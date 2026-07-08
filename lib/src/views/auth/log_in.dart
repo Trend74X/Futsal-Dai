@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/views/auth/register.dart';
@@ -18,6 +19,7 @@ class LogInPage extends StatefulWidget {
 }
 
 class _LogInPageState extends State<LogInPage> {
+  final AuthController authCon = Get.put(AuthController());
   final formKey = GlobalKey<FormState>();
 
   // bools
@@ -120,7 +122,7 @@ class _LogInPageState extends State<LogInPage> {
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(20),
                 ],
-                validator: (value) => validateEmail(string: value!),
+                validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 15),
                 onChanged: (value){
                   setState(() {});
                 },

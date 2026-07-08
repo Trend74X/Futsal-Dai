@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
+import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -16,6 +18,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
+  final formKey = GlobalKey<FormState>();
+  final AuthController authCon = Get.find();
 
   String selectedRole = 'player';
 
@@ -258,136 +262,152 @@ class _RegisterPageState extends State<RegisterPage> {
             width: 1.0,
           ),
         ),
-        child: Column(
-          children: [
-            CustomTextFormField(
-              headingText: "Full Name",
-              headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-              autoValidateMode: AutovalidateMode.onUserInteraction,
-              controller: fullNameCon,
-              maxLines: 1,
-              hintText: 'Cristiano Ronaldo',
-              hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(20),
-              ],
-              validator: (value) => validateIsEmpty(string: value!),
-              onChanged: (value){
-                setState(() {});
-              },
-            ),
-            SizedBox(height: 8.h),
-            CustomTextFormField(
-              headingText: "Phone Number",
-              headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-              autoValidateMode: AutovalidateMode.onUserInteraction,
-              controller: phoneNoCon,
-              maxLines: 1,
-              hintText: '9801234567',
-              hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(20),
-              ],
-              // validator: (value) => validateEmail(string: value!),
-              onChanged: (value){
-                setState(() {});
-              },
-            ),
-            SizedBox(height: 8.h),
-            CustomTextFormField(
-              headingText: "Email Address",
-              headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-              autoValidateMode: AutovalidateMode.onUserInteraction,
-              controller: emailCon,
-              maxLines: 1,
-              hintText: 'futsal_pro@example.com',
-              hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(20),
-              ],
-              // validator: (value) => validateEmail(string: value!),
-              onChanged: (value){
-                setState(() {});
-              },
-            ),
-            SizedBox(height: 8.h),
-            CustomTextFormField(
-              headingText: "Password",
-              headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-              textInputAction: TextInputAction.next,
-              keyboardType: TextInputType.text,
-              autoValidateMode: AutovalidateMode.onUserInteraction,
-              controller: passwordCon,
-              maxLines: 1,
-              hintText: '••••••••',
-              hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-              inputFormatters: [
-                LengthLimitingTextInputFormatter(20),
-              ],
-              // validator: (value) => validateEmail(string: value!),
-              onChanged: (value){
-                setState(() {});
-              },
-            ),
-            SizedBox(height: 24.h),
-            UsualButton(
-              text: 'Create Account',
-              fontSize: 16.sp,
-              fontWeight: .bold,
-              onPressed: () {},
-              height: 56.h,
-            ),
-            SizedBox(height: 24.h),
-            RichText(
-              textAlign: TextAlign.center,
-              text: TextSpan(
-                // 1. This base style is inherited by all sub-spans unless they override it
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                  height: 1.5, // Improves line-height spacing
-                ),
-                children: [
-                  const TextSpan(text: 'By registering, you agree to our '),
-                  
-                  // 2. A bold, colored segment
-                  const TextSpan(
-                    text: 'Terms of Service',
-                    style: TextStyle(
-                      color: primaryTextColor, 
-                      fontWeight: FontWeight.bold,
-                      decoration: TextDecoration.underline
-                    ),
+        child: Form(
+          key: formKey,
+          child: Column(
+            children: [
+              CustomTextFormField(
+                headingText: "Full Name",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                autoValidateMode: AutovalidateMode.onUserInteraction,
+                controller: fullNameCon,
+                maxLines: 1,
+                hintText: 'Cristiano Ronaldo',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(20),
+                ],
+                validator: (value) => validateIsEmpty(string: value!),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 8.h),
+              CustomTextFormField(
+                headingText: "Phone Number",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.phone,
+                autoValidateMode: AutovalidateMode.onUserInteraction,
+                controller: phoneNoCon,
+                maxLines: 1,
+                hintText: '9801234567',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(11),
+                ],
+                validator: (value) => validateMinMaxLength(string: value!, minLegth: 10, maxLength: 11),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 8.h),
+              CustomTextFormField(
+                headingText: "Email Address",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                autoValidateMode: AutovalidateMode.onUserInteraction,
+                controller: emailCon,
+                maxLines: 1,
+                hintText: 'futsal_pro@example.com',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(35),
+                ],
+                validator: (value) => validateEmail(string: value!),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 8.h),
+              CustomTextFormField(
+                headingText: "Password",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                autoValidateMode: AutovalidateMode.onUserInteraction,
+                obscureText: true,
+                controller: passwordCon,
+                maxLines: 1,
+                hintText: '••••••••',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(20),
+                ],
+                validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 20),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 24.h),
+              UsualButton(
+                text: 'Create Account',
+                fontSize: 16.sp,
+                fontWeight: .bold,
+                onPressed: () async {
+                  final isValid = formKey.currentState!.validate();
+                  if (!isValid) return;
+                  var data = {
+                    "full_name": fullNameCon.text.trim(),
+                    "phone_number": phoneNoCon.text.trim(),
+                    "email": emailCon.text.trim(),
+                    "password": passwordCon.text.trim(),
+                    "role": selectedRole,
+                  };
+                  bool isSignedUp = await authCon.signUp(data);
+                  if(isSignedUp) Get.offAll(() => LogInPage());
+                },
+                height: 56.h,
+              ),
+              SizedBox(height: 24.h),
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  // 1. This base style is inherited by all sub-spans unless they override it
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
+                    height: 1.5, // Improves line-height spacing
                   ),
-                  
-                  const TextSpan(text: ' and '),
-                  
-                  // 3. An interactive, clickable link segment
-                  TextSpan(
-                    text: 'Privacy Policy.',
-                    style: const TextStyle(
-                      color: primaryTextColor, // Neon Green
-                      decoration: TextDecoration.underline, // Underlines the link
-                      fontWeight: FontWeight.bold,
+                  children: [
+                    const TextSpan(text: 'By registering, you agree to our '),
+                    
+                    // 2. A bold, colored segment
+                    const TextSpan(
+                      text: 'Terms of Service',
+                      style: TextStyle(
+                        color: primaryTextColor, 
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline
+                      ),
                     ),
-                    // Recognizer captures tap gestures specifically on these words
-                    // recognizer: TapGestureRecognizer()
-                    //   ..onTap = () {
-                    //     print('Privacy Policy Tapped!');
-                    //     // Handle your navigation or URL launcher here
-                    //   },
-                  ),
-                ]
-              )
-            ),
-            SizedBox(height: 24.h),
-          ],
+                    
+                    const TextSpan(text: ' and '),
+                    
+                    // 3. An interactive, clickable link segment
+                    TextSpan(
+                      text: 'Privacy Policy.',
+                      style: const TextStyle(
+                        color: primaryTextColor, // Neon Green
+                        decoration: TextDecoration.underline, // Underlines the link
+                        fontWeight: FontWeight.bold,
+                      ),
+                      // Recognizer captures tap gestures specifically on these words
+                      // recognizer: TapGestureRecognizer()
+                      //   ..onTap = () {
+                      //     print('Privacy Policy Tapped!');
+                      //     // Handle your navigation or URL launcher here
+                      //   },
+                    ),
+                  ]
+                )
+              ),
+              SizedBox(height: 24.h),
+            ],
+          ),
         ),
       ),
     );

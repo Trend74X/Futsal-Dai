@@ -169,7 +169,7 @@ class CustomTextFormField extends StatelessWidget {
           width: width,
           height: height,
           child: TextFormField(
-            style: textStyle ?? TextStyle(fontSize: 16.sp, color: black, fontFamily: 'NotoSansJP-Regular',height: 1.5.sp),
+            style: textStyle ?? TextStyle(fontSize: 16.sp, color: white, fontFamily: 'NotoSansJP-Regular',height: 1.5.sp),
             focusNode: focusNode,
             inputFormatters: inputFormatters ?? [],
             onTap: isSuffixLoading == true ? (){} : onTap,
@@ -184,7 +184,7 @@ class CustomTextFormField extends StatelessWidget {
             validator: validator,
             onChanged: onChanged,
             onFieldSubmitted: onFieldSubmitted,
-            cursorColor: cursorColor ?? black,
+            cursorColor: cursorColor ?? primaryColor,
             maxLines: maxLines ?? 1,
             maxLength: maxLength,
             decoration: InputDecoration(

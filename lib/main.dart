@@ -5,8 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/splash.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -19,13 +20,10 @@ void main() {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown
   ]);
-  // SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-  //   systemNavigationBarColor: Colors.transparent,
-  //   systemNavigationBarDividerColor: Colors.transparent,
-  //   systemNavigationBarIconBrightness: Brightness.light,
-  //   statusBarIconBrightness: Brightness.light, 
-  //   statusBarBrightness: Brightness.dark
-  // ));
+  await Supabase.initialize(
+    url: 'https://gilwmzglondlmruasdwj.supabase.co',
+    publishableKey: 'sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z',
+  );
   runApp(const MainApp());
 }
 
