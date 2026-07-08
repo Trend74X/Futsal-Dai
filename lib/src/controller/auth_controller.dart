@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -23,29 +25,40 @@ class AuthController extends GetxController {
     }
   }
 
-  // Future<bool> signIn(String email, String password) async {
-  //   final response = await supabase.auth.signInWithPassword(
-  //     email: email,
-  //     password: password,
-  //   );
-
-  //   // if (response.error != null) {
-  //   //   Get.snackbar('Login Error', response.error!.message);
-  //   //   return false;
-  //   // }
-
-  //   return true;
-  // }
-
-  Future storeUser(String userId, Map<String, dynamic> userData) {
+  Future<bool> signIn(String email, String password) async {
     try {
-      return supabase.from('Users').insert({
+      final AuthResponse response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.session != null) {
+        log('Login succeeded!');
+        log('User ID: ${response.user?.id}');
+        return true;
+      } else {
+        log('Login failed: Session is null');
+        return false;
+      }
+    } on AuthException catch (error) {
+      log('Login failed (AuthException): ${error.message}');
+      return false;
+    } catch (error) {
+      log('Login failed (Unexpected Error): $error');
+      return false;
+    }
+  }
+
+  Future storeUser(String userId, Map<String, dynamic> userData) async {
+    try {
+      final List<Map<String, dynamic>> response = await supabase.from('Users').insert({
         'id': userId,
         'full_name': userData['full_name'],
         'phone_number': userData['phone_number'],
         'role': userData['role'],
         'email': userData['email'],
-      });
+      }).select();
+      if (response.isNotEmpty)  log('Success! Inserted user: ${response.first}');
     } catch (e) {
       Get.snackbar('Error', e.toString());
       rethrow;

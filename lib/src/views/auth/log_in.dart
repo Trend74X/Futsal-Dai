@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -95,15 +96,15 @@ class _LogInPageState extends State<LogInPage> {
                 headingText: "EMAIL OR PHONE",
                 headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
                 textInputAction: TextInputAction.next,
-                keyboardType: TextInputType.text,
+                keyboardType: TextInputType.emailAddress,
                 autoValidateMode: AutovalidateMode.onUserInteraction,
                 controller: emailCon,
                 maxLines: 1,
                 hintText: 'futsal_pro@example.com',
                 hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(20),
-                ],
+                // inputFormatters: [
+                //   LengthLimitingTextInputFormatter(20),
+                // ],
                 validator: (value) => validateEmail(string: value!),
                 onChanged: (value){
                   setState(() {});
@@ -152,7 +153,10 @@ class _LogInPageState extends State<LogInPage> {
                 text: 'LOGIN',
                 fontSize: 16.sp,
                 fontWeight: .bold,
-                onPressed: () {},
+                onPressed: () async {
+                  bool success = await authCon.signIn(emailCon.text.trim(), passwordCon.text.trim());
+                  if(success) log('Login Success');
+                },
                 height: 56.h,
               ),
               SizedBox(height: 24.h),
