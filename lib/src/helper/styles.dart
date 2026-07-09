@@ -4,7 +4,9 @@ const primaryColor      = Color(0xFF39FF14);
 const primaryTextColor  = Color(0xFF79FF5B);
 const subtitleTextColor = Color(0xFFBACCB0);
 const buttonTextColor   = Color(0xFF022100);
+const whiteTextColor    = Color(0xFFDAE6D0);
 const filledBgColor     = Color(0xFF141E11);
+const containerBgColor  = Color(0xFF0E171D);
 const error             = Color(0xFFE00000);
 const red               = Color(0xFFE00000);
 const redCompulsory     = Color(0xFFC13939);
@@ -47,9 +49,9 @@ const toggleBlue        = Color(0xFF3735ac);
 const textBlue          = Color(0xFF1358ce);
 const lightGreen        = Color(0xFFD5F1E1);
 const disabledSwitch    = Color(0xffABABAB);
-const transparent       = Colors.transparent;
 const searchText        = Color(0xffB1B1B1);
 const disableButton     = Color(0xFFB7B7B7);
+const transparent       = Colors.transparent;
 
 TextStyle notoReg({required double size, Color? color = const Color(0x00707070),double? charSpacing = 0.0,double? lineSpacing = 0.0}) => 
   TextStyle(

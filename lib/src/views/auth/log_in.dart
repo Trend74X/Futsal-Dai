@@ -92,7 +92,7 @@ class _LogInPageState extends State<LogInPage> {
           child: Column(
             children: [
               CustomTextFormField(
-                headingText: "EMAIL OR PHONE",
+                headingText: "EMAIL",
                 headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.emailAddress,
@@ -122,7 +122,7 @@ class _LogInPageState extends State<LogInPage> {
                 inputFormatters: [
                   LengthLimitingTextInputFormatter(20),
                 ],
-                validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 15),
+                validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 20),
                 onChanged: (value){
                   setState(() {});
                 },

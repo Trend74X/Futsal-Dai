@@ -5,7 +5,7 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:get/get.dart';
 
 class CustomTextFormField extends StatelessWidget {
-  final String headingText;
+  final String? headingText;
   final TextStyle? headingTextStyle;
   final String? infoText;
   final String? impText;
@@ -85,7 +85,7 @@ class CustomTextFormField extends StatelessWidget {
     this.inputFormatters, 
     this.onFieldSubmitted,
     this.focusNode,
-    required this.headingText, 
+    this.headingText, 
     this.isRequired, 
     this.isDropdown, this.isOptional, this.infoText, this.infoTextStyle, this.maxLength, this.isSuffixLoading, this.reqText, this.impText, this.headingTextStyle
   });
@@ -96,65 +96,68 @@ class CustomTextFormField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Heading Text and Required
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Flexible(
-              child: Text(
-                headingText, 
-                style: headingTextStyle ?? notoReg(size: 15.sp, color: black),
-                maxLines: 3,
-                // softWrap: false,
-              )
-            ),
-            SizedBox(width: 8.w,),
-            //Reauired Indicator
-            Visibility(
-              visible: isRequired == true,
-              child: Container(
-                height: 20.h,
-                padding: EdgeInsets.fromLTRB(5.0.w, 0.0.h, 5.0.w, 1.6.h),
-                margin: EdgeInsets.only(top: 1.0.h),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4.r),
-                  color: redCompulsory
-                ),
-                child: Center(
-                  child: Text(
-                    reqText ?? "requiredTag".tr, 
-                    style: notoReg(size: 11.sp, color: white),
-                    textAlign: TextAlign.center,
-                  ),
+        Visibility(
+          visible: headingText != '',
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: Text(
+                  headingText!,
+                  style: headingTextStyle ?? notoReg(size: 15.sp, color: black),
+                  maxLines: 3,
+                  // softWrap: false,
                 )
               ),
-            ),
-            // Optional Indicator
-            Visibility(
-              visible: isOptional == true,
-              child: Container(
-                height: 20.h,
-                padding: EdgeInsets.fromLTRB(5.0.w, 0.0.h, 5.0.w, 1.6.h),
-                margin: EdgeInsets.only(top: 3.0.h),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4.r),
-                  color: black2
-                ),
-                child: Center(
-                  child: Text(
-                    "任意",
-                    style: notoReg(size: 12.sp, color: white),
-                    textAlign: TextAlign.center,
+              SizedBox(width: 8.w,),
+              //Reauired Indicator
+              Visibility(
+                visible: isRequired == true,
+                child: Container(
+                  height: 20.h,
+                  padding: EdgeInsets.fromLTRB(5.0.w, 0.0.h, 5.0.w, 1.6.h),
+                  margin: EdgeInsets.only(top: 1.0.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4.r),
+                    color: redCompulsory
                   ),
-                )
+                  child: Center(
+                    child: Text(
+                      reqText ?? "requiredTag".tr, 
+                      style: notoReg(size: 11.sp, color: white),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ),
               ),
-            ),
-            SizedBox(width: 4.w,),
-            Visibility(
-              visible: infoText != null,
-              child: Text(infoText?? "", style: infoTextStyle ?? notoReg(size: 11.sp, color: black2))
-            ),
-          ],
+              // Optional Indicator
+              Visibility(
+                visible: isOptional == true,
+                child: Container(
+                  height: 20.h,
+                  padding: EdgeInsets.fromLTRB(5.0.w, 0.0.h, 5.0.w, 1.6.h),
+                  margin: EdgeInsets.only(top: 3.0.h),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4.r),
+                    color: black2
+                  ),
+                  child: Center(
+                    child: Text(
+                      "任意",
+                      style: notoReg(size: 12.sp, color: white),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                ),
+              ),
+              SizedBox(width: 4.w,),
+              Visibility(
+                visible: infoText != null,
+                child: Text(infoText?? "", style: infoTextStyle ?? notoReg(size: 11.sp, color: black2))
+              ),
+            ],
+          ),
         ),
         SizedBox(height: 6.0.h,),
         Visibility(
