@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:get/get.dart';
@@ -12,14 +13,16 @@ class SplashScreenPage extends StatefulWidget {
 }
 
 // 1. Added SingleTickerProviderStateMixin to handle the 5-second animation ticker
-class _SplashScreenPageState extends State<SplashScreenPage>
-    with SingleTickerProviderStateMixin {
+class _SplashScreenPageState extends State<SplashScreenPage> with SingleTickerProviderStateMixin {
+  final authCon = Get.put(AuthController());
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
+
+    final session = authCon.supabase.auth.currentSession;
 
     // 2. Initialize the 5-second controller
     _controller = AnimationController(
@@ -38,7 +41,12 @@ class _SplashScreenPageState extends State<SplashScreenPage>
     
     // Optional: If you want to navigate automatically to the next screen after 5 seconds:
     _controller.forward().then((_) {
-      Get.offAll(() => LogInPage());
+      if(session == null) {
+        Get.offAll(() => LogInPage());
+      } else {
+        authCon.getUserById(session.user.id);
+      }
+      // Get.offAll(() => session != null ? PlayerBottomsheet() : LogInPage());
     });
     
   }

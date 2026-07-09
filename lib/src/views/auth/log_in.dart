@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -153,10 +152,7 @@ class _LogInPageState extends State<LogInPage> {
                 text: 'LOGIN',
                 fontSize: 16.sp,
                 fontWeight: .bold,
-                onPressed: () async {
-                  bool success = await authCon.signIn(emailCon.text.trim(), passwordCon.text.trim());
-                  if(success) log('Login Success');
-                },
+                onPressed: () => authCon.signIn(emailCon.text.trim(), passwordCon.text.trim()),
                 height: 56.h,
               ),
               SizedBox(height: 24.h),

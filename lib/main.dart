@@ -44,12 +44,19 @@ class MainApp extends StatelessWidget {
           defaultTransition: Transition.rightToLeft,
           home: SplashScreenPage(),
           builder: (context, child) {
-            return SafeArea(
-              top: false,
-              bottom: Platform.isIOS ? false : true,
-              child: MediaQuery(
-                data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-                child: child!
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: const SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,         // Transparent background
+                statusBarIconBrightness: Brightness.light,   // White icons for Android
+                statusBarBrightness: Brightness.dark,       // White icons for iOS
+              ),
+              child: SafeArea(
+                top: false,
+                bottom: Platform.isIOS ? false : true,
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
+                  child: child!
+                ),
               ),
             );
           },

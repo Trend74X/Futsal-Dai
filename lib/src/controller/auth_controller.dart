@@ -1,11 +1,17 @@
 import 'dart:developer';
 
+import 'package:futsal_dai/src/model/user_model.dart';
+import 'package:futsal_dai/src/views/owner/owner_bottomsheet.dart';
+import 'package:futsal_dai/src/views/player/player_bottomsheet.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthController extends GetxController {
 
   final supabase = Supabase.instance.client;
+
+  UserModel? profile;
 
   Future<bool> signUp(Map<String, dynamic> userData) async {
     try {
@@ -20,12 +26,12 @@ class AuthController extends GetxController {
         return false;
       }
     } catch (e) {
-      Get.snackbar('Login Error', e.toString());
+      showToast(message: 'Login Error', isSuccess: false, isNotDissmiable: true);
       return false;
     }
   }
 
-  Future<bool> signIn(String email, String password) async {
+  Future<void> signIn(String email, String password) async {
     try {
       final AuthResponse response = await supabase.auth.signInWithPassword(
         email: email,
@@ -33,19 +39,16 @@ class AuthController extends GetxController {
       );
 
       if (response.session != null) {
-        log('Login succeeded!');
-        log('User ID: ${response.user?.id}');
-        return true;
+        getUserById(response.user!.id);
       } else {
+        showToast(message: 'Login failed: Session is null', isSuccess: false, isNotDissmiable: false);
         log('Login failed: Session is null');
-        return false;
       }
     } on AuthException catch (error) {
+      showToast(message: error.message, isSuccess: false, isNotDissmiable: false);
       log('Login failed (AuthException): ${error.message}');
-      return false;
     } catch (error) {
       log('Login failed (Unexpected Error): $error');
-      return false;
     }
   }
 
@@ -62,6 +65,22 @@ class AuthController extends GetxController {
     } catch (e) {
       Get.snackbar('Error', e.toString());
       rethrow;
+    }
+  }
+
+  Future getUserById(String userId) async {
+    try {
+      final data = await supabase.from('Users').select().eq('id', userId).maybeSingle();
+      if (data != null) {
+        profile = UserModel.fromJson(data);
+        if(profile!.role == 'player') {
+          Get.offAll(() => PlayerBottomsheet());
+        } else {
+          Get.offAll(() => OwnerBottomsheet());
+        }
+      }
+    } catch (e) {
+      log(e.toString());
     }
   }
 
