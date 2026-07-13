@@ -148,7 +148,7 @@ class _LogInPageState extends State<LogInPage> {
                 ]
               ),
               SizedBox(height: 24.h),
-              UsualButton(
+              CustomUsualButton(
                 text: 'LOGIN',
                 fontSize: 16.sp,
                 fontWeight: .bold,

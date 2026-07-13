@@ -2,9 +2,12 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/player/futsal_detail.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:get/get.dart';
 
 class PlayerHomePage extends StatefulWidget {
   const PlayerHomePage({super.key});
@@ -16,34 +19,6 @@ class PlayerHomePage extends StatefulWidget {
 class _PlayerHomePageState extends State<PlayerHomePage> {
 
   final searchCon    = TextEditingController();
-
-  List amenities = [
-    {
-      'label' : 'Parking',
-      'icon': Icons.local_parking,
-      'isSelected': false,
-    },
-    {
-      'label' : 'Showers',
-      'icon': Icons.shower,
-      'isSelected': false,
-    },
-    {
-      'label' : 'Night Light',
-      'icon': Icons.light,
-      'isSelected': false,
-    },
-    {
-      'label' : 'Drinking Water',
-      'icon': Icons.water_drop_outlined,
-      'isSelected': false,
-    },
-    {
-      'label' : 'Bibs',
-      'icon': Icons.dry_cleaning,
-      'isSelected': false,
-    },
-  ];
   
   @override
   Widget build(BuildContext context) {
@@ -198,38 +173,41 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
             scrollDirection: .horizontal,
             separatorBuilder: (cntxt, idx) => SizedBox(width: 16.w), 
             itemBuilder: (context, index) {
-              return SizedBox(
-                width: 290.w,
-                child: Column(
-                  crossAxisAlignment: .start,
-                  children: [
-                    Container(
-                      height: 176.h,
-                      width: 280.w,
-                      decoration: BoxDecoration(
-                        color: primaryTextColor,
-                        borderRadius: .circular(12.r)
+              return InkWell(
+                onTap: () => Get.to(() => FutsalDetail()),
+                child: SizedBox(
+                  width: 290.w,
+                  child: Column(
+                    crossAxisAlignment: .start,
+                    children: [
+                      Container(
+                        height: 176.h,
+                        width: 280.w,
+                        decoration: BoxDecoration(
+                          color: primaryTextColor,
+                          borderRadius: .circular(12.r)
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Text(
-                      'Prismatic Futsal & Recreation Center',
-                      style: TextStyle(
-                        color: whiteTextColor,
-                        fontSize: 20.sp,
-                        fontWeight: .w600
+                      SizedBox(height: 8.h),
+                      Text(
+                        'Prismatic Futsal & Recreation Center',
+                        style: TextStyle(
+                          color: whiteTextColor,
+                          fontSize: 20.sp,
+                          fontWeight: .w600
+                        ),
+                        overflow: .ellipsis,
                       ),
-                      overflow: .ellipsis,
-                    ),
-                    Text(
-                      '2.4 km - Sanepa, Lalitpur',
-                      style: TextStyle(
-                        color: whiteTextColor,
-                        fontSize: 14.sp,
-                        fontWeight: .normal
+                      Text(
+                        '2.4 km - Sanepa, Lalitpur',
+                        style: TextStyle(
+                          color: whiteTextColor,
+                          fontSize: 14.sp,
+                          fontWeight: .normal
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               );
             }, 
@@ -313,7 +291,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                           ),
                         ),
                         Spacer(),
-                        UsualButton(
+                        CustomUsualButton(
                           text: 'Book Now', 
                           onPressed: () {},
                           height: 32.h,
@@ -392,7 +370,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
               ),
             ),
             SizedBox(height: 16.h),
-            UsualButton(
+            CustomUsualButton(
               text: 'Claim Now', 
               onPressed: () {},
               height: 36.h,

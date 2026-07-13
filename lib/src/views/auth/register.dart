@@ -343,7 +343,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 },
               ),
               SizedBox(height: 24.h),
-              UsualButton(
+              CustomUsualButton(
                 text: 'Create Account',
                 fontSize: 16.sp,
                 fontWeight: .bold,

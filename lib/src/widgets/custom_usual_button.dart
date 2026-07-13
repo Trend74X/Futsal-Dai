@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 
 //----------Usual button ----------
 // ignore: must_be_immutable
-class UsualButton extends StatelessWidget {
+class CustomUsualButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
   final double? height;
@@ -25,7 +25,7 @@ class UsualButton extends StatelessWidget {
   final Key? buttonKey; 
   final int? maxlines;
 
-  UsualButton({
+  CustomUsualButton({
     super.key,
     required this.text,
     required this.onPressed,
