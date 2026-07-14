@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/player_home.dart';
+import 'package:futsal_dai/src/views/player/player_profile.dart';
 
 class PlayerBottomsheet extends StatefulWidget {
   const PlayerBottomsheet({super.key});
@@ -18,7 +19,7 @@ class _PlayerBottomsheetState extends State<PlayerBottomsheet> {
   final List<Widget> _screens = [
     PlayerHomePage(),
     const Center(child: Text('Bookings Screen')),
-    const Center(child: Text('Profile Screen')),
+    PlayerProfilePage(),
   ];
 
   final Color indicatorColor = const Color(0xFF1B4D14); // Dark green pill background

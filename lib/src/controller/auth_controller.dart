@@ -1,6 +1,8 @@
 import 'dart:developer';
 
+import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
+import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:futsal_dai/src/views/owner/owner_bottomsheet.dart';
 import 'package:futsal_dai/src/views/player/player_bottomsheet.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
@@ -49,6 +51,20 @@ class AuthController extends GetxController {
       log('Login failed (AuthException): ${error.message}');
     } catch (error) {
       log('Login failed (Unexpected Error): $error');
+    }
+  }
+
+  Future<void> signOutUser(BuildContext context) async {
+    try {
+      await supabase.auth.signOut();
+      if (!context.mounted) return;
+      Get.offAll(() => LogInPage());
+    } on AuthException catch (error) {
+      if (!context.mounted) return;
+      showToast(message: error.message, isSuccess: false);
+    } catch (error) {
+      if (!context.mounted) return;
+      showToast(message: 'An unexpected error occurred while logging out.', isSuccess: false);
     }
   }
 
