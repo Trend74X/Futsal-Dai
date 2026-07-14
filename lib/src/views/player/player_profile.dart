@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
@@ -13,7 +14,8 @@ class PlayerProfilePage extends StatefulWidget {
 }
 
 class _PlayerProfilePageState extends State<PlayerProfilePage> {
-  final AuthController _con = Get.put(AuthController());
+  final AuthController _authCon = Get.put(AuthController());
+  final AppController _appCon = Get.put(AppController());
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +37,8 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
                     SizedBox(height: 24.h),
                     logOutBtn(),
                     SizedBox(height: 24.h),
-                    appVersion()
+                    appVersion(),
+                    SizedBox(height: 24.h),
                   ],
                 )
               )
@@ -63,7 +66,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
         ),
         SizedBox(height: 8.h),
         Text(
-          'Ashok Shakya',
+          _authCon.profile!.fullName,
           style: TextStyle(
             color: whiteTextColor,
             fontWeight: .bold,
@@ -71,7 +74,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           ),
         ),
         Text(
-          '+977 ******7215',
+          '+977 ${_authCon.profile!.phoneNumber}',
           style: TextStyle(
             color: whiteTextColor,
             fontSize: 16.sp
@@ -228,7 +231,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
   Widget logOutBtn() {
     return CustomUsualButton(
       text: 'Log Out', 
-      onPressed: () => _con.signOutUser(context),
+      onPressed: () => _authCon.signOutUser(context),
       fontColor: Color(0xFFFFB4AB),
       borderColor: Color(0xFFFFB4AB),
       bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.05),
@@ -236,11 +239,14 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
   }
 
   Widget appVersion() {
-    return Text(
-      'App Version 2.4.0 (Build 102)',
-      style: TextStyle(
-        color: subtitleTextColor.withValues(alpha: 0.4),
-        fontSize: 16.sp
+    return Obx(() =>
+      Text(
+        // 'App Version 2.4.0 (Build 102)',
+        _appCon.appVersion.value,
+        style: TextStyle(
+          color: subtitleTextColor.withValues(alpha: 0.4),
+          fontSize: 16.sp
+        ),
       ),
     );
   }
