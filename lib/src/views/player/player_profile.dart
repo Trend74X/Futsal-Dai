@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
@@ -175,7 +176,6 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
 
   Widget historyAndStuff() {
     return Container(
-      // height: 120.h,
       decoration: BoxDecoration(
         color: filledBgColor,
         borderRadius: .circular(12.r)
@@ -185,11 +185,13 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
         child: Column(
           mainAxisAlignment: .center,
           children: [
+            historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () {}),
+            Divider(color: gray01),
             historyTile(icon: Icons.star_border, label: 'Saved / Favorite Futsals', onTap: () {}),
             Divider(color: gray01),
             historyTile(icon: Icons.history, label: 'Transaction & Payment History', onTap: () {}),
             Divider(color: grayDark),
-            historyTile(icon: Icons.question_mark, label: 'Support & Anti-Spam Guidelines', onTap: () {})
+            historyTile(icon: Icons.question_mark, label: 'Support & Anti-Spam Guidelines', onTap: () => Get.to(() => RulesWebViewScreen()))
           ]
         ),
       )
@@ -241,7 +243,6 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
   Widget appVersion() {
     return Obx(() =>
       Text(
-        // 'App Version 2.4.0 (Build 102)',
         _appCon.appVersion.value,
         style: TextStyle(
           color: subtitleTextColor.withValues(alpha: 0.4),
