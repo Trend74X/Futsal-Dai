@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -40,11 +41,14 @@ class _FutsalDetailState extends State<FutsalDetail> {
                     height: 360.h,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: primaryTextColor,
                       borderRadius: .only(
                         topLeft: .circular(24.r),
                         topRight: .circular(24.r),
                       )
+                    ),
+                    child: Image.asset(
+                      'assets/images/court.png',
+                      fit: .cover,
                     ),
                   ),
                 ),
@@ -544,7 +548,13 @@ class _FutsalDetailState extends State<FutsalDetail> {
                 fontWeight: .bold,
                 fontSize: 20.sp
               ),
-              onPressed: () {}
+              onPressed: () {
+                Get.bottomSheet(
+                  PlayerBookingConfirm(),
+                  isScrollControlled: true, // Allows sheet to expand if needed
+                  ignoreSafeArea: false,
+                );
+              }
             )
           ],
         ),

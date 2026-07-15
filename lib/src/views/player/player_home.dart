@@ -187,6 +187,10 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                           color: primaryTextColor,
                           borderRadius: .circular(12.r)
                         ),
+                        child: Image.asset(
+                          'assets/images/court.png',
+                          fit: .cover,
+                        ),
                       ),
                       SizedBox(height: 8.h),
                       Text(
@@ -250,11 +254,14 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                 height: 192.h,
                 width: 360.w,
                 decoration: BoxDecoration(
-                  color: primaryTextColor,
                   borderRadius: .only(
-                    topLeft: .circular(24.r),
-                    topRight: .circular(24.r),
+                    topLeft: .circular(28.r),
+                    topRight: .circular(28.r),
                   )
+                ),
+                child: Image.asset(
+                  'assets/images/court.png',
+                  fit: .cover,
                 ),
               ),
               Padding(
