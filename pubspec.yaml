@@ -17,6 +17,7 @@ dependencies:
   package_info_plus: ^10.2.0
   shimmer: ^3.0.0
   supabase_flutter: ^2.15.3
+  url_launcher: ^6.3.2
   webview_flutter: ^4.14.1
 
 dev_dependencies:

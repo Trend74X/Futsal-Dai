@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/player/player_bookings.dart';
 import 'package:futsal_dai/src/views/player/player_home.dart';
 import 'package:futsal_dai/src/views/player/player_profile.dart';
 
@@ -18,7 +19,7 @@ class _PlayerBottomsheetState extends State<PlayerBottomsheet> {
   // Replace these placeholders with your actual screen widgets
   final List<Widget> _screens = [
     PlayerHomePage(),
-    const Center(child: Text('Bookings Screen')),
+    PlayerBookingPage(),
     PlayerProfilePage(),
   ];
 
@@ -66,7 +67,7 @@ class _PlayerBottomsheetState extends State<PlayerBottomsheet> {
             NavigationDestination(
               icon: _buildCustomTab(
                 isSelected: _currentIndex == 1,
-                iconPath: 'assets/icons/player.svg',
+                iconPath: 'assets/icons/booking.svg',
                 label: 'Bookings',
                 activeColor: Color(0xFF1B4D14),
                 inactiveColor: subtitleTextColor,

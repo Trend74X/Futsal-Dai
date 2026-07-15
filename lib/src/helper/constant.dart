@@ -111,3 +111,19 @@ List slots = [
     "booked_by": ""
   }
 ];
+
+
+List pastMatches = [
+  {
+    "label": "Prismatic Futsal & Recreation Center",
+    "date": "Dec 10, 2025",
+    "amount": "1200",
+    "status": "completed"
+  },
+  {
+    "label": "X-Arena Pro",
+    "date": "Dec 10, 2025",
+    "amount": "0",
+    "status": "cancelled (refunded)"
+  },
+];

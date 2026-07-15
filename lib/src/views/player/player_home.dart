@@ -242,7 +242,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
             color: containerBgColor,
             border: Border.all(
               color: Color(0xFF3C4B35),
-              width: 3.w
+              width: 1.w
             ),
             borderRadius: BorderRadius.circular(24.r)
           ),
@@ -250,18 +250,24 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
           child: Column(
             crossAxisAlignment: .start,
             children: [
-              Container(
-                height: 192.h,
-                width: 360.w,
-                decoration: BoxDecoration(
-                  borderRadius: .only(
-                    topLeft: .circular(28.r),
-                    topRight: .circular(28.r),
-                  )
+              ClipRRect(
+                borderRadius: .only(
+                  topLeft: .circular(24.r),
+                  topRight: .circular(24.r)
                 ),
-                child: Image.asset(
-                  'assets/images/court.png',
-                  fit: .cover,
+                child: Container(
+                  height: 192.h,
+                  width: 360.w,
+                  decoration: BoxDecoration(
+                    borderRadius: .only(
+                      topLeft: .circular(28.r),
+                      topRight: .circular(28.r),
+                    )
+                  ),
+                  child: Image.asset(
+                    'assets/images/court.png',
+                    fit: .cover,
+                  ),
                 ),
               ),
               Padding(
@@ -323,7 +329,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
         color: containerBgColor,
         border: Border.all(
           color: Color(0xFF3C4B35),
-          width: 3.w
+          width: 1.w
         ),
         borderRadius: BorderRadius.circular(24.r)
       ),
@@ -398,21 +404,25 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
         color: containerBgColor,
         border: Border.all(
           color: Color(0xFF3C4B35),
-          width: 3.w
+          width: 1.w
         ),
         borderRadius: BorderRadius.circular(24.r)
       ),
       child: Column(
         crossAxisAlignment: .start,
         children: [
-          Container(
-            height: 130.h,
-            decoration: BoxDecoration(
-              color: primaryTextColor,
-              borderRadius: .only(
-                topLeft: .circular(24.r),
-                topRight: .circular(24.r),
-              )
+          ClipRRect(
+            borderRadius: .only(
+              topLeft: .circular(24.r),
+              topRight: .circular(24.r)
+            ),
+            child: SizedBox(
+              height: 130.h,
+              width: double.infinity,
+              child: Image.asset(
+                'assets/images/court.png',
+                fit: .fill,
+              ),
             ),
           ),
           Padding(
