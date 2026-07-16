@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
+import 'package:futsal_dai/src/helper/share_url.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
@@ -16,6 +17,7 @@ class FutsalDetail extends StatefulWidget {
 
 class _FutsalDetailState extends State<FutsalDetail> {
   DateTime selectedDate = DateTime.now();
+  bool isFav = false;
   int? selectedIndex;
 
   @override
@@ -75,27 +77,57 @@ class _FutsalDetailState extends State<FutsalDetail> {
                 Positioned(
                   top: 64.h,
                   left: 16.w,
-                  child: Container(
-                    height: 40.h,
-                    width: 40.w,
-                    decoration: BoxDecoration(
-                    color: black8.withValues(alpha: 0.5),
-                      shape: .circle
-                    ),
-                    child: IconButton(
-                      onPressed: () => Get.back(), 
-                      icon: Icon(
-                        Icons.arrow_back_ios_new,
-                        color: white,
-                        size: 18.r,
-                      )
-                    ),
+                  child: iconButton(icon: Icons.arrow_back_ios_new, onTap: () => Get.back())
+                ),
+                Positioned(
+                  top: 64.h,
+                  right: 16.w,
+                  child: Column(
+                    children: [
+                      iconButton(icon: Icons.share, onTap: () => shareContent(context)),
+                      SizedBox(height: 12.h),
+                      Container(
+                        height: 40.h,
+                        width: 40.w,
+                        decoration: BoxDecoration(
+                        color: black8.withValues(alpha: 0.5),
+                          shape: .circle
+                        ),
+                        child: IconButton(
+                          onPressed: () => setState(() => isFav = !isFav),
+                          icon: Icon(
+                            Icons.favorite,
+                            color: isFav ? primaryColor : white,
+                            size: 24.r,
+                          )
+                        ),
+                      ),
+                    ],
                   ),
                 )
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget iconButton({required IconData icon, required VoidCallback onTap}) {
+    return Container(
+      height: 40.h,
+      width: 40.w,
+      decoration: BoxDecoration(
+      color: black8.withValues(alpha: 0.5),
+        shape: .circle
+      ),
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(
+          icon,
+          color: white,
+          size: 18.r,
+        )
       ),
     );
   }

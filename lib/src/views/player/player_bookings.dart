@@ -416,7 +416,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
           decoration: BoxDecoration(
             color: data['status'] == 'completed'
                     ? Color(0xFF1E293B).withValues(alpha: 0.9)
-                    : Color(0xFF93000A).withValues(alpha: 0.1),
+                    : Color(0xFF93000A).withValues(alpha: 0.25),
             borderRadius: .circular(12.r)
           ),
           padding: .symmetric(vertical: 16.h, horizontal: 12.w),
