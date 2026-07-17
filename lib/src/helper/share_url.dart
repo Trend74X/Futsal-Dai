@@ -9,7 +9,7 @@ void shareContent(BuildContext context) async {
   final result = await SharePlus.instance.share(
     ShareParams(
       text: textToShare,
-      subject: 'Check this out!', // Used mostly if the user shares to Email
+      subject: 'Check this out from Futsal Dai!', // Used mostly if the user shares to Email
     ),
   );
 

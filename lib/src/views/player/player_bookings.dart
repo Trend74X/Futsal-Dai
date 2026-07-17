@@ -252,38 +252,76 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                   ],
                 ),
                 SizedBox(height: 16.h),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Color(0xFF2D3828),
-                    borderRadius: .circular(12.r)
-                  ),
-                  padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                  child: Row(
-                    mainAxisSize: .min,
-                    children: [
-                      Icon(Icons.map_outlined, size: 18.sp, color: whiteTextColor),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Get Directions',
-                        style: TextStyle(
-                          color: whiteTextColor,
-                          fontSize: 16.sp,
-                        )
-                      )
-                    ],
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Center(
-                  child: Text(
-                    'Free cancellation valid for 45 more minutes',
-                    style: TextStyle(
-                      color: subtitleTextColor,
-                      fontSize: 10.sp
+                Row(
+                  children: [
+                    InkWell(
+                      onTap: () => launchMapDirections(),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: .all(
+                            color: primaryTextColor
+                          ),
+                          borderRadius: .circular(12.r)
+                        ),
+                        padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                        child: Row(
+                          mainAxisSize: .min,
+                          children: [
+                            Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
+                            SizedBox(width: 8.w),
+                            Text(
+                              'Get Directions',
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontSize: 16.sp,
+                              )
+                            )
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => makePhoneCall('9809809809'),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: .all(
+                             color:  primaryTextColor
+                            ),
+                            borderRadius: .circular(12.r)
+                          ),
+                          padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                          child: Row(
+                            mainAxisSize: .min,
+                            children: [
+                              Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
+                              SizedBox(width: 8.w),
+                              Text(
+                                'Call Owner',
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontSize: 16.sp,
+                                )
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: 12.h),
+                // Center(
+                //   child: Text(
+                //     'Free cancellation valid for 45 more minutes',
+                //     style: TextStyle(
+                //       color: subtitleTextColor,
+                //       fontSize: 10.sp
+                //     ),
+                //   ),
+                // ),
+                // SizedBox(height: 12.h),
               ],
             ),
           )
