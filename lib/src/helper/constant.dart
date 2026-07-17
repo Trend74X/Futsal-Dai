@@ -128,6 +128,7 @@ List pastMatches = [
   },
 ];
 
+
 List transactions = [
   {
     "date": "DECEMBER 2026",
@@ -180,5 +181,33 @@ List transactions = [
         "status": "SUCCESSFUL"
       }
     ]
+  }
+];
+
+
+List favoritesStalls = [
+  {
+    "name": "Prismatic Futsal & Recreation Center",
+    "location": "Sanepa, Lalitpur, Nepal",
+    "price": "1500",
+    "isFav": true
+  },
+  {
+    "name": "X-Arena Pro",
+    "location": "Downtown District, Sector 7",
+    "price": "45",
+    "isFav": true
+  },
+  {
+    "name": "Neon Roof Pitch",
+    "location": "Skyline Plaza, East Side",
+    "price": "60",
+    "isFav": true
+  },
+  {
+    "name": "Underground Futsal",
+    "location": "The Vault, Old Industrial Park",
+    "price": "35",
+    "isFav": true
   }
 ];
