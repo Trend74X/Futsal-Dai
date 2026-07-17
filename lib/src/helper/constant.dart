@@ -127,3 +127,58 @@ List pastMatches = [
     "status": "cancelled (refunded)"
   },
 ];
+
+List transactions = [
+  {
+    "date": "DECEMBER 2026",
+    "data": [
+      {
+        "name": "Prismatic Futsal & Recreation Center",
+        "date": "Dec 16, 2026",
+        "time": "8:00 PM",
+        "price": "1200",
+        "status": "SUCCESSFUL"
+      },
+      {
+        "name": "Neon Turf Central",
+        "date": "Dec 04, 2026",
+        "time": "10:00 PM",
+        "price": "1800",
+        "status": "REFUNDED"
+      }
+    ]
+  },
+  {
+    "date": "NOVEMBER 2026",
+    "data": [
+      {
+        "name": "Urban Kick Arena",
+        "date": "Nov 25, 2026",
+        "time": "6:00 PM",
+        "price": "1450",
+        "status": "SUCCESSFUL"
+      },
+      {
+        "name": "Pro-Fit Futsal Hub",
+        "date": "Nov 18, 2026",
+        "time": "9:00 PM",
+        "price": "1200",
+        "status": "SUCCESSFUL"
+      },
+      {
+        "name": "X-Arena",
+        "date": "Nov 11, 2026",
+        "time": "6:00 PM",
+        "price": "1500",
+        "status": "SUCCESSFUL"
+      },
+      {
+        "name": "Creative Futsal Hub",
+        "date": "Nov 4, 2026",
+        "time": "9:00 PM",
+        "price": "1000",
+        "status": "SUCCESSFUL"
+      }
+    ]
+  }
+];

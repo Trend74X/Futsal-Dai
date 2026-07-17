@@ -8,6 +8,7 @@ const buttonTextColor    = Color(0xFF022100);
 const brownTextColor     = Color(0xFFFFB95F);
 const filledBgColor      = Color(0xFF141E11);
 const lightFilledBgColor = Color(0xFF222D1E);
+const filledBlueColor    = Color(0xFF0F172A);
 const containerBgColor   = Color(0xFF0E171D);
 const error              = Color(0xFFE00000);
 const red                = Color(0xFFE00000);
@@ -72,6 +73,27 @@ TextStyle notoMed({required double size,Color? color = const Color(0x00707070),d
     letterSpacing: charSpacing,      // character spacing
     height       : lineSpacing       // line spacing
   );
+
+  TextStyle boldStyle(Color color, double size) =>
+    TextStyle(
+      color: color,
+      fontWeight: .bold,
+      fontSize: size
+    );
+
+  TextStyle regularStyle(Color color, double size) =>
+    TextStyle(
+      color: color,
+      fontWeight: .normal,
+      fontSize: size
+    );
+
+  TextStyle semiBoldStyle(Color color, double size) =>
+    TextStyle(
+      color: color,
+      fontWeight: .w600,
+      fontSize: size
+    );
 
 
 BoxDecoration bgImg() {

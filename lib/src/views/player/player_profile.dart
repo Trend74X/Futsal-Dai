@@ -4,6 +4,7 @@ import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
+import 'package:futsal_dai/src/views/player/player_transactions.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
@@ -189,7 +190,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
             Divider(color: gray01),
             historyTile(icon: Icons.star_border, label: 'Saved / Favorite Futsals', onTap: () {}),
             Divider(color: gray01),
-            historyTile(icon: Icons.history, label: 'Transaction & Payment History', onTap: () {}),
+            historyTile(icon: Icons.history, label: 'Transaction & Payment History', onTap: () => Get.to(() => PlayerTransactions()) ),
             Divider(color: grayDark),
             historyTile(icon: Icons.question_mark, label: 'Support & Anti-Spam Guidelines', onTap: () => Get.to(() => RulesWebViewScreen()))
           ]
