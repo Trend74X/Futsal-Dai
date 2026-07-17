@@ -211,3 +211,56 @@ List favoritesStalls = [
     "isFav": true
   }
 ];
+
+List squadStatusList = [
+  {
+    "name": "Ashok Shakya",
+    "status": "N/A",
+    "matches_played": 28
+  },
+  {
+    "name": "Anish Shakya",
+    "status": "OUT",
+    "matches_played": 57
+  },
+  {
+    "name": "Amrit Shakya",
+    "status": "IN",
+    "matches_played": 56
+  },
+  {
+    "name": "Prajesh Shakya",
+    "status": "IN",
+    "matches_played": 40
+  },
+  {
+    "name": "Mandip Napit",
+    "status": "IN",
+    "matches_played": 35
+  },
+  {
+    "name": "Sajit Shakya",
+    "status": "IN",
+    "matches_played": 53
+  },
+  {
+    "name": "Alice",
+    "status": "IN",
+    "matches_played": 41
+  },
+  {
+    "name": "Prajwol",
+    "status": "OUT",
+    "matches_played": 28
+  },
+  {
+    "name": "Pratik Rai",
+    "status": "N/A",
+    "matches_played": 51
+  },
+  {
+    "name": "Aman Rai",
+    "status": "N/A",
+    "matches_played": 49
+  }
+];
