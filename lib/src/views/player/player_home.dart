@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
+import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -306,7 +307,11 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                         Spacer(),
                         CustomUsualButton(
                           text: 'Book Now', 
-                          onPressed: () {},
+                          onPressed: () => Get.bottomSheet(
+                            PlayerBookingConfirm(),
+                            isScrollControlled: true,
+                            ignoreSafeArea: false,
+                          ),
                           height: 32.h,
                           width: 111.w,
                           padding: .zero,

@@ -5,8 +5,10 @@ import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/player/favorites.dart';
+import 'package:futsal_dai/src/views/player/player_edit_profile.dart';
 import 'package:futsal_dai/src/views/player/player_transactions.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 
 class PlayerProfilePage extends StatefulWidget {
@@ -60,11 +62,22 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           width: 96.w,
           decoration: BoxDecoration(
             color: filledBgColor,
-            border: Border.all(
+            shape: .circle,
+            border: .all(
               color: primaryColor,
-              width: 1.5
+              width: 2.w,
             ),
-            shape: .circle
+          ),
+          child: Padding(
+            padding: .symmetric(horizontal: 5.w), 
+            child: _authCon.profile?.profilePic == null 
+              ? const SizedBox()
+              : ClipOval(
+                child: DisplayNetworkImage(
+                  imageUrl: _authCon.profile!.profilePic!,
+                  boxFit: .cover,
+                ),
+              ),
           ),
         ),
         SizedBox(height: 8.h),
@@ -187,7 +200,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
         child: Column(
           mainAxisAlignment: .center,
           children: [
-            historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () {}),
+            historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () => Get.to(() => PlayerEditProfile())),
             Divider(color: gray01),
             historyTile(icon: Icons.star_border, label: 'Saved / Favorite Futsals', onTap: () => Get.to(() => FavoritePage())),
             Divider(color: gray01),

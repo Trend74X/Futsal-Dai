@@ -10,6 +10,10 @@ class UserModel {
   final String phoneNumber;
   final String role;
   final String email;
+  final String? profilePic;
+  final double? longitude;
+  final double? latitude;
+  final String? address;
 
   UserModel({
     required this.id,
@@ -21,24 +25,32 @@ class UserModel {
     required this.phoneNumber,
     required this.role,
     required this.email,
+    this.profilePic,
+    this.longitude,
+    this.latitude,
+    this.address
   });
 
   /// Factory constructor to create a PlayerModel from a JSON map
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] as String,
+      id       : json['id'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
-      deletedAt: json['deleted_at'] != null 
-          ? DateTime.parse(json['deleted_at'] as String) 
-          : null,
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'] as String) 
-          : null,
-      isDeleted: json['is_deleted'] as bool,
-      fullName: json['full_name'] as String,
+      deletedAt: json['deleted_at'] != null
+                  ? DateTime.parse(json['deleted_at'] as String) 
+                  :  null,
+      updatedAt: json['updated_at'] != null
+                  ? DateTime.parse(json['updated_at'] as String) 
+                  :  null,
+      isDeleted  : json['is_deleted'] as bool,
+      fullName   : json['full_name'] as String,
       phoneNumber: json['phone_number'] as String,
-      role: json['role'] as String,
-      email: json['email'] as String,
+      role       : json['role'] as String,
+      email      : json['email'] as String,
+      profilePic : json['profile_pic'] as String,
+      longitude  : json['longitude'],
+      latitude   : json['latitude'],
+      address    : json['address'] as String,
     );
   }
 
