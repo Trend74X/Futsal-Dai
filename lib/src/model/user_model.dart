@@ -47,10 +47,10 @@ class UserModel {
       phoneNumber: json['phone_number'] as String,
       role       : json['role'] as String,
       email      : json['email'] as String,
-      profilePic : json['profile_pic'] as String,
-      longitude  : json['longitude'],
-      latitude   : json['latitude'],
-      address    : json['address'] as String,
+      profilePic : json['profile_pic'] ?? '',
+      longitude  : json['longitude'] ?? 0.0,
+      latitude   : json['latitude'] ?? 0.0,
+      address    : json['address'] ?? ''
     );
   }
 
