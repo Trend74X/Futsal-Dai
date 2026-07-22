@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:get/get.dart';
 
 class OwnerPendingAll extends StatefulWidget {
   const OwnerPendingAll({super.key});
@@ -19,7 +20,10 @@ class _OwnerPendingAllState extends State<OwnerPendingAll> {
           child: SafeArea(
             child: SingleChildScrollView(
               child: Column(
+                crossAxisAlignment: .start,
                 children: [
+                  appbarWidget(),
+                  SizedBox(height: 8.h),
                   pendingConfirmation(),
                   Padding(
                     padding: .all(16.sp),
@@ -39,6 +43,20 @@ class _OwnerPendingAllState extends State<OwnerPendingAll> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget appbarWidget() {
+    return Row(
+      mainAxisAlignment: .spaceBetween,
+      children: [
+        IconButton(
+          onPressed: () => Get.back(),
+          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
+        ),
+        Text('Pending', style: boldStyle(primaryTextColor, 28.sp)),
+        SizedBox(width: 1),
+      ],
     );
   }
 
