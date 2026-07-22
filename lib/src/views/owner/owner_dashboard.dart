@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
+import 'package:futsal_dai/src/views/owner/owner_pending_all.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:get/get.dart';
 
 class OwnerDashboard extends StatefulWidget {
   const OwnerDashboard({super.key});
@@ -101,9 +103,12 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               ),
             ),
             const Spacer(),
-            Text(
-              'SEE ALL',
-              style: boldStyle(primaryColor, 12.sp),
+            InkWell(
+              onTap: () => Get.to(() => OwnerPendingAll()),
+              child: Text(
+                'SEE ALL',
+                style: boldStyle(primaryColor, 12.sp),
+              ),
             ),
           ],
         ),
