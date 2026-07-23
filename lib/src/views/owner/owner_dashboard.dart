@@ -56,7 +56,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     return Expanded(
       child: Container(
         decoration: BoxDecoration(
-          color: filledBlueColor
+          color: filledBgColor
         ),
         padding: .symmetric(vertical: 16.h, horizontal: 16.w),
         child: Column(
@@ -136,7 +136,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     return Container(
       width: 280.w,
       decoration: BoxDecoration(
-        color: filledBlueColor,
+        color: filledBgColor,
         borderRadius: BorderRadius.circular(12.r),
       ),
       padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
@@ -274,7 +274,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
         const SizedBox(height: 20),
         Container(
           decoration: BoxDecoration(
-            color: filledBlueColor,
+            color: filledBgColor,
             borderRadius: .circular(12.r)
           ),
           padding: .symmetric(vertical: 16.h, horizontal: 16.w),

@@ -72,7 +72,7 @@ class _DisplayNetworkImageState extends State<DisplayNetworkImage> {
     return Image.asset(
       imgUrl ?? (widget.bigPlaceHolder != null && widget.bigPlaceHolder == true
           ? "assets/images/default.png"
-          : "assets/icons/no-img.png"),
+          : "assets/icons/ball.png"),
       width: widget.width,
       height: widget.height,
       fit: widget.bigPlaceHolder != null && widget.bigPlaceHolder == true ? BoxFit.contain : BoxFit.cover,

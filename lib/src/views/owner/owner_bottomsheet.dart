@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/owner/owner_dashboard.dart';
-import 'package:futsal_dai/src/views/player/player_bookings.dart';
-import 'package:futsal_dai/src/views/player/player_profile.dart';
+import 'package:futsal_dai/src/views/owner/owner_profile.dart';
+import 'package:futsal_dai/src/views/owner/owner_reports.dart';
+import 'package:futsal_dai/src/views/owner/owner_schedule.dart';
 
 class OwnerBottomsheet extends StatefulWidget {
   const OwnerBottomsheet({super.key});
@@ -16,11 +17,11 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
 
   int _currentIndex = 0;
 
-  // Replace these placeholders with your actual screen widgets
   final List<Widget> _screens = [
     OwnerDashboard(),
-    PlayerBookingPage(),
-    PlayerProfilePage(),
+    OwnerSchedulePage(),
+    OwnerReports(),
+    OwnerProfilePage()
   ];
 
   final Color indicatorColor = const Color(0xFF1B4D14); // Dark green pill background
@@ -29,7 +30,6 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // decoration: bgImg(),
         child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
@@ -39,7 +39,6 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
             topLeft: Radius.circular(24),
             topRight: Radius.circular(24),
           ),
-          // clipBehavior: Clip.antiAlias,
         ),
         child: NavigationBar(
           selectedIndex: _currentIndex,
@@ -67,8 +66,8 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
             NavigationDestination(
               icon: _buildCustomTab(
                 isSelected: _currentIndex == 1,
-                iconPath: 'assets/icons/booking.svg',
-                label: 'Bookings',
+                iconPath: 'assets/icons/schedule.svg',
+                label: 'Schedule',
                 activeColor: Color(0xFF1B4D14),
                 inactiveColor: subtitleTextColor,
                 indicatorColor: Color(0xFF79FF5B),
@@ -78,6 +77,17 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
             NavigationDestination(
               icon: _buildCustomTab(
                 isSelected: _currentIndex == 2,
+                iconPath: 'assets/icons/reports.svg',
+                label: 'Reports',
+                activeColor: Color(0xFF1B4D14),
+                inactiveColor: subtitleTextColor,
+                indicatorColor: Color(0xFF79FF5B),
+              ),
+              label: '',
+            ),
+            NavigationDestination(
+              icon: _buildCustomTab(
+                isSelected: _currentIndex == 3,
                 iconPath: 'assets/icons/profile.svg',
                 label: 'Profile',
                 activeColor: Color(0xFF1B4D14),

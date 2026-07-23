@@ -120,9 +120,6 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
                 maxLines: 1,
                 hintText: 'Cristiano Ronaldo',
                 hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(20),
-                ],
                 validator: (value) => validateIsEmpty(string: value!),
                 onChanged: (value){
                   setState(() {});
