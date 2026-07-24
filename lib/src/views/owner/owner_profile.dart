@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 
@@ -43,7 +44,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                       title: 'Manage Venue & Pitches',  
                       subTitle: 'Edit facility info, add pitches, pricing & amenities',
                       isPrimary: true,
-                      onTap: () {}
+                      onTap: () => Get.to(() => OwnerVenueDetails())
                     ),
                     SizedBox(height: 12.h),
                     tileCard(
@@ -243,60 +244,63 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
     bool? isPrimary,
     bool? isSwitch
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isPrimary == null ? filledBgColor : primaryColor.withValues(alpha: 0.1),
-        borderRadius: .circular(12.r),
-        border: .all(color: isPrimary == null ? gray01 : primaryColor)
-      ),
-      padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-      child: Row(
-        children: [
-          Container(
-            height: 48.h,
-            width: 48.w,
-            decoration: BoxDecoration(
-              color: isPrimary == null ? lightFilledBgColor : primaryColor,
-              borderRadius: .circular(12.r)
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isPrimary == null ? filledBgColor : primaryColor.withValues(alpha: 0.1),
+          borderRadius: .circular(12.r),
+          border: .all(color: isPrimary == null ? gray01 : primaryColor)
+        ),
+        padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+        child: Row(
+          children: [
+            Container(
+              height: 48.h,
+              width: 48.w,
+              decoration: BoxDecoration(
+                color: isPrimary == null ? lightFilledBgColor : primaryColor,
+                borderRadius: .circular(12.r)
+              ),
+              child: Icon(icon, size: 28.sp, color: isPrimary == null ? whiteTextColor : black)
             ),
-            child: Icon(icon, size: 28.sp, color: isPrimary == null ? whiteTextColor : black)
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(
-                  title,
-                  style: semiBoldStyle(isPrimary == null ? whiteTextColor : primaryColor, 20.sp).copyWith(height: 1.0),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  subTitle,
-                  style: regularStyle(subtitleTextColor, 14.sp).copyWith(height: 1.0),
-                ),
-              ],
+            SizedBox(width: 12.w),
+            Expanded(
+              flex: 5,
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Text(
+                    title,
+                    style: semiBoldStyle(isPrimary == null ? whiteTextColor : primaryColor, 20.sp).copyWith(height: 1.0),
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    subTitle,
+                    style: regularStyle(subtitleTextColor, 14.sp).copyWith(height: 1.0),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: isSwitch == null
-              ? Icon(
-                Icons.arrow_forward_ios, 
-                color: isPrimary == null ? whiteTextColor : primaryColor,
-                size: 16.sp,
-              )
-              : Switch(
-                value: isNotificationOn,
-                activeThumbColor: primaryColor,
-                activeTrackColor: primaryColor.withValues(alpha: 0.2),
-                inactiveThumbColor: subtitleTextColor,
-                inactiveTrackColor: lightFilledBgColor,
-                onChanged: (value) => setState(() => isNotificationOn = value )
-              )
-          )
-        ],
+            SizedBox(width: 8.w),
+            Expanded(
+              child: isSwitch == null
+                ? Icon(
+                  Icons.arrow_forward_ios, 
+                  color: isPrimary == null ? whiteTextColor : primaryColor,
+                  size: 16.sp,
+                )
+                : Switch(
+                  value: isNotificationOn,
+                  activeThumbColor: primaryColor,
+                  activeTrackColor: primaryColor.withValues(alpha: 0.2),
+                  inactiveThumbColor: subtitleTextColor,
+                  inactiveTrackColor: lightFilledBgColor,
+                  onChanged: (value) => setState(() => isNotificationOn = value )
+                )
+            )
+          ],
+        ),
       ),
     );
   }
