@@ -69,9 +69,9 @@ class _MatchAttendanceState extends State<MatchAttendance> {
       child: Row(
         mainAxisAlignment: .center,
         children: [
-          countCircleWidget(count: 5, color: primaryColor, label: 'IN'),
-          countCircleWidget(count: 3, color: Color(0xFFFFB4AB), label: 'OUT'),
-          countCircleWidget(count: 2, color: grayDark, label: 'N/A')
+          countCircleWidget(count: 8, color: primaryColor, label: 'IN'),
+          countCircleWidget(count: 2, color: Color(0xFFFFB4AB), label: 'OUT'),
+          countCircleWidget(count: 3, color: grayDark, label: 'N/A')
         ]
       ),
     );

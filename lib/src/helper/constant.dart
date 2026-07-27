@@ -254,7 +254,7 @@ List squadStatusList = [
     "matches_played": 28
   },
   {
-    "name": "Pratik Rai",
+    "name": "Pratik Thapa",
     "status": "N/A",
     "matches_played": 51
   },
@@ -262,5 +262,20 @@ List squadStatusList = [
     "name": "Aman Rai",
     "status": "N/A",
     "matches_played": 49
+  },
+  {
+    "name": "Suzan",
+    "status": "IN",
+    "matches_played": 13
+  },
+  {
+    "name": "Shreyas",
+    "status": "IN",
+    "matches_played": 13
+  },
+  {
+    "name": "Pradip",
+    "status": "IN",
+    "matches_played": 1
   }
 ];

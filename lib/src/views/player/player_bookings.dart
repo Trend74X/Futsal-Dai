@@ -5,6 +5,7 @@ import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/player/match_attendance.dart';
+import 'package:futsal_dai/src/views/player/player_team_shuffler.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
@@ -156,177 +157,200 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
             )
           ]
         ),
-        child: Column(
-          crossAxisAlignment: .start,
+        child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: .only(
-                topLeft: .circular(24.r),
-                topRight: .circular(24.r)
-              ),
-              child: SizedBox(
-                height: 128.h,
-                width: .infinity,
-                child: Image.asset(
-                  'assets/images/court.png',
-                  fit: .cover,
-                )
-              )
-            ),
-            Padding(
-              padding: .all(16.sp),
-              child: Column(
-                crossAxisAlignment: .start,
-                children: [
-                  Text(
-                    'X-Arena Pro',
-                    style: TextStyle(
-                      color: primaryTextColor,
-                      fontSize: 20.sp,
-                      fontWeight: .w600
-                    ),
+            Column(
+              crossAxisAlignment: .start,
+              children: [
+                ClipRRect(
+                  borderRadius: .only(
+                    topLeft: .circular(24.r),
+                    topRight: .circular(24.r)
                   ),
-                  Text(
-                    '[PITCH 1 • INDOOR 5-A-SIDE]',
-                    style: TextStyle(
-                      color: subtitleTextColor,
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Row(
+                  child: SizedBox(
+                    height: 128.h,
+                    width: .infinity,
+                    child: Image.asset(
+                      'assets/images/court.png',
+                      fit: .cover,
+                    )
+                  )
+                ),
+                Padding(
+                  padding: .all(16.sp),
+                  child: Column(
                     crossAxisAlignment: .start,
                     children: [
-                      Icon(Icons.date_range_rounded, color: primaryTextColor, size: 15.sp),
-                      SizedBox(width: 8.w),
-                      Column(
+                      Text(
+                        'X-Arena Pro',
+                        style: TextStyle(
+                          color: primaryTextColor,
+                          fontSize: 20.sp,
+                          fontWeight: .w600
+                        ),
+                      ),
+                      Text(
+                        '[PITCH 1 • INDOOR 5-A-SIDE]',
+                        style: TextStyle(
+                          color: subtitleTextColor,
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
                         crossAxisAlignment: .start,
                         children: [
-                          Text(
-                            'Sat, Dec 16 | 7:00 PM - 8:00 PM',
-                            style: TextStyle(
-                              color: whiteTextColor,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                          SizedBox(height: 8.h),
-                          Row(
+                          Icon(Icons.date_range_rounded, color: primaryTextColor, size: 15.sp),
+                          SizedBox(width: 8.w),
+                          Column(
+                            crossAxisAlignment: .start,
                             children: [
-                              Icon(Icons.timer, color: primaryTextColor, size: 15.sp),
-                              SizedBox(width: 8.w),
                               Text(
-                                'Starts in 2h 15m',
+                                'Sat, Dec 16 | 7:00 PM - 8:00 PM',
                                 style: TextStyle(
-                                  color: Color(0xFF2AE500),
-                                  fontSize: 12.sp,
-                                  fontWeight: .bold
+                                  color: whiteTextColor,
+                                  fontSize: 14.sp,
                                 ),
+                              ),
+                              SizedBox(height: 8.h),
+                              Row(
+                                children: [
+                                  Icon(Icons.timer, color: primaryTextColor, size: 15.sp),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    'Starts in 2h 15m',
+                                    style: TextStyle(
+                                      color: Color(0xFF2AE500),
+                                      fontSize: 12.sp,
+                                      fontWeight: .bold
+                                    ),
+                                  )
+                                ],
                               )
                             ],
                           )
                         ],
-                      )
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      Icon(Icons.flash_on, color: subtitleTextColor, size: 12.sp),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Extra Bibs Requested',
-                        style: TextStyle(
-                          color: subtitleTextColor,
-                          fontSize: 12.sp
-                        ),
-                      )
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Image.asset('assets/icons/ball.png', color: subtitleTextColor, height: 12.h),
-                      SizedBox(width: 8.w),
-                      Text(
-                        '2 Match Balls',
-                        style: TextStyle(
-                          color: subtitleTextColor,
-                          fontSize: 12.sp
-                        ),
-                      )
-                    ],
-                  ),
-                  SizedBox(height: 16.h),
-                  Row(
-                    children: [
-                      InkWell(
-                        onTap: () => launchMapDirections(),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            border: .all(
-                              color: primaryTextColor
-                            ),
-                            borderRadius: .circular(12.r)
-                          ),
-                          padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                          child: Row(
-                            mainAxisSize: .min,
-                            children: [
-                              Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
-                              SizedBox(width: 8.w),
-                              Text(
-                                'Get Directions',
-                                style: TextStyle(
-                                  color: primaryTextColor,
-                                  fontSize: 16.sp,
-                                )
-                              )
-                            ],
-                          ),
-                        ),
                       ),
-                      SizedBox(width: 8.w),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => makePhoneCall('9809809809'),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              border: .all(
-                               color:  primaryTextColor
+                      SizedBox(height: 16.h),
+                      Row(
+                        children: [
+                          Icon(Icons.flash_on, color: subtitleTextColor, size: 12.sp),
+                          SizedBox(width: 8.w),
+                          Text(
+                            'Extra Bibs Requested',
+                            style: TextStyle(
+                              color: subtitleTextColor,
+                              fontSize: 12.sp
+                            ),
+                          )
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Image.asset('assets/icons/ball.png', color: subtitleTextColor, height: 12.h),
+                          SizedBox(width: 8.w),
+                          Text(
+                            '2 Match Balls',
+                            style: TextStyle(
+                              color: subtitleTextColor,
+                              fontSize: 12.sp
+                            ),
+                          )
+                        ],
+                      ),
+                      SizedBox(height: 16.h),
+                      Row(
+                        children: [
+                          InkWell(
+                            onTap: () => launchMapDirections(),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: .all(
+                                  color: primaryTextColor
+                                ),
+                                borderRadius: .circular(12.r)
                               ),
-                              borderRadius: .circular(12.r)
-                            ),
-                            padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                            child: Row(
-                              mainAxisSize: .min,
-                              children: [
-                                Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
-                                SizedBox(width: 8.w),
-                                Text(
-                                  'Call Owner',
-                                  style: TextStyle(
-                                    color: primaryTextColor,
-                                    fontSize: 16.sp,
+                              padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                              child: Row(
+                                mainAxisSize: .min,
+                                children: [
+                                  Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    'Get Directions',
+                                    style: TextStyle(
+                                      color: primaryTextColor,
+                                      fontSize: 16.sp,
+                                    )
                                   )
-                                )
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () => makePhoneCall('9809809809'),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: .all(
+                                   color:  primaryTextColor
+                                  ),
+                                  borderRadius: .circular(12.r)
+                                ),
+                                padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                                child: Row(
+                                  mainAxisSize: .min,
+                                  children: [
+                                    Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      'Call Owner',
+                                      style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontSize: 16.sp,
+                                      )
+                                    )
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                      SizedBox(height: 12.h),
+                      // Center(
+                      //   child: Text(
+                      //     'Free cancellation valid for 45 more minutes',
+                      //     style: TextStyle(
+                      //       color: subtitleTextColor,
+                      //       fontSize: 10.sp
+                      //     ),
+                      //   ),
+                      // ),
+                      // SizedBox(height: 12.h),
                     ],
                   ),
-                  SizedBox(height: 12.h),
-                  // Center(
-                  //   child: Text(
-                  //     'Free cancellation valid for 45 more minutes',
-                  //     style: TextStyle(
-                  //       color: subtitleTextColor,
-                  //       fontSize: 10.sp
-                  //     ),
-                  //   ),
-                  // ),
-                  // SizedBox(height: 12.h),
-                ],
+                )
+              ],
+            ),
+            Align(
+              alignment: .topRight,
+              child: InkWell(
+                onTap: () => Get.to(() => PlayerTeamShuffler()),
+                child: Container(
+                  margin: .all(16.sp),
+                  decoration: BoxDecoration(
+                    color: filledBgColor,
+                    borderRadius: .circular(12.r)
+                  ),
+                  padding: .all(12.sp),
+                  child: Icon(
+                    Icons.diversity_3,
+                    size: 24.sp,
+                    color: primaryColor,
+                  ),
+                ),
               ),
             )
           ],
