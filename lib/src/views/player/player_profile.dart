@@ -6,6 +6,7 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/player/favorites.dart';
 import 'package:futsal_dai/src/views/player/player_edit_profile.dart';
+import 'package:futsal_dai/src/views/player/player_group_list.dart';
 import 'package:futsal_dai/src/views/player/player_transactions.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
@@ -201,6 +202,8 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           mainAxisAlignment: .center,
           children: [
             historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () => Get.to(() => PlayerEditProfile())),
+            Divider(color: gray01),
+            historyTile(icon: Icons.diversity_3, label: 'Teams / Player Groups', onTap: () => Get.to(() => PlayerGroupList())),
             Divider(color: gray01),
             historyTile(icon: Icons.star_border, label: 'Saved / Favorite Futsals', onTap: () => Get.to(() => FavoritePage())),
             Divider(color: gray01),
