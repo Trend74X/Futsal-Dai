@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:futsal_dai/src/views/owner/owner_bottomsheet.dart';
@@ -74,6 +75,7 @@ class AuthController extends GetxController {
       );
 
       if (response.session != null) {
+        write('userId', response.user!.id);
         getUserById(response.user!.id);
       } else {
         showToast(message: 'Login failed: Session is null', isSuccess: false, isNotDissmiable: false);

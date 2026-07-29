@@ -1,20 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/app_controller.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/helper/validators.dart';
+import 'package:futsal_dai/src/model/amenities_model.dart';
+import 'package:futsal_dai/src/model/pitch_model.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
-
-// Model to handle dynamic pitches
-class PitchModel {
-  TextEditingController nameCon = TextEditingController();
-  TextEditingController modifierCon = TextEditingController(text: '+0.00');
-  String selectedFormat = '5-A-Side';
-  String selectedSurface = 'AstroTurf';
-
-  PitchModel({String? name}) {
-    if (name != null) nameCon.text = name;
-  }
-}
 
 class OwnerVenueDetails extends StatefulWidget {
   const OwnerVenueDetails({super.key});
@@ -26,29 +20,74 @@ class OwnerVenueDetails extends StatefulWidget {
 class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   final formKey = GlobalKey<FormState>();
 
+  final AppController appCon = Get.put(AppController());
+  final OwnerController ownCon = Get.put(OwnerController());
+
   // Venue Controllers
-  final venueNameCon  = TextEditingController();
-  final contactCon    = TextEditingController();
-  final hourlyRateCon = TextEditingController();
-  final addressCon    = TextEditingController();
+  final venueNameCon   = TextEditingController();
+  final contactCon     = TextEditingController();
+  final hourlyRateCon  = TextEditingController();
+  final addressCon     = TextEditingController();
+  final descriptionCon = TextEditingController();
 
   int selectedPitchIndex = 0;
+  dynamic currentVenueId;
+  List<dynamic> deletedPitchIds = [];
 
   // Selected Amenities
   final Set<String> selectedAmenities = {'Parking', 'Changing'};
 
-  final List<Map<String, dynamic>> amenitiesList = [
-    {'name': 'Parking', 'icon': Icons.local_parking},
-    {'name': 'Changing', 'icon': Icons.water_drop_outlined},
-    {'name': 'Night Lights', 'icon': Icons.light_mode_outlined},
-    {'name': 'Cafe', 'icon': Icons.local_cafe_outlined},
-  ];
-
   // Pitches List
   List<PitchModel> pitches = [
     PitchModel(name: 'Pitch A - Main Turf'),
-    PitchModel(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    final data = await ownCon.fetchVenueAndPitchesByOwner();
+
+    if (data != null && mounted) {
+      final venueRes = data['venue'];
+      final List<dynamic> groundsRes = data['grounds'];
+
+      setState(() {
+        currentVenueId = venueRes['id'];
+
+        venueNameCon.text   = venueRes['name'] ?? '';
+        contactCon.text     = venueRes['phone_number'] ?? '';
+        hourlyRateCon.text  = venueRes['base_price']?.toString() ?? '';
+        addressCon.text     = venueRes['address'] ?? '';
+        descriptionCon.text = venueRes['description'] ?? '';
+
+        // Set amenities
+        final List<dynamic> savedAmenities = venueRes['amenities'] ?? [];
+        for (var item in appCon.amenitiesList) {
+          if (savedAmenities.contains(item.label)) {
+            item.isSelected = true;
+          }
+        }
+
+        // Re-assign pitches list completely
+        if (groundsRes.isNotEmpty) {
+          pitches = groundsRes.map<PitchModel>((g) {
+            final double modifierVal = (g['price_modifier'] as num?)?.toDouble() ?? 0.0;
+            return PitchModel(
+              id: g['id'],
+              name: g['ground_name'] ?? '',
+              format: g['format'] ?? '5-A-Side',
+              surface: g['ground_type'] ?? 'AstroTurf',
+              modifier: modifierVal >= 0 ? '+$modifierVal' : '$modifierVal',
+            );
+          }).toList();
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,6 +95,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
     contactCon.dispose();
     hourlyRateCon.dispose();
     addressCon.dispose();
+    descriptionCon.dispose();
     for (var pitch in pitches) {
       pitch.nameCon.dispose();
       pitch.modifierCon.dispose();
@@ -73,28 +113,34 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: SafeArea(
               child: SingleChildScrollView(
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      appbarWidget(),
-                      SizedBox(height: 12.h),
-                      formWidget(),
-                      SizedBox(height: 24.h),
-                      amenitiesWidget(),
-                      SizedBox(height: 28.h),
-                      courtsAndPitchesHeader(),
-                      SizedBox(height: 16.h),
-                      pitchListWidget(),
-                      SizedBox(height: 16.h),
-                      addPitchButton(),
-                      SizedBox(height: 28.h),
-                      saveButton(),
-                      SizedBox(height: 24.h),
-                    ],
-                  ),
-                ),
+                child: Obx(() =>
+                  ownCon.isLoadingData.isTrue
+                    ? Center(
+                      child: CircularProgressIndicator(color: primaryColor),
+                    )
+                    : Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          appbarWidget(),
+                          SizedBox(height: 12.h),
+                          formWidget(),
+                          SizedBox(height: 24.h),
+                          amenitiesWidget(),
+                          SizedBox(height: 28.h),
+                          courtsAndPitchesHeader(),
+                          SizedBox(height: 16.h),
+                          pitchListWidget(),
+                          SizedBox(height: 16.h),
+                          addPitchButton(),
+                          SizedBox(height: 28.h),
+                          saveButton(),
+                          SizedBox(height: 24.h),
+                        ],
+                      ),
+                    ),
+                )
               ),
             ),
           ),
@@ -131,9 +177,11 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         CustomTextFormField(
           headingText: "VENUE / FUTSAL NAME",
           controller: venueNameCon,
-          hintText: 'e.g. Thunder Arena',
+          hintText: 'X-Arena',
           headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
           hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+          autoValidateMode: .onUserInteraction,
+          validator: (value) => validateIsEmpty(string: value!),
         ),
         SizedBox(height: 16.h),
 
@@ -142,10 +190,20 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
           headingText: "CONTACT PHONE NUMBER",
           controller: contactCon,
           keyboardType: TextInputType.phone,
-          hintText: '+977 9801234567',
-          suffixIcon: Icon(Icons.check_circle, color: Colors.green, size: 18.sp),
+          hintText: '9801234567',
+          // suffixIcon: Icon(Icons.check_circle, color: Colors.green, size: 18.sp),
           headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
           hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+          autoValidateMode: .onUserInteraction,
+          validator: (value) {
+            final emptyError = validateIsEmpty(string: value ?? '');
+            if (emptyError != null) return emptyError;
+            final numberError = validateIsNumbers(string: value ?? '');
+            if (numberError != null) return numberError;
+            final exactlengthError = validateExactLength(string: value!, length: 10);
+            if (exactlengthError != null) return exactlengthError;
+            return null;
+          },
         ),
         SizedBox(height: 16.h),
 
@@ -154,9 +212,17 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
           headingText: "BASE HOURLY RATE (RS.)",
           controller: hourlyRateCon,
           keyboardType: TextInputType.number,
-          hintText: '2500',
+          hintText: '1500',
           headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
           hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+          autoValidateMode: .onUserInteraction,
+          validator: (value) {
+            final emptyError = validateIsEmpty(string: value ?? '');
+            if (emptyError != null) return emptyError;
+            final numberError = validateIsNumbers(string: value ?? '');
+            if (numberError != null) return numberError;
+            return null;
+          },
         ),
         SizedBox(height: 16.h),
 
@@ -168,7 +234,10 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
           prefixIcon: Icon(Icons.location_on_outlined, color: subtitleTextColor, size: 20.sp),
           headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
           hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
-        ),
+          autoValidateMode: .onUserInteraction,
+          validator: (value) => validateIsEmpty(string: value!),
+        ),        
+
         SizedBox(height: 12.h),
 
         // Map Preview Container
@@ -188,67 +257,83 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             ),
           ),
         ),
+        SizedBox(height: 16.h),
+
+        // Venue Description
+        CustomTextFormField(
+          headingText: "DESCRIPTION",
+          controller: descriptionCon,
+          hintText: 'Provide details about rules, facilities, opening hours, etc.',
+          maxLines: 3, // Allows multiline input
+          headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
+          hintStyle: regularStyle(const Color(0xFF6B7280), 16.sp),
+          autoValidateMode: AutovalidateMode.onUserInteraction,
+          validator: (value) => validateIsEmpty(string: value!),
+        ),
       ],
     );
   }
 
   Widget amenitiesWidget() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "AMENITIES",
-          style: boldStyle(subtitleTextColor, 12.sp)
-        ),
-        SizedBox(height: 12.h),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 3.2,
-            crossAxisSpacing: 12.w,
-            mainAxisSpacing: 12.h,
-          ),
-          itemCount: amenitiesList.length,
-          itemBuilder: (context, index) {
-            final item = amenitiesList[index];
-            final isSelected = selectedAmenities.contains(item['name']);
-            return InkWell(
-              borderRadius: BorderRadius.circular(8.r),
-              onTap: () {
-                setState(() {
-                  if (isSelected) {
-                    selectedAmenities.remove(item['name']);
-                  } else {
-                    selectedAmenities.add(item['name']);
-                  }
-                });
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF132819) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8.r),
-                  border: Border.all(
-                    color: isSelected ? primaryColor : Colors.white24,
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(item['icon'], color: isSelected ? const Color(0xFF00FF66) : subtitleTextColor, size: 16.sp),
-                    SizedBox(width: 8.w),
-                    Text(
-                      item['name'],
-                      style: regularStyle(isSelected ? Colors.white : subtitleTextColor, 13.sp)
-                    ),
-                  ],
-                ),
+    return Obx(() =>
+      appCon.isLoadingAmenities.isTrue
+        ? SizedBox.shrink()
+        : Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "AMENITIES",
+              style: boldStyle(subtitleTextColor, 12.sp)
+            ),
+            SizedBox(height: 12.h),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 3.2,
+                crossAxisSpacing: 12.w,
+                mainAxisSpacing: 12.h,
               ),
-            );
-          },
+              itemCount: appCon.amenitiesList.length,
+              itemBuilder: (context, index) {
+                final item = appCon.amenitiesList[index];
+                return InkWell(
+                  borderRadius: BorderRadius.circular(8.r),
+                  onTap: () {
+                    setState(() {
+                      item.isSelected = !item.isSelected; // Toggle selection
+                    });
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: item.isSelected ? const Color(0xFF132819) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: item.isSelected ? primaryColor : Colors.white24,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          getAmenityIcon(item.iconName),
+                          color: item.isSelected ? const Color(0xFF00FF66) : subtitleTextColor,
+                          size: 16.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          item.label,
+                          style: regularStyle(item.isSelected ? Colors.white : subtitleTextColor, 13.sp),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-      ],
     );
   }
 
@@ -277,10 +362,10 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         Expanded(
           flex: 1,
           child: Container(
-            padding: .symmetric(horizontal: 8.w, vertical: 8.h),
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
             decoration: BoxDecoration(
-              color: Color(0xFF2D3828),
-              borderRadius: .circular(16.r),
+              color: const Color(0xFF2D3828),
+              borderRadius: BorderRadius.circular(16.r),
             ),
             child: Text(
               '${pitches.length} Pitches Configured',
@@ -300,23 +385,37 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
       separatorBuilder: (_, _) => SizedBox(height: 16.h),
       itemBuilder: (context, index) {
         final pitch = pitches[index];
+
+        // Format validation fallback to ensure dropdown match
+        final List<String> formatItems = ['5-A-Side', '7-A-Side', '11-A-Side'];
+        final List<String> surfaceItems = ['AstroTurf', 'Natural Grass', 'Rubber Turf'];
+
+        final currentFormat = formatItems.contains(pitch.selectedFormat)
+            ? pitch.selectedFormat
+            : formatItems.first;
+
+        final currentSurface = surfaceItems.contains(pitch.selectedSurface)
+            ? pitch.selectedSurface
+            : surfaceItems.first;
+
         return InkWell(
+          key: ValueKey(pitch.id ?? index), // Key ensures Flutter rebuilds list properly
           onTap: () => setState(() => selectedPitchIndex = index),
           child: Container(
-            padding: .all(16.sp),
+            padding: EdgeInsets.all(16.sp),
             decoration: BoxDecoration(
               color: filledBgColor,
-              borderRadius: .circular(12.r),
-              border: .all(
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
                 color: index == selectedPitchIndex ? const Color(0xFF00FF66) : Colors.white10,
                 width: index == selectedPitchIndex ? 1.5 : 1.0,
               ),
             ),
             child: Column(
-              crossAxisAlignment: .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: .spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
@@ -331,9 +430,12 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                     if (pitches.length > 1)
                       IconButton(
                         constraints: const BoxConstraints(),
-                        padding: .zero,
+                        padding: EdgeInsets.zero,
                         onPressed: () {
                           setState(() {
+                            if (pitch.id != null) {
+                              deletedPitchIds.add(pitch.id!); // Add ID to deletion list
+                            }
                             pitches.removeAt(index);
                           });
                         },
@@ -349,15 +451,17 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                   controller: pitch.nameCon,
                   hintText: 'e.g. Pitch B',
                   headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                  hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+                  hintStyle: regularStyle(const Color(0xFF6B7280), 16.sp),
+                  autoValidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) => validateIsEmpty(string: value!),
                 ),
                 SizedBox(height: 12.h),
           
                 // Format Dropdown
                 dropdownField(
                   label: "FORMAT",
-                  value: pitch.selectedFormat,
-                  items: ['5-A-Side', '7-A-Side', '11-A-Side'],
+                  value: currentFormat,
+                  items: formatItems,
                   onChanged: (val) => setState(() => pitch.selectedFormat = val!),
                 ),
                 SizedBox(height: 12.h),
@@ -365,8 +469,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                 // Surface Type Dropdown
                 dropdownField(
                   label: "SURFACE TYPE",
-                  value: pitch.selectedSurface,
-                  items: ['AstroTurf', 'Natural Grass', 'Rubber Turf'],
+                  value: currentSurface,
+                  items: surfaceItems,
                   onChanged: (val) => setState(() => pitch.selectedSurface = val!),
                 ),
                 SizedBox(height: 12.h),
@@ -377,7 +481,9 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                   controller: pitch.modifierCon,
                   keyboardType: TextInputType.number,
                   headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                  hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+                  hintStyle: regularStyle(const Color(0xFF6B7280), 16.sp),
+                  autoValidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) => validateIsEmpty(string: value!),
                 ),
               ],
             ),
@@ -431,32 +537,73 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
       child: Container(
         decoration: BoxDecoration(
           color: transparent,
-          borderRadius: .circular(12.r),
-          border: .all(
-            color: primaryColor
-          )
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(color: primaryColor),
         ),
-        padding: .symmetric(vertical: 16.h),
+        padding: EdgeInsets.symmetric(vertical: 16.h),
         child: Row(
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_circle_outline, color: primaryColor, size: 20.sp),
             SizedBox(width: 8.w),
             Text(
               'ADD ANOTHER PITCH',
-              style: regularStyle(primaryTextColor, 16.sp)
-            )
+              style: regularStyle(primaryTextColor, 16.sp),
+            ),
           ],
-        )
+        ),
       ),
     );
   }
 
   Widget saveButton() {
     return InkWell(
-      onTap: () {
+      onTap: () async {
         if (formKey.currentState!.validate()) {
-          // Perform submit action
+          List<String> selectedAmenityLabels = appCon.amenitiesList
+            .where((item) => item.isSelected)
+            .map((item) => item.label)
+            .toList();
+
+          var venueData = {
+            "owner_id"    : read('userId'),
+            "name"        : venueNameCon.text,
+            "phone_number": contactCon.text,
+            'base_price': double.tryParse(hourlyRateCon.text) ?? 0.0,
+            "description": descriptionCon.text.trim(),
+            'address': addressCon.text.trim(),
+            'latitude': 27.7172, // Replace with actual lat from map state
+            'longitude': 85.3240, // Replace with actual lng from map state
+            'amenities': selectedAmenityLabels
+          };
+
+          List<Map<String, dynamic>> groundsList = pitches.map<Map<String, dynamic>>((pitch) {
+            final rawModifier = pitch.modifierCon.text.replaceAll('+', '').trim();
+            return {
+              if (pitch.id != null) "id": pitch.id,
+              "ground_name": pitch.nameCon.text.trim(),
+              "format": pitch.selectedFormat,
+              "ground_type": pitch.selectedSurface,
+              "price_modifier": double.tryParse(rawModifier) ?? 0.0,
+              "is_available": true,
+            };
+          }).toList();
+
+          if (currentVenueId != null) {
+            // --- UPDATE MODE ---
+            await ownCon.updateVenueAndPitches(
+              venueId: currentVenueId!,
+              futsalVenues: venueData,
+              futsalGround: groundsList,
+              deletedPitchIds: deletedPitchIds,
+            );
+          } else {
+            // --- CREATE MODE ---
+            await ownCon.saveVenueAndPitches(
+              futsalVenues: venueData,
+              futsalGround: groundsList,
+            );
+          }
         }
       },
       child: Container(

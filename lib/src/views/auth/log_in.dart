@@ -116,6 +116,7 @@ class _LogInPageState extends State<LogInPage> {
                 keyboardType: TextInputType.text,
                 autoValidateMode: AutovalidateMode.onUserInteraction,
                 controller: passwordCon,
+                obscureText: true,
                 maxLines: 1,
                 hintText: '********',
                 hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),

@@ -1,3 +1,5 @@
+import 'package:get/get_utils/get_utils.dart';
+
 /// email validator
 String? validateEmail({required String string}) {
   String regex = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
@@ -25,6 +27,35 @@ String? validateIsEmpty({required String string}) {
 String? validateMinMaxLength({required String string, int minLegth = 1, int maxLength = 10}) {
   return (string.length < minLegth || string.length > maxLength)
     ? "Must be between $minLegth and $maxLength characters"
+    : null;
+}
+
+/// validate min length
+String? validateMinLength({required String string, required int length}) {
+  return (string.length < length && string.isEmpty)
+  ? "mustbeGreater".tr+length.toString()+'characters'.tr
+  : null;
+}
+
+/// validate max length
+String? validateMaxLength({required String string, int length = 8}) {
+  return string.length > length
+  ? "maximum".tr +length.toString()+ 'downToLetters'.tr
+  : null;
+}
+
+/// validate exact numbers
+String? validateExactLength({required String string, int length = 10}) {
+  if (string.length != length) {
+    return 'Must be exactly $length digits long';
+  }
+  return null;
+}
+
+/// validate if numbers
+String? validateIsNumbers({required String string}) {
+  return !string.isNum
+    ? "Only numbers are allowed" 
     : null;
 }
 
