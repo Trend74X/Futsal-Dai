@@ -262,7 +262,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                       Row(
                         children: [
                           InkWell(
-                            onTap: () => launchMapDirections(),
+                            onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
                             child: Container(
                               decoration: BoxDecoration(
                                 border: .all(

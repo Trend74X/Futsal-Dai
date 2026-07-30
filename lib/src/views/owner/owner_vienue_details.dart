@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
@@ -7,8 +9,10 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:futsal_dai/src/model/pitch_model.dart';
+import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
+import 'package:latlong2/latlong.dart';
 
 class OwnerVenueDetails extends StatefulWidget {
   const OwnerVenueDetails({super.key});
@@ -33,6 +37,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   int selectedPitchIndex = 0;
   dynamic currentVenueId;
   List<dynamic> deletedPitchIds = [];
+  double venueLat = 0.0;
+  double venueLong = 0.0;
 
   // Selected Amenities
   final Set<String> selectedAmenities = {'Parking', 'Changing'};
@@ -63,6 +69,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         hourlyRateCon.text  = venueRes['base_price']?.toString() ?? '';
         addressCon.text     = venueRes['address'] ?? '';
         descriptionCon.text = venueRes['description'] ?? '';
+        venueLat            = venueRes['latitude'] ?? 0.0;
+        venueLong           = venueRes['longitude'] ?? 0.0;
 
         // Set amenities
         final List<dynamic> savedAmenities = venueRes['amenities'] ?? [];
@@ -115,8 +123,11 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
               child: SingleChildScrollView(
                 child: Obx(() =>
                   ownCon.isLoadingData.isTrue
-                    ? Center(
-                      child: CircularProgressIndicator(color: primaryColor),
+                    ? SizedBox(
+                      height: Get.height - 150.h,
+                      child: Center(
+                        child: CircularProgressIndicator(color: primaryColor),
+                      ),
                     )
                     : Form(
                       key: formKey,
@@ -249,13 +260,20 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(color: Colors.white10),
           ),
-          child: Center(
-            child: CircleAvatar(
-              radius: 20.r,
-              backgroundColor: const Color(0xFF00FF66),
-              child: Icon(Icons.location_on, color: Colors.black, size: 22.sp),
-            ),
-          ),
+          child: CustomMapScreen(
+            initialLat: venueLat,
+            initialLng: venueLong,
+            showCurrentLocation: true,
+            showDirection: true,
+            isSelectionMode: true,
+            onLocationSelected: (LatLng location) {
+              log("PARENT RECEIVED: ${location.latitude}, ${location.longitude}");
+              setState(() {
+                venueLat = location.latitude;
+                venueLong = location.longitude;
+              });
+            },
+          )
         ),
         SizedBox(height: 16.h),
 
