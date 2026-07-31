@@ -37,6 +37,74 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
   );
 
   @override
+  void initState() {
+    super.initState();
+    loadSavedData();
+  }
+
+  Future<void> loadSavedData() async {
+    final controller = Get.find<OwnerController>();
+    final data = await controller.fetchOperatingRules(widget.venueId);
+
+    if (data == null) return;
+
+    final venueData = data['venue'] as Map<String, dynamic>?;
+    final hoursData = data['hours'] as List<Map<String, dynamic>>?;
+
+    setState(() {
+      // 1. Map venue settings (Slot Duration & Buffer Time)
+      if (venueData != null) {
+        selectedDuration = venueData['slot_duration_mins'] ?? 60;
+
+        final bufferMins = venueData['buffer_time_mins'] ?? 0;
+        selectedBufferTime = bufferMins == 0 ? 'none' : bufferMins.toString();
+      }
+
+      // 2. Map operating hours back to individual days
+      if (hoursData != null && hoursData.isNotEmpty) {
+        for (var row in hoursData) {
+          final dayOfWeek = row['day_of_week'] as int?;
+
+          // Update corresponding day in individualDays list
+          final index = individualDays.indexWhere((d) => d.dayOfWeek == dayOfWeek);
+          if (index != -1) {
+            individualDays[index]
+              ..isEnabled = !(row['is_closed'] ?? false)
+              ..startTime = parseTimeString(row['open_time'] ?? '08:00:00')
+              ..endTime = parseTimeString(row['close_time'] ?? '22:00:00');
+          }
+
+          // 3. Map peak hour details (taken from the first row that contains peak data)
+          if (row['is_peak'] == true) {
+            peakHourSchedule.isEnabled = true;
+            if (row['peak_start_time'] != null) {
+              peakHourSchedule.startTime = parseTimeString(row['peak_start_time']);
+            }
+            if (row['peak_end_time'] != null) {
+              peakHourSchedule.endTime = parseTimeString(row['peak_end_time']);
+            }
+            if (row['peak_rate'] != null) {
+              peakRateCon.text = row['peak_rate'].toString();
+            }
+          }
+        }
+      }
+    });
+  }
+
+  TimeOfDay parseTimeString(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      return TimeOfDay(
+        hour: int.parse(parts[0]),
+        minute: int.parse(parts[1]),
+      );
+    } catch (_) {
+      return const TimeOfDay(hour: 8, minute: 0);
+    }
+  }
+
+  @override
   void dispose() {
     peakRateCon.dispose();
     super.dispose();

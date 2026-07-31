@@ -119,7 +119,7 @@ class OwnerController extends GetxController {
         'grounds': groundsRes as List<dynamic>,
       };
     } catch (e) {
-      Get.snackbar("Error", "Failed to fetch data: $e");
+      showToast(message: "Failed to fetch data: $e", isSuccess: false);
       return null;
     } finally {
       isLoadingData.value = false;
@@ -151,21 +151,9 @@ class OwnerController extends GetxController {
           .update(venueSettings)
           .eq('id', venueId);
 
-      Get.snackbar(
-        'Success',
-        'Operating rules saved successfully!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: const Color(0xFF107100),
-        colorText: Colors.white,
-      );
+      showToast(message: 'Operating rules saved successfully!', isSuccess: true);
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to save settings: ${e.toString()}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
-      );
+      showToast(message: 'Failed to save settings: ${e.toString()}', isSuccess: false);
     } finally {
       isLoadingData.value = false;
     }
