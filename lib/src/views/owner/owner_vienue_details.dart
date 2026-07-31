@@ -59,6 +59,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
 
     if (data != null && mounted) {
       final venueRes = data['venue'];
+      write('venueId', data['venue']['id']);
       final List<dynamic> groundsRes = data['grounds'];
 
       setState(() {
@@ -264,7 +265,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             initialLat: venueLat,
             initialLng: venueLong,
             showCurrentLocation: true,
-            showDirection: true,
+            showDirection: false,
             isSelectionMode: true,
             onLocationSelected: (LatLng location) {
               log("PARENT RECEIVED: ${location.latitude}, ${location.longitude}");

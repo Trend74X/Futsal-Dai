@@ -5,11 +5,17 @@ import 'package:futsal_dai/src/model/day_schedule_model.dart';
 
 class BusinessHoursScreen extends StatefulWidget {
   final List<DaySchedule> individualDays;
-  final Function(List<DaySchedule>) onScheduleChanged;
+  final List<DaySchedule> groupedDays;
+  final bool isMonFriGrouped;
+  final ValueChanged<bool> onGroupToggleChanged;
+  final ValueChanged<List<DaySchedule>> onScheduleChanged;
 
   const BusinessHoursScreen({
     super.key,
     required this.individualDays,
+    required this.groupedDays,
+    required this.isMonFriGrouped,
+    required this.onGroupToggleChanged,
     required this.onScheduleChanged,
   });
 
@@ -17,49 +23,16 @@ class BusinessHoursScreen extends StatefulWidget {
   State<BusinessHoursScreen> createState() => _BusinessHoursScreenState();
 }
 
-// class DaySchedule {
-//   String label;
-//   bool isEnabled;
-//   TimeOfDay startTime;
-//   TimeOfDay endTime;
-
-//   DaySchedule({
-//     required this.label,
-//     this.isEnabled = true,
-//     this.startTime = const TimeOfDay(hour: 6, minute: 0),
-//     this.endTime = const TimeOfDay(hour: 23, minute: 0),
-//   });
-// }
-
 class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
-  bool isMonFriGrouped = false;
-
-  // Individual schedules for 7 days
-  List<DaySchedule> individualDays = [
-    DaySchedule(dayOfWeek: 0, label: 'Sunday'),
-    DaySchedule(dayOfWeek: 1, label: 'Monday'),
-    DaySchedule(dayOfWeek: 2, label: 'Tuesday'),
-    DaySchedule(dayOfWeek: 3, label: 'Wednesday'),
-    DaySchedule(dayOfWeek: 4, label: 'Thursday'),
-    DaySchedule(dayOfWeek: 5, label: 'Friday'),
-    DaySchedule(dayOfWeek: 6, label: 'Saturday'),
-  ];
-
-  // Grouped schedule (3 rows)
-  final List<DaySchedule> groupedDays = [
-    DaySchedule(label: 'Mon - Fri', dayOfWeek: null),
-    DaySchedule(label: 'Saturday', isEnabled: false, dayOfWeek: null),
-    DaySchedule(label: 'Sunday', isEnabled: false, dayOfWeek: null),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    List<DaySchedule> currentList = isMonFriGrouped ? groupedDays : individualDays;
+    // Pick current working list based on grouped toggle state
+    List<DaySchedule> currentList = widget.isMonFriGrouped ? widget.groupedDays : widget.individualDays;
 
     return Column(
-      crossAxisAlignment: .end,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // "Apply Mon-Fri" Action Button
+        // "Apply Mon-Fri" Action Header
         Row(
           children: [
             Icon(
@@ -70,41 +43,34 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
             SizedBox(width: 6.w),
             Text(
               'Weekly Hours',
-              style: semiBoldStyle(whiteTextColor, 20.sp)
+              style: semiBoldStyle(whiteTextColor, 20.sp),
             ),
-            Spacer(),
-            OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  isMonFriGrouped = !isMonFriGrouped;
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: isMonFriGrouped ? Colors.greenAccent : Colors.grey[700]!,
+            const Spacer(),
+            InkWell(
+              onTap: () => widget.onGroupToggleChanged(!widget.isMonFriGrouped),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: widget.isMonFriGrouped ? primaryColor.withValues(alpha: 0.1) : transparent,
+                  borderRadius: .circular(8.r),
+                  border: .all(color: widget.isMonFriGrouped ? primaryColor : gray06, width: 0.5)
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                backgroundColor: isMonFriGrouped
-                    ? Colors.greenAccent.withValues(alpha: 0.1)
-                    : Colors.transparent,
-              ),
-              child: Text(
-                isMonFriGrouped ? 'Separate Days' : 'Apply Mon-Fri',
-                style: boldStyle(Color(0xFFBEC6E0), 12.sp)
-              ),
+                padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                child: Text(
+                  widget.isMonFriGrouped ? 'Separate Days' : 'Apply Mon-Fri',
+                  style: boldStyle(const Color(0xFFBEC6E0), 12.sp),
+                )
+              )
             ),
           ],
         ),
         SizedBox(height: 12.h),
 
-        // List of Days
+        // Schedule List
         Column(
           children: currentList.map((item) {
             return Padding(
               padding: EdgeInsets.only(bottom: 10.h),
-              child: _buildDayRow(item),
+              child: _buildDayRow(item, currentList),
             );
           }).toList(),
         ),
@@ -112,17 +78,17 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
     );
   }
 
-  Widget _buildDayRow(DaySchedule item) {
+  Widget _buildDayRow(DaySchedule item, List<DaySchedule> currentList) {
     return Container(
-      padding: .symmetric(horizontal: 6.w, vertical: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 8.h),
       decoration: BoxDecoration(
         color: filledBgColor,
-        borderRadius: .circular(12.r),
-        border: .all(color: gray01),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: gray01),
       ),
       child: Row(
         children: [
-          // Switch Button
+          // Enable / Disable Switch
           Transform.scale(
             scale: 0.8,
             child: Switch(
@@ -135,26 +101,27 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                 setState(() {
                   item.isEnabled = val;
                 });
+                widget.onScheduleChanged(currentList);
               },
             ),
           ),
           SizedBox(width: 4.w),
 
-          // Day Label
+          // Day / Group Label
           Expanded(
             child: Text(
               item.label,
               style: semiBoldStyle(whiteTextColor, 18.sp).copyWith(height: 1.0),
               maxLines: 1,
-              overflow: .ellipsis,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
 
-          // Closed or Time Selectors
+          // Closed Indicator OR Time Pickers
           if (!item.isEnabled)
             Text(
               'Closed all day',
-              style: regularStyle(subtitleTextColor, 16.sp)
+              style: regularStyle(subtitleTextColor, 16.sp),
             )
           else
             Row(
@@ -165,18 +132,21 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                     TimeOfDay? picked = await showTimePicker(
                       context: context,
                       initialTime: item.startTime,
-                      builder: buildPickerTheme
+                      builder: buildPickerTheme,
                     );
                     if (picked != null) {
-                      setState(() => item.startTime = picked);
+                      setState(() {
+                        item.startTime = picked;
+                      });
+                      widget.onScheduleChanged(currentList);
                     }
                   },
                 ),
                 Padding(
-                  padding: .symmetric(horizontal: 4.0.w),
+                  padding: EdgeInsets.symmetric(horizontal: 4.0.w),
                   child: Text(
                     'to',
-                    style: regularStyle(subtitleTextColor, 16.sp)
+                    style: regularStyle(subtitleTextColor, 16.sp),
                   ),
                 ),
                 _buildTimeButton(
@@ -188,7 +158,10 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
                       builder: buildPickerTheme,
                     );
                     if (picked != null) {
-                      setState(() => item.endTime = picked);
+                      setState(() {
+                        item.endTime = picked;
+                      });
+                      widget.onScheduleChanged(currentList);
                     }
                   },
                 ),
@@ -205,18 +178,19 @@ class _BusinessHoursScreenState extends State<BusinessHoursScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: .circular(6.r),
+      borderRadius: BorderRadius.circular(6.r),
       child: Container(
-        padding: .symmetric(horizontal: 12.w, vertical: 8.h),
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: lightFilledBgColor,
-          borderRadius: .circular(6.r),
+          borderRadius: BorderRadius.circular(6.r),
         ),
         child: Text(
           time.format(context),
-          style: regularStyle(whiteTextColor, 16.sp)
+          style: regularStyle(whiteTextColor, 16.sp),
         ),
       ),
     );
   }
+
 }

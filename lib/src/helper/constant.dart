@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:futsal_dai/src/model/day_schedule_model.dart';
 
 List amenities = [
   {
@@ -279,3 +280,19 @@ List squadStatusList = [
     "matches_played": 1
   }
 ];
+
+  List<DaySchedule> individualDays = [
+    DaySchedule(dayOfWeek: 0, label: 'Sunday'),
+    DaySchedule(dayOfWeek: 1, label: 'Monday'),
+    DaySchedule(dayOfWeek: 2, label: 'Tuesday'),
+    DaySchedule(dayOfWeek: 3, label: 'Wednesday'),
+    DaySchedule(dayOfWeek: 4, label: 'Thursday'),
+    DaySchedule(dayOfWeek: 5, label: 'Friday'),
+    DaySchedule(dayOfWeek: 6, label: 'Saturday'),
+  ];
+
+  List<DaySchedule> groupedDays = [
+    DaySchedule(dayOfWeek: null, label: 'Mon - Fri'),
+    DaySchedule(dayOfWeek: 6, label: 'Saturday', isEnabled: false),
+    DaySchedule(dayOfWeek: 0, label: 'Sunday', isEnabled: false),
+  ];

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
+import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/model/day_schedule_model.dart';
@@ -9,7 +11,7 @@ import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
 
 class OwnerOperatingHours extends StatefulWidget {
-  final int venueId; // Pass your venue ID here
+  final int venueId;
 
   const OwnerOperatingHours({super.key, required this.venueId});
 
@@ -18,26 +20,20 @@ class OwnerOperatingHours extends StatefulWidget {
 }
 
 class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
+  final controller = Get.put(OwnerController());
+
   int selectedDuration = 60;
   String selectedBufferTime = 'none';
-  final peakRateCon = TextEditingController();
+  bool isMonFriGrouped = false;
 
-  List<DaySchedule> individualDays = [
-    DaySchedule(dayOfWeek: 0, label: 'Sunday'),
-    DaySchedule(dayOfWeek: 1, label: 'Monday'),
-    DaySchedule(dayOfWeek: 2, label: 'Tuesday'),
-    DaySchedule(dayOfWeek: 3, label: 'Wednesday'),
-    DaySchedule(dayOfWeek: 4, label: 'Thursday'),
-    DaySchedule(dayOfWeek: 5, label: 'Friday'),
-    DaySchedule(dayOfWeek: 6, label: 'Saturday'),
-  ];
+  final peakRateCon = TextEditingController();
 
   DaySchedule peakHourSchedule = DaySchedule(
     dayOfWeek: -1,
     label: 'Peak Hours',
     isEnabled: false,
-    startTime: const TimeOfDay(hour: 17, minute: 0),
-    endTime: const TimeOfDay(hour: 21, minute: 0),
+    startTime: const TimeOfDay(hour: 16, minute: 0),
+    endTime: const TimeOfDay(hour: 22, minute: 0),
   );
 
   @override
@@ -46,22 +42,55 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
     super.dispose();
   }
 
-  // Helper method to convert TimeOfDay into DB 'HH:mm:ss' format
   String _formatTimeOfDay(TimeOfDay time) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute:00';
   }
 
-  // Parse Buffer Time string to integer
   int _getBufferMinutes() {
     if (selectedBufferTime == 'none') return 0;
     return int.tryParse(selectedBufferTime) ?? 0;
   }
 
-  // Handle saving data to backend / controller
+  // Normalizes grouped Mon-Fri into individual records (1..5)
+  List<DaySchedule> _getFinalScheduleForDatabase() {
+    if (!isMonFriGrouped) {
+      return individualDays;
+    }
+
+    final monFriGroup = groupedDays.firstWhere((item) => item.label == 'Mon - Fri');
+    final List<DaySchedule> expandedList = [];
+
+    for (int dayIndex = 0; dayIndex <= 6; dayIndex++) {
+      if (dayIndex >= 1 && dayIndex <= 5) {
+        expandedList.add(
+          DaySchedule(
+            label: _getDayLabel(dayIndex),
+            dayOfWeek: dayIndex,
+            isEnabled: monFriGroup.isEnabled,
+            startTime: monFriGroup.startTime,
+            endTime: monFriGroup.endTime,
+          ),
+        );
+      } else {
+        final dayItem = groupedDays.firstWhere(
+          (item) => item.dayOfWeek == dayIndex,
+          orElse: () => DaySchedule(label: _getDayLabel(dayIndex), dayOfWeek: dayIndex),
+        );
+        expandedList.add(dayItem);
+      }
+    }
+
+    return expandedList;
+  }
+
+  String _getDayLabel(int dayIndex) {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[dayIndex];
+  }
+
   Future<void> _handleSave() async {
-    // 1. Validate peak rate input if peak hours are enabled
     if (peakHourSchedule.isEnabled && peakRateCon.text.trim().isEmpty) {
       Get.snackbar(
         'Required Field',
@@ -73,50 +102,39 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
       return;
     }
 
-    // 2. Prepare payload for operating_hours table
-    final List<Map<String, dynamic>> operatingHoursData = individualDays.map((day) {
+    final finalSchedule = _getFinalScheduleForDatabase();
+
+    // 1. Daily operating hours payload
+    final List<Map<String, dynamic>> operatingHoursData = finalSchedule.map((day) {
       return {
         'venue_id': widget.venueId,
         'day_of_week': day.dayOfWeek,
         'open_time': _formatTimeOfDay(day.startTime),
         'close_time': _formatTimeOfDay(day.endTime),
         'is_closed': !day.isEnabled,
-        'is_peak': false,
-        'peak_rate': null,
+        'is_peak': peakHourSchedule.isEnabled,
+        'peak_start_time': peakHourSchedule.isEnabled ? _formatTimeOfDay(peakHourSchedule.startTime) : null,
+        'peak_end_time': peakHourSchedule.isEnabled ? _formatTimeOfDay(peakHourSchedule.endTime) : null,
+        'peak_rate': peakHourSchedule.isEnabled ? (double.tryParse(peakRateCon.text) ?? 0.0) : null,
       };
     }).toList();
 
-    // Append Peak Hour row if enabled
-    if (peakHourSchedule.isEnabled) {
-      operatingHoursData.add({
-        'venue_id': widget.venueId,
-        'day_of_week': null, // General peak hour rule
-        'open_time': _formatTimeOfDay(peakHourSchedule.startTime),
-        'close_time': _formatTimeOfDay(peakHourSchedule.endTime),
-        'is_closed': false,
-        'is_peak': true,
-        'peak_rate': double.tryParse(peakRateCon.text) ?? 0.0,
-      });
-    }
-
-    // 3. Prepare payload for futsal_venues table
+    // 2. Global venue settings payload
     final Map<String, dynamic> venueSettingsData = {
       'slot_duration_mins': selectedDuration,
       'buffer_time_mins': _getBufferMinutes(),
+      'is_peak_enabled': peakHourSchedule.isEnabled,
+      'peak_start_time': peakHourSchedule.isEnabled ? _formatTimeOfDay(peakHourSchedule.startTime) : null,
+      'peak_end_time': peakHourSchedule.isEnabled ? _formatTimeOfDay(peakHourSchedule.endTime) : null,
+      'peak_rate': peakHourSchedule.isEnabled ? (double.tryParse(peakRateCon.text) ?? 0.0) : null,
     };
 
-    // DEBUG LOG: Inspect your payload before network request
-    debugPrint('--- Operating Hours Payload ---');
-    debugPrint(operatingHoursData.toString());
-    debugPrint('--- Venue Settings Payload ---');
-    debugPrint(venueSettingsData.toString());
-
-    // Call your Controller method here
-    // await ownCon.saveOperatingRules(
-    //   venueId: widget.venueId,
-    //   hours: operatingHoursData,
-    //   settings: venueSettingsData,
-    // );
+    // 3. Controller execution
+    await controller.saveOperatingRules(
+      venueId: widget.venueId,
+      operatingHours: operatingHoursData,
+      venueSettings: venueSettingsData,
+    );
   }
 
   @override
@@ -143,9 +161,20 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
                     SizedBox(height: 24.h),
                     BusinessHoursScreen(
                       individualDays: individualDays,
+                      groupedDays: groupedDays,
+                      isMonFriGrouped: isMonFriGrouped,
+                      onGroupToggleChanged: (val) {
+                        setState(() {
+                          isMonFriGrouped = val;
+                        });
+                      },
                       onScheduleChanged: (updatedList) {
                         setState(() {
-                          individualDays = updatedList;
+                          if (isMonFriGrouped) {
+                            groupedDays = updatedList;
+                          } else {
+                            individualDays = updatedList;
+                          }
                         });
                       },
                     ),
@@ -448,32 +477,47 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
   }
 
   Widget saveOperationRulesWidget() {
-    return InkWell(
-      onTap: _handleSave,
-      borderRadius: BorderRadius.circular(12.r),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: primaryColor,
-          borderRadius: BorderRadius.circular(12.r),
+    final controller = Get.find<OwnerController>();
+
+    return Obx(() {
+      final isLoading = controller.isLoadingData.value;
+
+      return InkWell(
+        onTap: isLoading ? null : _handleSave,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 12.h),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              isLoading
+                  ? SizedBox(
+                      height: 20.sp,
+                      width: 20.sp,
+                      child: const CircularProgressIndicator(
+                        color: Color(0xFF107100),
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      Icons.check_circle_outline,
+                      color: const Color(0xFF107100),
+                      size: 20.sp,
+                    ),
+              SizedBox(width: 8.w),
+              Text(
+                isLoading ? 'Saving...' : 'Save Operating Rules',
+                style: regularStyle(const Color(0xFF107100), 20.sp),
+              ),
+            ],
+          ),
         ),
-        padding: EdgeInsets.symmetric(vertical: 12.h),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: const Color(0xFF107100),
-              size: 20.sp,
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              'Save Operating Rules',
-              style: regularStyle(const Color(0xFF107100), 20.sp),
-            ),
-          ],
-        ),
-      ),
-    );
+      );
+    });
   }
 }

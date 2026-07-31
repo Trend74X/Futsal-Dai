@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/owner/owner_operating_hours.dart';
 import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
@@ -52,7 +53,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                       icon: Icons.access_time, 
                       title: 'Operating Hours & Slots',  
                       subTitle: 'Set opening/closing times and slot durations',
-                      onTap: () => Get.to(() => OwnerOperatingHours(venueId: 132))
+                      onTap: () => Get.to(() => OwnerOperatingHours(venueId: read('venueId')))
                     ),
                     SizedBox(height: 12.h),
                     tileCard(

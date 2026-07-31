@@ -14,7 +14,7 @@ class DaySchedule {
     required this.label,
     this.isEnabled = true,
     this.startTime = const TimeOfDay(hour: 6, minute: 0),
-    this.endTime = const TimeOfDay(hour: 23, minute: 0),
+    this.endTime = const TimeOfDay(hour: 22, minute: 0),
   });
 
   // Convert TimeOfDay to database "HH:mm:ss" string

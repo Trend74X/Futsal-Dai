@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
@@ -119,6 +120,82 @@ class OwnerController extends GetxController {
       };
     } catch (e) {
       Get.snackbar("Error", "Failed to fetch data: $e");
+      return null;
+    } finally {
+      isLoadingData.value = false;
+    }
+  }
+
+  Future<void> saveOperatingRules({
+    required int venueId,
+    required List<Map<String, dynamic>> operatingHours,
+    required Map<String, dynamic> venueSettings,
+  }) async {
+    try {
+      isLoadingData.value = true;
+
+      // 1. Clear previous operating hours for this venue to prevent duplicate records
+      await supabase
+          .from('operating_hours')
+          .delete()
+          .eq('venue_id', venueId);
+
+      // 2. Insert new operating hours schedule
+      await supabase
+          .from('operating_hours')
+          .insert(operatingHours);
+
+      // 3. Update global settings in futsal_venues table
+      await supabase
+          .from('futsal_venues')
+          .update(venueSettings)
+          .eq('id', venueId);
+
+      Get.snackbar(
+        'Success',
+        'Operating rules saved successfully!',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF107100),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to save settings: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoadingData.value = false;
+    }
+  }
+
+  /// Optional: Fetch existing hours for a venue when opening the screen
+  Future<Map<String, dynamic>?> fetchOperatingRules(int venueId) async {
+    try {
+      isLoadingData.value = true;
+
+      // Fetch venue settings (slot duration, buffer, peak hours)
+      final venueRes = await supabase
+          .from('futsal_venues')
+          .select('slot_duration_mins, buffer_time_mins, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
+          .eq('id', venueId)
+          .maybeSingle();
+
+      // Fetch weekly operating hours
+      final hoursRes = await supabase
+          .from('operating_hours')
+          .select('*')
+          .eq('venue_id', venueId)
+          .order('day_of_week', ascending: true);
+
+      return {
+        'venue': venueRes,
+        'hours': hoursRes,
+      };
+    } catch (e) {
+      debugPrint('Error fetching operating rules: $e');
       return null;
     } finally {
       isLoadingData.value = false;
