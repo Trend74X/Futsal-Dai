@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
@@ -19,7 +20,15 @@ class PlayerHomePage extends StatefulWidget {
 
 class _PlayerHomePageState extends State<PlayerHomePage> {
 
+  final PlayerController _con = Get.put(PlayerController());
+
   final searchCon    = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _con.loadNearbyVenues();
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -168,54 +177,61 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
         SizedBox(height: 8.h),
         SizedBox(
           height: 240.h,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: 5,
-            scrollDirection: .horizontal,
-            separatorBuilder: (cntxt, idx) => SizedBox(width: 16.w), 
-            itemBuilder: (context, index) {
-              return InkWell(
-                onTap: () => Get.to(() => FutsalDetail()),
-                child: SizedBox(
-                  width: 290.w,
-                  child: Column(
-                    crossAxisAlignment: .start,
-                    children: [
-                      Container(
-                        height: 176.h,
-                        width: 280.w,
-                        decoration: BoxDecoration(
-                          color: primaryTextColor,
-                          borderRadius: .circular(12.r)
-                        ),
-                        child: Image.asset(
-                          'assets/images/court.png',
-                          fit: .cover,
-                        ),
+          child: Obx(() =>
+            _con.isLoadingNearByData.isTrue
+              ? Center(
+                child: CircularProgressIndicator(color: primaryColor),
+              )
+              : ListView.separated(
+                shrinkWrap: true,
+                itemCount: _con.nearbyVenues.length,
+                scrollDirection: .horizontal,
+                separatorBuilder: (cntxt, idx) => SizedBox(width: 16.w), 
+                itemBuilder: (context, index) {
+                  var data = _con.nearbyVenues[index];
+                  return InkWell(
+                    onTap: () => Get.to(() => FutsalDetail()),
+                    child: SizedBox(
+                      width: 290.w,
+                      child: Column(
+                        crossAxisAlignment: .start,
+                        children: [
+                          Container(
+                            height: 176.h,
+                            width: 280.w,
+                            decoration: BoxDecoration(
+                              color: primaryTextColor,
+                              borderRadius: .circular(12.r)
+                            ),
+                            child: Image.asset(
+                              'assets/images/court.png',
+                              fit: .cover,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            data.name,
+                            style: TextStyle(
+                              color: whiteTextColor,
+                              fontSize: 20.sp,
+                              fontWeight: .w600
+                            ),
+                            overflow: .ellipsis,
+                          ),
+                          Text(
+                            '${data.distanceKm} km - ${data.address}',
+                            style: TextStyle(
+                              color: whiteTextColor,
+                              fontSize: 14.sp,
+                              fontWeight: .normal
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8.h),
-                      Text(
-                        'Prismatic Futsal & Recreation Center',
-                        style: TextStyle(
-                          color: whiteTextColor,
-                          fontSize: 20.sp,
-                          fontWeight: .w600
-                        ),
-                        overflow: .ellipsis,
-                      ),
-                      Text(
-                        '2.4 km - Sanepa, Lalitpur',
-                        style: TextStyle(
-                          color: whiteTextColor,
-                          fontSize: 14.sp,
-                          fontWeight: .normal
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }, 
+                    ),
+                  );
+                }, 
+              )
           ),
         )
       ],
