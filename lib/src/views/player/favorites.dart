@@ -6,6 +6,7 @@ import 'package:futsal_dai/src/helper/share_url.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
 import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
@@ -21,6 +22,8 @@ class _FavoritePageState extends State<FavoritePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'FAVORITES'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -31,7 +34,6 @@ class _FavoritePageState extends State<FavoritePage> {
                 child: Column(
                   crossAxisAlignment: .start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 16.h),
                     titleAndCountsWidgets(),
                     SizedBox(height: 16.h),
@@ -43,20 +45,6 @@ class _FavoritePageState extends State<FavoritePage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: .spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('FAVORITES', style: boldStyle(primaryTextColor, 28.sp)),
-        SizedBox(),
-      ],
     );
   }
 

@@ -1,11 +1,11 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_datetime_picker.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -13,14 +13,14 @@ import 'package:intl/intl.dart';
 // Ensure this path matches your project structure for DateTimePickerHelper
 // import 'package:futsal_dai/src/helper/date_time_picker_helper.dart';
 
-class OwnserMaunualSlotEntry extends StatefulWidget {
-  const OwnserMaunualSlotEntry({super.key});
+class OwnerMaunualSlotEntry extends StatefulWidget {
+  const OwnerMaunualSlotEntry({super.key});
 
   @override
-  State<OwnserMaunualSlotEntry> createState() => _OwnserMaunualSlotEntryState();
+  State<OwnerMaunualSlotEntry> createState() => _OwnerMaunualSlotEntryState();
 }
 
-class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
+class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
   final formKey = GlobalKey<FormState>();
 
   // Text Controllers
@@ -65,17 +65,18 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'Add Entry'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
           child: SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.h),
+              padding: .all(8.sp),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    appbarWidget(),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: 8.h),
                     entrySlot(),
                   ],
                 ),
@@ -87,40 +88,26 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
     );
   }
 
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Add Entry', style: boldStyle(primaryTextColor, 28.sp)),
-        const SizedBox(width: 40), // Balanced spacing for back icon
-      ],
-    );
-  }
-
   Widget entrySlot() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: .circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
+        filter: .blur(sigmaX: 15.0, sigmaY: 15.0),
         child: Container(
-          margin: EdgeInsets.symmetric(horizontal: 8.w),
-          padding: EdgeInsets.all(24.r),
+          margin: .symmetric(horizontal: 8.w),
+          padding: .all(24.r),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            color: Colors.black.withValues(alpha: 0.01),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: .circular(24),
+            color: black.withValues(alpha: 0.01),
+            border: .all(
+              color: white.withValues(alpha: 0.08),
               width: 1.0,
             ),
           ),
           child: Form(
             key: formKey,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: .start,
               children: [
                 Text(
                   'Manual Slot Entry',
@@ -139,8 +126,8 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                     child: CustomTextFormField(
                       headingText: "COURT SELECTION",
                       headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                      textInputAction: TextInputAction.next,
-                      autoValidateMode: AutovalidateMode.onUserInteraction,
+                      textInputAction: .next,
+                      autoValidateMode: .onUserInteraction,
                       controller: courtSel,
                       readOnly: true,
                       maxLines: 1,
@@ -161,9 +148,9 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                 Container(
                   decoration: BoxDecoration(
                     color: lightFilledBgColor,
-                    borderRadius: BorderRadius.circular(8.r),
+                    borderRadius: .circular(8.r),
                   ),
-                  padding: EdgeInsets.all(16.sp),
+                  padding: .all(16.sp),
                   child: Row(
                     children: [
                       Icon(Icons.calendar_today_outlined, color: primaryColor, size: 20.sp),
@@ -180,13 +167,13 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                         child: Container(
                           decoration: BoxDecoration(
                             color: primaryTextColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(
+                            borderRadius: .circular(10.r),
+                            border: .all(
                               color: primaryTextColor,
                               width: 0.5,
                             ),
                           ),
-                          padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 12.w),
+                          padding: .symmetric(vertical: 4.h, horizontal: 12.w),
                           child: Text(
                             'EDIT',
                             style: boldStyle(primaryTextColor, 12.sp),
@@ -202,9 +189,9 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                 CustomTextFormField(
                   headingText: "PLAYER/TEAM NAME",
                   headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                  textInputAction: TextInputAction.next,
-                  keyboardType: TextInputType.text,
-                  autoValidateMode: AutovalidateMode.onUserInteraction,
+                  textInputAction: .next,
+                  keyboardType: .text,
+                  autoValidateMode: .onUserInteraction,
                   controller: teamName,
                   maxLines: 1,
                   hintText: 'Urban Striker FC',
@@ -222,8 +209,8 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                 // Phone Number
                 CustomTextFormField(
                   headingText: "PHONE NUMBER",
-                  keyboardType: TextInputType.phone,
-                  autoValidateMode: AutovalidateMode.onUserInteraction,
+                  keyboardType: .phone,
+                  autoValidateMode: .onUserInteraction,
                   controller: phNum,
                   maxLines: 1,
                   hintText: '9801234567',
@@ -256,7 +243,7 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
                   text: 'Confirm & Book Slot',
                   fontColor: const Color(0xFF053900),
                   fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: .bold,
                   onPressed: _submitForm,
                 ),
                 SizedBox(height: 16.h),
@@ -285,23 +272,23 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
       onTap: () => setState(() => selectedMethod = method),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
+          borderRadius: .circular(12.r),
+          border: .all(
             color: isSelected ? primaryColor : whiteTextColor.withValues(alpha: 0.5),
             width: 0.5.sp,
           ),
         ),
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+        padding: .symmetric(vertical: 16.h, horizontal: 16.w),
         child: Row(
           children: [
             SvgPicture.asset(
               icon,
               width: 16.w,
               height: 16.h,
-              fit: BoxFit.cover,
-              colorFilter: ColorFilter.mode(
+              fit: .cover,
+              colorFilter: .mode(
                 isSelected ? primaryColor : Colors.white,
-                BlendMode.srcIn,
+                .srcIn,
               ),
             ),
             SizedBox(width: 8.w),
@@ -314,9 +301,9 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
               height: 20.h,
               width: 20.w,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
+                shape: .circle,
                 color: isSelected ? primaryColor : Colors.transparent,
-                border: Border.all(
+                border: .all(
                   color: isSelected ? primaryColor : whiteTextColor,
                 ),
               ),
@@ -347,14 +334,14 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
       context: context,
       backgroundColor: lightFilledBgColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        borderRadius: .vertical(top: Radius.circular(20.r)),
       ),
       builder: (context) {
         final courts = ['Pitch A (Indoor)', 'Pitch B (Outdoor)', 'Pitch C (5-A-Side)'];
         return Container(
-          padding: EdgeInsets.all(16.sp),
+          padding: .all(16.sp),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: .min,
             children: courts.map((court) {
               return ListTile(
                 title: Text(court, style: boldStyle(whiteTextColor, 16.sp)),
@@ -375,14 +362,7 @@ class _OwnserMaunualSlotEntryState extends State<OwnserMaunualSlotEntry> {
   // Form Submission
   void _submitForm() {
     if (formKey.currentState!.validate()) {
-      // Process manual booking logic
-      Get.snackbar(
-        'Success',
-        'Slot reserved successfully for ${teamName.text}',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: primaryColor,
-        colorText: Colors.black,
-      );
+      showToast(message: 'Slot reserved successfully for ${teamName.text}', isSuccess: true);
       Get.back();
     }
   }

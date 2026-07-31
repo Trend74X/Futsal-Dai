@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:get/get.dart';
 
 class PlayerTransactions extends StatelessWidget {
@@ -11,6 +12,8 @@ class PlayerTransactions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'TRANSACTIONS'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -21,7 +24,6 @@ class PlayerTransactions extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: .start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 16.h),
                     totalTilesCard(),
                     SizedBox(height: 16.h),
@@ -33,20 +35,6 @@ class PlayerTransactions extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: .spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('TRANSACTIONS', style: boldStyle(primaryTextColor, 28.sp)),
-        SizedBox(),
-      ],
     );
   }
 
@@ -222,4 +210,5 @@ class PlayerTransactions extends StatelessWidget {
       ),
     );
   }
+
 }

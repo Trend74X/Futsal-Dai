@@ -115,7 +115,7 @@ class AuthController extends GetxController {
       }).select();
       if (response.isNotEmpty)  log('Success! Inserted user: ${response.first}');
     } catch (e) {
-      Get.snackbar('Error', e.toString());
+      showToast(message: e.toString(), isSuccess: false);
       rethrow;
     }
   }
@@ -124,7 +124,7 @@ class AuthController extends GetxController {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) {
-        Get.snackbar("Error", "User not authenticated");
+        showToast(message:"User not authenticated", isSuccess: false);
         return false;
       }
 
@@ -185,7 +185,7 @@ class AuthController extends GetxController {
       return false;
     } catch (e) {
       log('Update User Error: $e');
-      Get.snackbar("Error", "Failed to update profile: $e");
+      showToast(message:"Failed to update profile: $e", isSuccess: false);
       return false;
     }
   }

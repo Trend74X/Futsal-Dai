@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
-import 'package:get/get.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 
 class PlayerTeamShuffler extends StatefulWidget {
   const PlayerTeamShuffler({super.key});
@@ -65,6 +65,8 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'Team Shuffler'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -75,7 +77,6 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 12.h),
                     headerWidget(),
                     SizedBox(height: 12.h),
@@ -91,20 +92,6 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Team Shuffler', style: boldStyle(primaryTextColor, 24.sp)),
-        const SizedBox(width: 40),
-      ],
     );
   }
 

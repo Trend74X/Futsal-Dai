@@ -343,7 +343,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
             ),
             child: status == 'AVAILABLE' || status == 'EMPTY'
                     ? InkWell(
-                      onTap: () => Get.to(() => OwnserMaunualSlotEntry()),
+                      onTap: () => Get.to(() => OwnerMaunualSlotEntry()),
                       child: Row(
                         mainAxisAlignment: .center,
                         children: [

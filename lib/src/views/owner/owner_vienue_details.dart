@@ -9,6 +9,7 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:futsal_dai/src/model/pitch_model.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
@@ -114,6 +115,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'Venue Details'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -134,7 +137,6 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          appbarWidget(),
                           SizedBox(height: 12.h),
                           formWidget(),
                           SizedBox(height: 24.h),
@@ -157,20 +159,6 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Venue Details', style: boldStyle(primaryTextColor, 24.sp)),
-        const SizedBox(width: 40),
-      ],
     );
   }
 

@@ -7,7 +7,9 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/model/day_schedule_model.dart';
 import 'package:futsal_dai/src/views/owner/owner_business_hours_widget.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 
 class OwnerOperatingHours extends StatefulWidget {
@@ -160,13 +162,7 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
 
   Future<void> _handleSave() async {
     if (peakHourSchedule.isEnabled && peakRateCon.text.trim().isEmpty) {
-      Get.snackbar(
-        'Required Field',
-        'Please enter a peak hourly rate.',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
-        colorText: Colors.white,
-      );
+      showToast(message:"Please enter a peak hourly rate.", isSuccess: false);
       return;
     }
 
@@ -208,6 +204,8 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'Operating Hours'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -218,7 +216,6 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 12.h),
                     headerlabel(
                       label: 'Slot & Duration Rules',
@@ -265,20 +262,6 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Operating Hours', style: boldStyle(primaryTextColor, 24.sp)),
-        const SizedBox(width: 40),
-      ],
     );
   }
 
@@ -398,14 +381,14 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
         children: [
           Icon(
             Icons.info_outline,
-            color: const Color(0xFFADB4CE),
+            color: subtitleTextColor,
             size: 20.sp,
           ),
           SizedBox(width: 8.w),
           Expanded(
             child: Text(
               'Charge extra during high-demand hours. Peak rates will apply automatically during the specified window.',
-              style: regularStyle(const Color(0xFFADB4CE), 16.sp),
+              style: regularStyle(subtitleTextColor, 16.sp),
             ),
           ),
         ],
@@ -564,23 +547,23 @@ class _OwnerOperatingHoursState extends State<OwnerOperatingHours> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               isLoading
-                  ? SizedBox(
-                      height: 20.sp,
-                      width: 20.sp,
-                      child: const CircularProgressIndicator(
-                        color: Color(0xFF107100),
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Icon(
-                      Icons.check_circle_outline,
-                      color: const Color(0xFF107100),
-                      size: 20.sp,
-                    ),
+                ? SizedBox(
+                  height: 20.sp,
+                  width: 20.sp,
+                  child: const CircularProgressIndicator(
+                    color: Color(0xFF107100),
+                    strokeWidth: 2,
+                  ),
+                )
+                : Icon(
+                  Icons.check_circle_outline,
+                  color: black,
+                  size: 20.sp,
+                ),
               SizedBox(width: 8.w),
               Text(
                 isLoading ? 'Saving...' : 'Save Operating Rules',
-                style: regularStyle(const Color(0xFF107100), 20.sp),
+                style: regularStyle(black, 18.sp),
               ),
             ],
           ),

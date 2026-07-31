@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/player_group_details.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:get/get.dart';
 
 class PlayerGroupList extends StatefulWidget {
@@ -15,6 +16,8 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'My Groups'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -25,7 +28,6 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 12.h),
                     newGroupButton(),
                     SizedBox(height: 24.h),
@@ -37,20 +39,6 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('My Groups', style: boldStyle(whiteTextColor, 24.sp)),
-        const SizedBox(width: 40),
-      ],
     );
   }
 

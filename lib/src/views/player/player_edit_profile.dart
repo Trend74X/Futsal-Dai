@@ -8,6 +8,7 @@ import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -346,7 +347,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
         });
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not process image: $e", backgroundColor: Colors.redAccent, colorText: Colors.white);
+      showToast(message: 'Could not process image: $e', isSuccess: false);
     } finally {
       setState(() => isCompressingImage = false);
     }
@@ -424,7 +425,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        Get.snackbar("Error", "Location services are disabled on your phone.");
+        showToast(message: 'Location services are disabled on your phone.', isSuccess: false);
         setState(() => isFetchingLocation = false);
         return;
       }
@@ -433,14 +434,14 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
-          Get.snackbar("Permission Denied", "Location permissions are required.");
+          showToast(message: 'Location permissions are required.', isSuccess: false);
           setState(() => isFetchingLocation = false);
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        Get.snackbar("Permission Blocked", "Please enable location permission in settings.");
+        showToast(message: 'Please enable location permission in settings.', isSuccess: false);
         setState(() => isFetchingLocation = false);
         return;
       }
@@ -469,7 +470,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
         });
       }
     } catch (e) {
-      Get.snackbar("Location Error", "Failed to retrieve location: $e");
+      showToast(message: 'Failed to retrieve location: $e', isSuccess: false);
     } finally {
       setState(() => isFetchingLocation = false);
     }

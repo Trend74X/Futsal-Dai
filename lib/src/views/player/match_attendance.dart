@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:get/get.dart';
 
 class MatchAttendance extends StatefulWidget {
@@ -17,6 +18,8 @@ class _MatchAttendanceState extends State<MatchAttendance> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(title: 'Match Attendance'),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -27,7 +30,6 @@ class _MatchAttendanceState extends State<MatchAttendance> {
                 child: Column(
                   crossAxisAlignment: .start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 16.h),
                     attendanceCount(),
                     SizedBox(height: 16.h),
@@ -41,20 +43,6 @@ class _MatchAttendanceState extends State<MatchAttendance> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: .spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Match Attendance', style: boldStyle(primaryTextColor, 28.sp)),
-        SizedBox(),
-      ],
     );
   }
 

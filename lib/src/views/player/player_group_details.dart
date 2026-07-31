@@ -3,8 +3,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
-import 'package:get/get.dart';
 
 class PlayerGroupDetail extends StatefulWidget {
   const PlayerGroupDetail({super.key});
@@ -20,6 +20,11 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: appBarWidget(
+        title: 'Manage Group', 
+        action: Icon(Icons.edit, color: subtitleTextColor)
+      ),
+      extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
           decoration: bgImg(),
@@ -30,7 +35,6 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    appbarWidget(),
                     SizedBox(height: 12.h),
                     headerWidget(),
                     SizedBox(height: 12.h),
@@ -51,20 +55,6 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget appbarWidget() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          onPressed: () => Get.back(),
-          icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
-        ),
-        Text('Manage Group', style: boldStyle(whiteTextColor, 24.sp)),
-        Icon(Icons.edit, color: subtitleTextColor)
-      ],
     );
   }
 
