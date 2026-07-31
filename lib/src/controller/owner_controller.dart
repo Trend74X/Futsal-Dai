@@ -25,6 +25,7 @@ class OwnerController extends GetxController {
           .select('id')
           .single();
       final int venueId = venueResponse['id'];
+      write('venueId', venueResponse['id']);
 
       // 2. Attach the created venue_id to each ground object
       final List<Map<String, dynamic>> groundsData = futsalGround.map((ground) {

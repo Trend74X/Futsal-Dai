@@ -59,7 +59,6 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
 
     if (data != null && mounted) {
       final venueRes = data['venue'];
-      write('venueId', data['venue']['id']);
       final List<dynamic> groundsRes = data['grounds'];
 
       setState(() {
