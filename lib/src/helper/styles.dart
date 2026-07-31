@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 const primaryColor       = Color(0xFF39FF14);
 const primaryTextColor   = Color(0xFF79FF5B);
@@ -102,5 +103,35 @@ BoxDecoration bgImg() {
       image: AssetImage('assets/images/bg_img.png'),
       fit: BoxFit.cover,
     ),
+  );
+}
+
+Widget buildPickerTheme(BuildContext context, Widget? child) {
+  return Theme(
+    data: ThemeData.dark().copyWith(
+      colorScheme: .dark(
+        primary: primaryColor, // Header background & selected circle
+        onPrimary: black, // Text color inside selected circle
+        surface: lightFilledBgColor, // Dialog background color
+        onSurface: whiteTextColor, // Normal text color
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryColor,
+          textStyle: boldStyle(primaryColor, 14.sp),
+        ),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: lightFilledBgColor,
+        hourMinuteColor: primaryColor.withValues(alpha: 0.1),
+        hourMinuteTextColor: whiteTextColor,
+        dialBackgroundColor: Colors.black26,
+        dialHandColor: primaryColor,
+        dialTextColor: whiteTextColor,
+        entryModeIconColor: primaryColor,
+      ),
+      dialogTheme: DialogThemeData(backgroundColor: lightFilledBgColor),
+    ),
+    child: child!,
   );
 }
