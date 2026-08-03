@@ -225,20 +225,6 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         ),
         SizedBox(height: 16.h),
 
-        // Address Field
-        CustomTextFormField(
-          headingText: "ADDRESS / LOCATION",
-          controller: addressCon,
-          hintText: 'Search neighborhood or street...',
-          prefixIcon: Icon(Icons.location_on_outlined, color: subtitleTextColor, size: 20.sp),
-          headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-          hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
-          autoValidateMode: .onUserInteraction,
-          validator: (value) => validateIsEmpty(string: value!),
-        ),        
-
-        SizedBox(height: 12.h),
-
         // Map Preview Container
         Container(
           height: 140.h,
@@ -254,15 +240,31 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             showCurrentLocation: true,
             showDirection: false,
             isSelectionMode: true,
-            onLocationSelected: (LatLng location) {
+            onLocationSelected: (LatLng location) async {
               log("PARENT RECEIVED: ${location.latitude}, ${location.longitude}");
               setState(() {
                 venueLat = location.latitude;
                 venueLong = location.longitude;
+                addressCon.text = 'Fetching address...';
               });
+
+              addressCon.text = await appCon.getAddressFromLatLng(location.latitude, location.longitude);
             },
           )
         ),
+        SizedBox(height: 12.h),
+        // Address Field
+        CustomTextFormField(
+          headingText: "ADDRESS / LOCATION",
+          controller: addressCon,
+          hintText: 'Search neighborhood or street...',
+          prefixIcon: Icon(Icons.location_on_outlined, color: subtitleTextColor, size: 20.sp),
+          headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
+          hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+          autoValidateMode: .onUserInteraction,
+          validator: (value) => validateIsEmpty(string: value!),
+        ),
+
         SizedBox(height: 16.h),
 
         // Venue Description
@@ -578,8 +580,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             'base_price': double.tryParse(hourlyRateCon.text) ?? 0.0,
             "description": descriptionCon.text.trim(),
             'address': addressCon.text.trim(),
-            'latitude': 27.7172, // Replace with actual lat from map state
-            'longitude': 85.3240, // Replace with actual lng from map state
+            'latitude': venueLat,
+            'longitude': venueLong,
             'amenities': selectedAmenityLabels
           };
 

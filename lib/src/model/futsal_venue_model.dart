@@ -109,7 +109,6 @@ class FutsalVenueModel {
     };
   }
 
-  /// Helper to convert standard List or Postgres Array strings (e.g. `{Parking,Showers}`) into List<String>
   static List<String> _parseArray(dynamic value) {
     if (value == null) return [];
     if (value is List) {
