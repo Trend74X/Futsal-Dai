@@ -3,30 +3,87 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
-class PlayerBookingConfirm extends StatelessWidget {
-  const PlayerBookingConfirm({super.key});
+class PlayerBookingConfirm extends StatefulWidget {
+  final dynamic venueData; // Using your FutsalVenueModel
+  final DateTime selectedDate;
+  final Map<String, dynamic> selectedSlot;
+  final Map<String, dynamic> selectedGround;
+
+  const PlayerBookingConfirm({
+    super.key,
+    required this.venueData,
+    required this.selectedDate,
+    required this.selectedSlot,
+    required this.selectedGround,
+  });
+
+  @override
+  State<PlayerBookingConfirm> createState() => _PlayerBookingConfirmState();
+}
+
+class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
+  bool isBooking = false;
+
+  // --- MOCK BOOKING FUNCTION ---
+  // You will move this to your PlayerController or execute your Supabase insert here
+  Future<void> confirmBookingRequest() async {
+    setState(() => isBooking = true);
+    
+    try {
+      // Example Supabase insertion logic:
+      /*
+      await Supabase.instance.client.from('bookings').insert({
+        'venue_id': widget.venueData.id,
+        'ground_id': widget.selectedGround['id'],
+        'user_id': Supabase.instance.client.auth.currentUser?.id,
+        'booking_date': DateFormat('yyyy-MM-dd').format(widget.selectedDate),
+        'start_time': DateFormat('HH:mm:ss').format(widget.selectedSlot['slot_start']),
+        'end_time': DateFormat('HH:mm:ss').format(widget.selectedSlot['slot_end']),
+        'total_price': widget.selectedSlot['price'],
+        'status': 'pending', // Pending owner verification
+      });
+      */
+
+      // Simulating network delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      Get.back(); // Close bottom sheet
+      Get.snackbar(
+        'Request Sent', 
+        'Your booking request has been sent to the owner.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to request booking.', backgroundColor: Colors.red, colorText: Colors.white);
+    } finally {
+      if (mounted) setState(() => isBooking = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: .all(16.sp),
+      padding: EdgeInsets.all(16.sp),
       width: double.infinity,
       decoration: BoxDecoration(
         color: filledBgColor,
-        borderRadius: .vertical(top: .circular(20.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: .start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Text(
                 'Booking Confirmation',
-                style: TextStyle(fontSize: 20.sp, fontWeight: .w600, color: whiteTextColor),
+                style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.w600, color: whiteTextColor),
               ),
-              Spacer(),
+              const Spacer(),
               IconButton(
                 onPressed: () => Get.back(), 
                 icon: Icon(Icons.close, color: whiteTextColor)
@@ -53,42 +110,61 @@ class PlayerBookingConfirm extends StatelessWidget {
 
   Widget imageCard() {
     return Stack(
-      alignment: .bottomLeft,
+      alignment: Alignment.bottomLeft,
       children: [
-        Image.asset(
-          'assets/images/court.png',
-          fit: .cover,
+        // Make the image dynamic. Use a fallback if the venue has no image.
+        Container(
+          height: 120.h,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            image: DecorationImage(
+              // Assuming your venueData model has a mainImageUrl property
+              image: widget.venueData.mainImageUrl != null 
+                  ? NetworkImage(widget.venueData.mainImageUrl) as ImageProvider
+                  : const AssetImage('assets/images/court.png'),
+              fit: BoxFit.cover,
+            )
+          ),
+        ),
+        Container(
+          height: 120.h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12.r),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+            )
+          ),
         ),
         Padding(
-          padding: .symmetric(vertical: 16.h, horizontal: 16.w),
+          padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
           child: Column(
-            crossAxisAlignment: .start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 61.w,
-                height: 24.h,
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.2),
-                  borderRadius: .circular(4.r)
+                  color: primaryColor.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(4.r)
                 ),
-                child: Center(
-                  child: Text(
-                    'VENUE',
-                    style: TextStyle(
-                      color: primaryTextColor,
-                      fontSize: 12.sp,
-                      fontWeight: .bold
-                    ),
+                child: Text(
+                  widget.selectedGround['ground_name']?.toUpperCase() ?? 'VENUE',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.bold
                   ),
                 ),
               ),
               SizedBox(height: 8.h),
               Text(
-                'Prismatic Futsal & Recreation Center',
+                widget.venueData.name,
                 style: TextStyle(
                   color: whiteTextColor,
-                  fontWeight: .bold,
-                  fontSize: 28.sp,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24.sp,
                   height: 1.1
                 ),
               )
@@ -106,34 +182,34 @@ class PlayerBookingConfirm extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               color: lightFilledBgColor,
-              borderRadius: .circular(12.r)
+              borderRadius: BorderRadius.circular(12.r)
             ),
             child: Padding(
-              padding: .symmetric(vertical: 16.h, horizontal: 16.w),
+              padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
               child: Column(
-                crossAxisAlignment: .start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.date_range, color: whiteTextColor),
+                      Icon(Icons.date_range, color: whiteTextColor, size: 16.sp),
                       SizedBox(width: 4.w),
                       Text(
                         'DATE',
                         style: TextStyle(
                           color: whiteTextColor,
                           fontSize: 12.sp,
-                          fontWeight: .bold
+                          fontWeight: FontWeight.bold
                         ),
                       )
                     ]
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 8.h),
                   Text(
-                    'Sat, Dec 14',
+                    DateFormat('EEE, MMM d').format(widget.selectedDate), // e.g., "Sat, Dec 14"
                     style: TextStyle(
                       color: whiteTextColor,
-                      fontSize: 20.sp,
-                      fontWeight: .w600
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600
                     ),
                   )
                 ],
@@ -141,39 +217,39 @@ class PlayerBookingConfirm extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: 16.w),
+        SizedBox(width: 12.w),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
               color: lightFilledBgColor,
-              borderRadius: .circular(12.r)
+              borderRadius: BorderRadius.circular(12.r)
             ),
             child: Padding(
-              padding: .symmetric(vertical: 16.h, horizontal: 16.w),
+              padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
               child: Column(
-                crossAxisAlignment: .start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.access_time, color: whiteTextColor),
+                      Icon(Icons.access_time, color: whiteTextColor, size: 16.sp),
                       SizedBox(width: 4.w),
                       Text(
                         'TIME',
                         style: TextStyle(
                           color: whiteTextColor,
                           fontSize: 12.sp,
-                          fontWeight: .bold
+                          fontWeight: FontWeight.bold
                         ),
                       )
                     ]
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 8.h),
                   Text(
-                    '17:00 - 18:00',
+                    widget.selectedSlot['slot'], // e.g., "17:00 - 18:00"
                     style: TextStyle(
                       color: whiteTextColor,
-                      fontSize: 20.sp,
-                      fontWeight: .w600
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600
                     ),
                   )
                 ],
@@ -186,28 +262,36 @@ class PlayerBookingConfirm extends StatelessWidget {
   }
 
   Widget priceWidget() {
+    // Check if the current slot price is higher than the venue's base price to show "Peak Rate"
+    bool isPeakRate = widget.selectedSlot['price'] > widget.venueData.basePrice;
+    
+    // Calculate duration
+    DateTime start = widget.selectedSlot['slot_start'];
+    DateTime end = widget.selectedSlot['slot_end'];
+    int durationMins = end.difference(start).inMinutes;
+
     return Container(
       decoration: BoxDecoration(
         color: lightFilledBgColor,
-        borderRadius: .circular(12.r)
+        borderRadius: BorderRadius.circular(12.r)
       ),
       child: Padding(
-        padding: .all(16.sp),
+        padding: EdgeInsets.all(16.sp),
         child: Row(
           children: [
             Column(
-              crossAxisAlignment: .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Weekend Peak Rate',
+                  isPeakRate ? 'Peak Rate Applied' : 'Standard Rate',
                   style: TextStyle(
-                    color: Color(0xFFADB4CE),
-                    fontWeight: .bold, 
+                    color: isPeakRate ? const Color(0xFFFFD6A8) : const Color(0xFFADB4CE),
+                    fontWeight: FontWeight.bold, 
                     fontSize: 12.sp,
                   ),
                 ),
                 Text(
-                  'Standard 1 hour slot',
+                  '$durationMins minutes slot',
                   style: TextStyle(
                     color: whiteTextColor,
                     fontSize: 14.sp,
@@ -215,13 +299,13 @@ class PlayerBookingConfirm extends StatelessWidget {
                 )
               ],
             ),
-            Spacer(),
+            const Spacer(),
             Text(
-              'Rs. 1300',
+              'Rs. ${widget.selectedSlot['price'].toInt()}',
               style: TextStyle(
                 color: primaryTextColor,
                 fontSize: 28.sp,
-                fontWeight: .bold
+                fontWeight: FontWeight.bold
               ),
             )
           ],
@@ -233,25 +317,25 @@ class PlayerBookingConfirm extends StatelessWidget {
   Widget verificationWidget() {
     return Container(
       decoration: BoxDecoration(
-        color: Color(0xFFFFD6A8).withValues(alpha: 0.1),
-        borderRadius: .circular(12.r)
+        color: const Color(0xFFFFD6A8).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12.r)
       ),
-      padding: .symmetric(vertical: 16.h, horizontal: 16.w),
+      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
       child: Row(
-        crossAxisAlignment: .start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.verified_user_outlined, color: brownTextColor),
           SizedBox(width: 8.w),
           Expanded(
             child: Column(
-              crossAxisAlignment: .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Verification Required',
                   style: TextStyle(
-                    color: Color(0xFFFFDDB8),
+                    color: const Color(0xFFFFDDB8),
                     fontSize: 12.sp,
-                    fontWeight: .bold
+                    fontWeight: FontWeight.bold
                   ),
                 ),
                 Text(
@@ -273,27 +357,28 @@ class PlayerBookingConfirm extends StatelessWidget {
 
   Widget reqBookingBtnWidget() {
     return Center(
-      child: CustomUsualButton(
-        text: 'REQUEST BOOOKING SLOT', 
-        onPressed: () {},
-        fontColor: Color(0xFF053900),
-        fontSize: 18.sp,
-        color: primaryTextColor,
-      ),
+      child: isBooking 
+        ? const CircularProgressIndicator(color: primaryColor)
+        : CustomUsualButton(
+            text: 'REQUEST BOOKING SLOT', 
+            onPressed: confirmBookingRequest,
+            fontColor: const Color(0xFF053900),
+            fontSize: 18.sp,
+            color: primaryTextColor,
+          ),
     );
   }
 
   Widget cancellationTextWidget() {
     return Center(
       child: Text(
-        'Cancelation policy applies. 15m grace period.',
+        'Cancellation policy applies. 15m grace period.',
         style: TextStyle(
-          fontWeight: .bold,
+          fontWeight: FontWeight.bold,
           fontSize: 12.sp,
           color: subtitleTextColor.withValues(alpha: 0.5)
         ),
       ),
     );
   }
-
 }

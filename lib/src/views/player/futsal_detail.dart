@@ -1,24 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:futsal_dai/src/helper/constant.dart';
+import 'package:futsal_dai/src/controller/app_controller.dart';
+import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/share_url.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 class FutsalDetail extends StatefulWidget {
-  const FutsalDetail({super.key});
+  final dynamic data;
+  const FutsalDetail({super.key, required this.data});
 
   @override
   State<FutsalDetail> createState() => _FutsalDetailState();
 }
 
 class _FutsalDetailState extends State<FutsalDetail> {
+  final appCon = Get.put(AppController());
+  final playerCon = Get.put(PlayerController());
+
   DateTime selectedDate = DateTime.now();
   bool isFav = false;
   int? selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,13 +76,15 @@ class _FutsalDetailState extends State<FutsalDetail> {
                       children: [
                         SizedBox(height: Get.height * 0.25),
                         futsalInfoCard(),
+                        SizedBox(height: 16.h), 
+                        selectGround(),
                         SizedBox(height: 16.h),
                         selectDate(),
                         SizedBox(height: 16.h),
                         availableSlots(),
                         SizedBox(height: 16.h),
-                        dynamicPricing(),
-                        SizedBox(height: 16.h),
+                        if(widget.data.isPeakEnabled) dynamicPricing(),
+                        if(widget.data.isPeakEnabled) SizedBox(height: 16.h),
                         totalPriceWidget()
                       ],
                     ),
@@ -133,6 +149,9 @@ class _FutsalDetailState extends State<FutsalDetail> {
   }
 
   Widget futsalInfoCard() {
+    List<AmenityModel> venueAmenities = appCon.amenitiesList.where((model) {
+      return widget.data.amenities.contains(model.label);
+    }).toList();
     return Container(
       decoration: BoxDecoration(
         color: containerBgColor,
@@ -140,88 +159,47 @@ class _FutsalDetailState extends State<FutsalDetail> {
       ),
       padding: .symmetric(vertical: 24.h, horizontal: 16.w),
       child: Column(
+        crossAxisAlignment: .start,
         children: [
+          //futsal name
           Text(
-            'Prismatic Futsal & Recreation Center',
+            widget.data.name,
             style: TextStyle(
               color: whiteTextColor,
               fontSize: 28.sp,
               fontWeight: .bold,
-              height: 1.2
+              height: 1.1
             ),
           ),
           SizedBox(height: 8.h),
+          // futsal address
           Row(
+            crossAxisAlignment: .start,
             children: [
               Icon(Icons.location_on_outlined, color: whiteTextColor, size: 14.sp),
               SizedBox(width: 4.w),
-              Text(
-                'Sanepa, Lalitpur, Nepal',
-                style: TextStyle(
-                  color: whiteTextColor,
-                  fontSize: 16.sp
+              Expanded(
+                child: Text(
+                  widget.data.address,
+                  style: TextStyle(
+                    color: whiteTextColor,
+                    fontSize: 16.sp,
+                    height: 1.1
+                  ),
+                  maxLines: 2,
                 ),
               )
             ],
           ),
           Divider(color: gray01, thickness: 1.sp),
           SizedBox(height: 8.h),
-          // SizedBox(
-          //   height: 90.h,
-          //   child: ListView.separated(
-          //     itemCount: amenities.length,
-          //     shrinkWrap: true,
-          //     scrollDirection: .horizontal,
-          //     separatorBuilder: (context, index) => SizedBox(width: 8.sp), 
-          //     itemBuilder: (context, index) {
-          //       var data = amenities[index];
-          //       return Container(
-          //         width: 60.w,
-          //         alignment: Alignment.center,
-          //         child: Column(
-          //           crossAxisAlignment: .center,
-          //           children: [
-          //             Container(
-          //               decoration: BoxDecoration(
-          //                 color: Color(0xFF222D1E),
-          //                 borderRadius: .circular(8.r)
-          //               ),
-          //               height: 40.h,
-          //               width: 40.h,
-          //               child: Icon(
-          //                 data['icon'],
-          //                 color: white,
-          //                 size: 18.sp,
-          //               ),
-          //             ),
-          //             SizedBox(height: 8.w),
-          //             Text(
-          //               data['label'],
-          //               style: TextStyle(
-          //                 color: white,
-          //                 fontSize: 14.sp,
-          //                 height: 1.0
-          //               ),
-          //               textAlign: .center,
-          //             ),
-          //           ],
-          //         ),
-          //       );
-          //     }, 
-          //   ),
-          // )
-          // 1. Remove the fixed height SizedBox and ListView
           Wrap(
-            // Space between items horizontally (replaces separatorBuilder)
             spacing: 8.sp, 
-            // Space between lines vertically when it wraps
             runSpacing: 12.h, 
-            // Centers the grid overall if it wraps unevenly
             alignment: WrapAlignment.start, 
-            children: amenities.map((data) {
+            children: venueAmenities.map((data) {
               return SizedBox(
                 width: 60.w,
-                // Removed fixed constraints to let text wrap/grow naturally
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -229,26 +207,26 @@ class _FutsalDetailState extends State<FutsalDetail> {
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFF222D1E),
-                        borderRadius: BorderRadius.circular(8.r), // Added missing 'BorderRadius' prefix
+                        borderRadius: BorderRadius.circular(8.r), 
                       ),
                       height: 40.h,
                       width: 40.h,
                       child: Icon(
-                        data['icon'],
+                        getAmenityIcon(data.iconName),
                         color: white,
                         size: 18.sp,
                       ),
                     ),
-                    SizedBox(height: 8.h), // Changed .w to .h for vertical spacing consistency
+                    SizedBox(height: 8.h), 
                     Text(
-                      data['label'],
+                      data.label,
                       style: TextStyle(
                         color: white,
                         fontSize: 14.sp,
-                        height: 1.2, // Slightly increased height so letters like 'g' or 'y' aren't clipped
+                        height: 1.2,
                       ),
-                      textAlign: TextAlign.center, // Added missing 'TextAlign' prefix
-                      maxLines: 2, // Prevents a single long word from breaking the UI layout
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -301,7 +279,13 @@ class _FutsalDetailState extends State<FutsalDetail> {
               String dayNumber = DateFormat('d').format(date); // 10, 11
 
               return GestureDetector(
-                onTap: () => setState(() => selectedDate = date),
+                onTap: () {
+                  setState(() {
+                    selectedDate = date;
+                    selectedIndex = null;
+                  });
+                  playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+                },
                 child: Container(
                   width: 60.w,
                   height: 80.h,
@@ -343,115 +327,221 @@ class _FutsalDetailState extends State<FutsalDetail> {
 
   Widget availableSlots() {
     return Column(
-      crossAxisAlignment: .start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Available Slots',
           style: TextStyle(
             color: whiteTextColor,
             fontSize: 20.sp,
-            fontWeight: .w600,
+            fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: 16.h),
-        GridView.builder(
-          padding: .zero,
-          physics: const NeverScrollableScrollPhysics(), // Prevents nested scrolling if inside another scroll view
-          shrinkWrap: true, // Allows it to take only needed space instead of full screen
-          itemCount: slots.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,          // Forces exactly 2 containers per row
-            crossAxisSpacing: 12.w,     // Horizontal spacing between columns
-            mainAxisSpacing: 12.h,      // Vertical spacing between rows
-            mainAxisExtent: 106.h,       // Enforces a strict total height for each container item
-          ),
-          itemBuilder: (context, index) {
-            var data = slots[index];
-            bool isSelected = selectedIndex == index;
-            return InkWell(
-              onTap: () {
-                if (data['status'] == 'available') {
-                  setState(() {
-                    if (selectedIndex == index) {
-                      selectedIndex = null;
-                    } else {
-                      selectedIndex = index;
-                    }
-                  });
-                }
-              },
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isSelected 
-                          ? primaryColor
-                          : data['status'] == 'booked' 
-                            ? filledBgColor
-                            : data['status'] == 'pending'
-                              ? brownTextColor.withValues(alpha: 0.2)
-                              :lightFilledBgColor,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                child: Column(
-                  mainAxisAlignment: .center,
-                  crossAxisAlignment: .start,
-                  children: [
-                    Text(
-                      data['slot'],
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: .bold,
-                        color: selectedIndex == index ? black : subtitleTextColor
-                      ),
-                    ),
-                    Text(
-                      data['status'] == 'available' 
-                        ? "Rs. ${data['price']}"
-                        : "${data['status'][0].toUpperCase()}${data['status'].substring(1)}",
-                      style: TextStyle(
-                        color: selectedIndex == index 
-                                ? black 
-                                : data['status'] == 'available' 
-                                  ? primaryTextColor 
-                                  : data['status'] == 'pending'
-                                    ? brownTextColor
-                                    : subtitleTextColor, 
-                        fontSize: 20.sp,
-                        fontWeight: .w500
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      data['status'] == 'booked' 
-                        ? "Booked by ${data['booked_by']}"
-                        : data['status'] == 'pending' 
-                          ? "Awaiting confirmation"
-                          : "",
-                      style: TextStyle(
-                        color: selectedIndex == index 
-                                ? black 
-                                : data['status'] == 'available' 
-                                  ? primaryTextColor 
-                                  : data['status'] == 'pending'
-                                    ? brownTextColor
-                                    : subtitleTextColor, 
-                        fontSize: 11.sp,
-                        fontWeight: .w500,
-                        height: 1.2
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+        Obx(() {
+          // 1. Show Loading State
+          if (playerCon.isLoadingDetails.value) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.h),
+                child: CircularProgressIndicator(color: primaryColor),
+              )
+            );
+          }
+
+          // 2. Check if Closed
+          if (playerCon.todayHours.value != null && playerCon.todayHours.value!['is_closed'] == true) {
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(24.h),
+              decoration: BoxDecoration(
+                color: filledBgColor,
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Center(
+                child: Text(
+                  "Venue is closed on this day.",
+                  style: TextStyle(color: Colors.redAccent, fontSize: 16.sp, fontWeight: FontWeight.bold),
                 ),
               ),
             );
-          },
-        )
+          }
+
+          // 3. Handle Empty Slots
+          if (playerCon.availableSlots.isEmpty) {
+            return Center(
+              child: Text("No slots available.", style: TextStyle(color: subtitleTextColor, fontSize: 14.sp))
+            );
+          }
+
+          // 4. Show the Grid
+          return GridView.builder(
+            padding: EdgeInsets.zero,
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
+            itemCount: playerCon.availableSlots.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12.w,
+              mainAxisSpacing: 12.h,
+              mainAxisExtent: 106.h,
+            ),
+            itemBuilder: (context, index) {
+              var data = playerCon.availableSlots[index]; // Use the controller's reactive list
+              bool isSelected = selectedIndex == index;
+              
+              return InkWell(
+                onTap: () {
+                  if (data['status'] == 'available') {
+                    setState(() {
+                      if (selectedIndex == index) {
+                        selectedIndex = null;
+                      } else {
+                        selectedIndex = index;
+                      }
+                    });
+                  }
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                            ? primaryColor
+                            : data['status'] == 'booked' 
+                              ? filledBgColor
+                              : data['status'] == 'pending'
+                                ? Colors.brown.withValues(alpha: 0.2) // Replace with your brown color
+                                : const Color(0xFF222D1E), // Your lightFilledBgColor
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data['slot'],
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                          color: selectedIndex == index ? Colors.black : subtitleTextColor
+                        ),
+                      ),
+                      Text(
+                        data['status'] == 'available' 
+                          ? "Rs. ${data['price'].toInt()}"
+                          : "${data['status'][0].toUpperCase()}${data['status'].substring(1)}",
+                        style: TextStyle(
+                          color: selectedIndex == index 
+                                  ? Colors.black 
+                                  : data['status'] == 'available' 
+                                    ? primaryColor // primaryTextColor
+                                    : data['status'] == 'pending'
+                                      ? Colors.brown
+                                      : subtitleTextColor, 
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w500
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        data['status'] == 'booked' 
+                          ? "Booked by ${data['booked_by']}"
+                          : data['status'] == 'pending' 
+                            ? "Awaiting confirmation"
+                            : "",
+                        style: TextStyle(
+                          color: selectedIndex == index 
+                                  ? Colors.black 
+                                  : subtitleTextColor, 
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w500,
+                          height: 1.2
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        })
       ],
     );
+  }
+
+  Widget selectGround() {
+    return Obx(() {
+      if (playerCon.grounds.isEmpty) return const SizedBox();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Select Ground',
+            style: TextStyle(
+              color: whiteTextColor, // Assuming this is defined in your styles
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: playerCon.grounds.map((ground) {
+                bool isSelected = playerCon.selectedGroundId.value == ground['id'];
+                
+                return GestureDetector(
+                  onTap: () {
+                    // Update the selected ground ID
+                    playerCon.selectedGroundId.value = ground['id'];
+                    // Regenerate the slots specifically for this ground
+                    playerCon.generateSlotsForSelectedGround(selectedDate, widget.data);
+                    // Clear user selection
+                    setState(() => selectedIndex = null); 
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(right: 12.w),
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                    decoration: BoxDecoration(
+                      color: isSelected ? primaryColor : filledBgColor, // Assuming filledBgColor is defined
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isSelected ? primaryColor : subtitleTextColor.withValues(alpha: 0.3),
+                      )
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          ground['ground_name'] ?? 'Ground',
+                          style: TextStyle(
+                            color: isSelected ? Colors.black : whiteTextColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                        if (ground['format'] != null)
+                          Text(
+                            ground['format'], // e.g. '5-A-Side'
+                            style: TextStyle(
+                              color: isSelected ? Colors.black87 : subtitleTextColor,
+                              fontSize: 12.sp,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      );
+    });
   }
 
   Widget dynamicPricing() {
@@ -502,14 +592,15 @@ class _FutsalDetailState extends State<FutsalDetail> {
             mainAxisAlignment: .spaceBetween,
             children: [
               Text(
-                'Off-Peak (06:00 - 15:00)',
+                'Off-Peak Hour',
+                // 'Off-Peak (06:00 - 15:00)',
                 style: TextStyle(
                   color: subtitleTextColor,
                   fontSize: 14.sp
                 ),
               ),
               Text(
-                'Rs. 800',
+                'Rs. ${widget.data.basePrice.toInt()}',
                 style: TextStyle(
                   color: primaryTextColor,
                   fontSize: 16.sp
@@ -522,14 +613,14 @@ class _FutsalDetailState extends State<FutsalDetail> {
             mainAxisAlignment: .spaceBetween,
             children: [
               Text(
-                'Peak Hour (16:00 - 21:00)',
+                'Peak Hour (${widget.data.peakStartTime.substring(0, 5)} - ${widget.data.peakEndTime.substring(0, 5)})',
                 style: TextStyle(
                   color: subtitleTextColor,
                   fontSize: 14.sp
                 ),
               ),
               Text(
-                'Rs. 1200',
+                'Rs. ${widget.data.peakRate.toInt()}',
                 style: TextStyle(
                   color: primaryTextColor,
                   fontSize: 16.sp
@@ -544,14 +635,14 @@ class _FutsalDetailState extends State<FutsalDetail> {
 
   Widget totalPriceWidget() {
     return selectedIndex == null 
-      ? SizedBox()
+      ? const SizedBox()
       : Container(
         color: filledBgColor,
-        padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 12.w),
         child: Row(
           children: [
             Column(
-              crossAxisAlignment: .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'TOTAL PRICE',
@@ -561,29 +652,45 @@ class _FutsalDetailState extends State<FutsalDetail> {
                   ),
                 ),
                 Text(
-                  "Rs. ${slots[selectedIndex!]['price']}",
+                  // Grab the price from the controller based on selected index
+                  "Rs. ${playerCon.availableSlots[selectedIndex!]['price'].toInt()}",
                   style: TextStyle(
                     color: whiteTextColor,
                     fontSize: 20.sp,
-                    fontWeight: .w600
+                    fontWeight: FontWeight.w600
                   ),
                 ),
               ],
             ),
-            Spacer(),
+            const Spacer(),
             CustomUsualButton(
               text: 'Book Now', 
               width: 200.w,
               height: 56.h,
               style: TextStyle(
-                color: black,
-                fontWeight: .bold,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
                 fontSize: 20.sp
               ),
               onPressed: () {
+                // 1. Get the selected slot data from the controller
+                var slotData = playerCon.availableSlots[selectedIndex!];
+                
+                // 2. Find the selected ground from the controller's ground list
+                var groundData = playerCon.grounds.firstWhere(
+                  (g) => g['id'] == playerCon.selectedGroundId.value,
+                  orElse: () => {'id': '', 'ground_name': 'Unknown Ground'} 
+                );
+
+                // 3. Open the sheet with the dynamic data
                 Get.bottomSheet(
-                  PlayerBookingConfirm(),
-                  isScrollControlled: true, // Allows sheet to expand if needed
+                  PlayerBookingConfirm(
+                    venueData: widget.data,
+                    selectedDate: selectedDate,
+                    selectedSlot: slotData,
+                    selectedGround: groundData,
+                  ),
+                  isScrollControlled: true, 
                   ignoreSafeArea: false,
                 );
               }
