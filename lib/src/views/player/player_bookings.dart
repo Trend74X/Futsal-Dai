@@ -6,6 +6,7 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/player/match_attendance.dart';
 import 'package:futsal_dai/src/views/player/player_team_shuffler.dart';
+import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
@@ -262,7 +263,15 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                       Row(
                         children: [
                           InkWell(
-                            onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
+                            // onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
+                            onTap: () => Get.to(() => CustomMapScreen(
+                              initialLat: 27.6743885773776,
+                              initialLng: 85.321441768245,
+                              showCurrentLocation: true,
+                              showDirection: true,
+                              enableSearch: true,
+                              isFullScreenView: true,
+                            )),
                             child: Container(
                               decoration: BoxDecoration(
                                 border: .all(

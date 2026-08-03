@@ -190,7 +190,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                 itemBuilder: (context, index) {
                   var data = _con.nearbyVenues[index];
                   return InkWell(
-                    onTap: () => Get.to(() => FutsalDetail()),
+                    onTap: () => Get.to(() => FutsalDetail(data: data)),
                     child: SizedBox(
                       width: 290.w,
                       child: Column(
@@ -218,12 +218,14 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                             ),
                             overflow: .ellipsis,
                           ),
-                          Text(
-                            '${data.distanceKm} km - ${data.address}',
-                            style: TextStyle(
-                              color: whiteTextColor,
-                              fontSize: 14.sp,
-                              fontWeight: .normal
+                          Expanded(
+                            child: Text(
+                              '${data.distanceKm} km - ${data.address}',
+                              style: TextStyle(
+                                color: whiteTextColor,
+                                fontSize: 14.sp,
+                                fontWeight: .normal
+                              ),
                             ),
                           ),
                         ],

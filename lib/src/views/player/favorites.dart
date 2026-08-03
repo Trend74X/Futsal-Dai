@@ -96,7 +96,7 @@ class _FavoritePageState extends State<FavoritePage> {
 
   Widget futsalCards(BuildContext context, dynamic data) {
     return InkWell(
-      onTap: () => Get.to(() => FutsalDetail()),
+      onTap: () => Get.to(() => FutsalDetail(data: data)),
       child: Container(
         decoration: BoxDecoration(
           color: filledBlueColor.withValues(alpha: 0.9),
