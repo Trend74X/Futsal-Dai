@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/owner/owner_pending_all.dart';
@@ -8,13 +9,26 @@ import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 
 class OwnerDashboard extends StatefulWidget {
-  const OwnerDashboard({super.key});
+  final int venueId;
+
+  const OwnerDashboard({super.key, required this.venueId});
 
   @override
   State<OwnerDashboard> createState() => _OwnerDashboardState();
 }
 
 class _OwnerDashboardState extends State<OwnerDashboard> {
+  final OwnerController ownerCon = Get.put(OwnerController());
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch the pending bookings right after the first frame renders
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ownerCon.fetchPendingBookings(widget.venueId);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,25 +106,27 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               style: semiBoldStyle(whiteTextColor, 20.sp),
             ),
             SizedBox(width: 8.w),
-            Container(
+            Obx(() => Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF93000A),
                 borderRadius: BorderRadius.circular(24.r),
               ),
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: Text(
-                '3 NEW',
+                '${ownerCon.pendingBookings.length} NEW', // Dynamically count pending items
                 style: boldStyle(whiteTextColor, 10.sp),
               ),
-            ),
+            )),
             const Spacer(),
-            InkWell(
-              onTap: () => Get.to(() => OwnerPendingAll()),
-              child: Text(
-                'SEE ALL',
-                style: boldStyle(primaryColor, 12.sp),
+            ownerCon.pendingBookings.isEmpty
+              ? SizedBox()
+              : InkWell(
+                onTap: () => Get.to(() => OwnerPendingAll()),
+                child: Text(
+                  'SEE ALL',
+                  style: boldStyle(primaryColor, 12.sp),
+                ),
               ),
-            ),
           ],
         ),
         SizedBox(height: 16.h),
@@ -118,21 +134,49 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
         // Horizontal List View container height adjusted to safely fit contents
         SizedBox(
           height: 210.h, 
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: 3,
-            scrollDirection: Axis.horizontal,
-            separatorBuilder: (ctx, idx) => SizedBox(width: 12.w),
-            itemBuilder: (context, index) {
-              return pendingQueCard();
-            },
-          ),
+          child: Obx(() {
+            if (ownerCon.isLoadingPending.value) {
+              return const Center(child: CircularProgressIndicator(color: primaryColor));
+            }
+
+            if (ownerCon.pendingBookings.isEmpty) {
+              return Center(
+                child: Text(
+                  'No pending bookings right now.',
+                  style: semiBoldStyle(Colors.grey, 14.sp),
+                )
+              );
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              itemCount: ownerCon.pendingBookings.length,
+              scrollDirection: Axis.horizontal,
+              separatorBuilder: (ctx, idx) => SizedBox(width: 12.w),
+              itemBuilder: (context, index) {
+                final bookingData = ownerCon.pendingBookings[index];
+                return pendingQueCard(bookingData);
+              },
+            );
+
+          })
         ),
       ],
     );
   }
 
-  Widget pendingQueCard() {
+  Widget pendingQueCard(Map<String, dynamic> data) {
+    // Extract data (adjust the keys based on your actual Supabase query result)
+    // Assuming the user data was joined via a 'profiles' table
+    final String userName = data['Users']?['full_name'] ?? 'Unknown User';
+    final String phone = data['Users']?['phone_number'] ?? 'N/A';
+    final String date = data['booking_date'] ?? '';
+    final String startTime = data['start_time']?.substring(0, 5) ?? ''; // '19:00:00' -> '19:00'
+    final String endTime = data['end_time']?.substring(0, 5) ?? '';
+    
+    // Just grabbing the first letter for the avatar
+    final String initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+
     return Container(
       width: 280.w,
       decoration: BoxDecoration(
@@ -144,36 +188,37 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            crossAxisAlignment: .start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 height: 40.h,
                 width: 40.w,
                 decoration: const BoxDecoration(
-                  shape: .circle,
+                  shape: BoxShape.circle,
                   color: Color(0xFF3F465C),
                 ),
                 child: Center(
                   child: Text(
-                    'A',
-                    style: boldStyle(Color(0xFFADB4CE), 20.sp),
+                    initial,
+                    style: boldStyle(const Color(0xFFADB4CE), 20.sp),
                   ),
                 )
               ),
               SizedBox(width: 8.w),
               
-              // Pushes call icon to the far right
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ashok Shakya',
+                      userName,
                       style: semiBoldStyle(whiteTextColor, 20.sp).copyWith(height: 1.0),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      '9876543210',
+                      phone,
                       style: semiBoldStyle(whiteTextColor, 14.sp),
                     ),
                   ],
@@ -182,7 +227,9 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               SizedBox(width: 8.w),
               
               InkWell(
-                onTap: () => makePhoneCall('9876543210'),
+                onTap: () {
+                  if (phone != 'N/A') makePhoneCall(phone);
+                },
                 child: Container(
                   height: 40.h,
                   width: 40.w,
@@ -197,7 +244,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
           ),
           SizedBox(height: 16.h),
           
-          // TODAY Banner (stretches to card full width automatically now)
           Container(
             height: 32.h,
             decoration: BoxDecoration(
@@ -207,10 +253,10 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
             padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 8.w),
             child: Row(
               children: [
-                Icon(Icons.access_time, color: primaryColor),
+                Icon(Icons.access_time, color: primaryColor, size: 16.sp),
                 SizedBox(width: 8.w),
                 Text(
-                  'TODAY | 19:00 - 20:00',
+                  '$date | $startTime - $endTime',
                   style: boldStyle(whiteTextColor, 12.sp),
                 ),
               ],
@@ -218,14 +264,14 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
           ),
           SizedBox(height: 16.h),
           
-          // Action Buttons (Using Expanded so they fit cleanly inside 280.w width)
           Expanded(
             child: Row(
               children: [
                 Expanded(
                   child: CustomUsualButton(
                     text: 'APPROVE', 
-                    onPressed: () {},
+                    // Trigger the approve function with this specific booking's ID
+                    onPressed: () => ownerCon.updateBookingStatus(data['id'].toString(), 'booked'),
                     fontWeight: FontWeight.bold,
                     fontSize: 14.sp,
                     height: 42.h,
@@ -235,7 +281,8 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                 Expanded(
                   child: CustomUsualButton(
                     text: 'REJECT', 
-                    onPressed: () {},
+                    // Trigger the reject function
+                    onPressed: () => ownerCon.updateBookingStatus(data['id'].toString(), 'rejected'),
                     bgColor: Colors.transparent,
                     fontSize: 14.sp,
                     fontColor: whiteTextColor,

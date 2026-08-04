@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/owner/owner_dashboard.dart';
 import 'package:futsal_dai/src/views/owner/owner_profile.dart';
@@ -18,7 +19,7 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    OwnerDashboard(),
+    OwnerDashboard(venueId: read('venueId')),
     OwnerSchedulePage(),
     OwnerReports(),
     OwnerProfilePage()

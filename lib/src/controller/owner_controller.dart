@@ -8,6 +8,10 @@ class OwnerController extends GetxController {
   final supabase = Supabase.instance.client; 
   RxBool isLoadingData = false.obs;
 
+  // Observable list to store pending bookings
+  RxList<Map<String, dynamic>> pendingBookings = <Map<String, dynamic>>[].obs;
+  RxBool isLoadingPending = false.obs;
+
   Future<void> saveVenueAndPitches({
     required Map<String, dynamic> futsalVenues, 
     required List<Map<String, dynamic>> futsalGround,
@@ -188,6 +192,49 @@ class OwnerController extends GetxController {
       return null;
     } finally {
       isLoadingData.value = false;
+    }
+  }
+
+  // Fetch Pending Bookings
+  Future<void> fetchPendingBookings(int venueId) async {
+    isLoadingPending.value = true;
+    try {
+      final response = await supabase
+          .from('bookings')
+          .select('*, Users(full_name, phone_number)') // Assuming you have a profiles table joined for user details
+          .eq('venue_id', venueId)
+          .eq('status', 'pending')
+          .eq('is_deleted', false)
+          .order('created_at', ascending: false);
+
+      pendingBookings.assignAll(List<Map<String, dynamic>>.from(response));
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch pending bookings: $e');
+    } finally {
+      isLoadingPending.value = false;
+    }
+  }
+
+  // Helper method to update DB and UI
+  Future<void> updateBookingStatus(String bookingId, String newStatus) async {
+    try {
+      // 1. Update Supabase
+      await supabase
+          .from('bookings')
+          .update({'status': newStatus})
+          .eq('id', bookingId);
+
+      // 2. Remove the booking from the local UI list immediately so it disappears from the queue
+      pendingBookings.removeWhere((booking) => booking['id'] == bookingId);
+
+      Get.snackbar(
+        'Success', 
+        'Booking $newStatus successfully',
+        backgroundColor: newStatus == 'booked' ? const Color(0xFF3C4B35) : const Color(0xFF93000A),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update booking: $e');
     }
   }
 

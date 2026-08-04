@@ -198,8 +198,20 @@ class AuthController extends GetxController {
         if(profile!.role == 'player') {
           Get.offAll(() => PlayerBottomsheet());
         } else {
+          getVenueId();
           Get.offAll(() => OwnerBottomsheet());
         }
+      }
+    } catch (e) {
+      log(e.toString());
+    }
+  }
+
+  Future getVenueId() async {
+    try {
+      final data = await supabase.from('futsal_venues').select().eq('owner_id', read('userId')).maybeSingle();
+      if (data != null) {
+        write('venueId', data['id']);
       }
     } catch (e) {
       log(e.toString());
