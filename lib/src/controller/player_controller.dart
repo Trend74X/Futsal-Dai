@@ -8,11 +8,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PlayerController extends GetxController {
   final supabase = Supabase.instance.client; 
+  RxBool isBooking = false.obs;
   
   RxBool isLoadingNearByData = false.obs;
   RxList nearbyVenues = [].obs;
 
-  // --- NEW VARIABLES FOR VENUE DETAILS ---
+  // --- VENUE DETAILS VARIABLES ---
   RxBool isLoadingDetails = false.obs;
   Rx<Map<String, dynamic>?> todayHours = Rx<Map<String, dynamic>?>(null);
   RxList<dynamic> grounds = <dynamic>[].obs;
@@ -21,7 +22,7 @@ class PlayerController extends GetxController {
   // The dynamically generated slots will be stored here for the UI to consume
   RxList<Map<String, dynamic>> availableSlots = <Map<String, dynamic>>[].obs;
 
-  // Track the currently selected ground to filter slots
+  // Track the currently selected ground to filter slots (Using RxnInt for Supabase int8 IDs)
   RxnString selectedGroundId = RxnString(null);
 
   Future<void> loadNearbyVenues() async {
@@ -48,22 +49,18 @@ class PlayerController extends GetxController {
     }
   }
 
-  // --- NEW METHOD TO FETCH DAILY DATA ---
+  // --- FETCH DAILY DATA ---
   Future<void> fetchDailyVenueData(int venueId, DateTime selectedDate, dynamic venueData) async {
     isLoadingDetails.value = true;
     
-    // Reset data
-    todayHours.value = null;
-    grounds.clear();
-    dailyBookings.clear();
-    availableSlots.clear();
-    selectedGroundId.value = null; 
+    // Remember the currently selected ground
+    String? previousSelectedGroundId = selectedGroundId.value;
 
     try {
-      final dayOfWeek = selectedDate.weekday; // 1 = Mon, 7 = Sun
+      final dayOfWeek = selectedDate.weekday; 
       final dateString = DateFormat('yyyy-MM-dd').format(selectedDate);
 
-      // Run all three queries concurrently
+      // Run queries concurrently
       final responses = await Future.wait(<Future<dynamic>>[
         supabase
             .from('operating_hours')
@@ -79,20 +76,31 @@ class PlayerController extends GetxController {
             .eq('is_available', true),
 
         supabase
-            .from('bookings') // Note: Make sure this matches your actual bookings table name
+            .from('bookings')
             .select()
             .eq('venue_id', venueId)
             .eq('booking_date', dateString)
+            .eq('is_deleted', false)
       ]);
 
       todayHours.value = responses[0] as Map<String, dynamic>?;
       grounds.assignAll(responses[1] as List<dynamic>);
       dailyBookings.assignAll(responses[2] as List<dynamic>);
       
-      // Auto-select the first ground if available
+      // Intelligent Ground Selection
       if (grounds.isNotEmpty) {
-        selectedGroundId.value = grounds.first['id'];
+        bool groundExists = grounds.any((ground) => ground['id'] == previousSelectedGroundId);
+
+        if (groundExists) {
+          selectedGroundId.value = previousSelectedGroundId;
+        } else {
+          selectedGroundId.value = grounds.first['id'];
+        }
+        
         generateSlotsForSelectedGround(selectedDate, venueData);
+      } else {
+        selectedGroundId.value = null;
+        availableSlots.clear();
       }
 
     } catch (e) {
@@ -133,7 +141,6 @@ class PlayerController extends GetxController {
     ));
   }
 
-  // The pure logic function to create the time blocks
   List<Map<String, dynamic>> _generateAvailableSlots({
     required DateTime selectedDate,
     required String openingTimeStr, 
@@ -182,8 +189,7 @@ class PlayerController extends GetxController {
       String bookedBy = '';
       
       for (var booking in existingBookings) {
-        // Adjust 'start_time' based on your actual booking table schema
-        if (booking['start_time'] == DateFormat('HH:mm:ss').format(currentSlotTime)) {
+        if (booking['start_time'] == DateFormat('HH:mm:ss').format(currentSlotTime) && booking['status'] != 'cancelled') {
           status = booking['status']; 
           bookedBy = booking['user_name'] ?? 'Someone';
           break;
@@ -202,6 +208,56 @@ class PlayerController extends GetxController {
       currentSlotTime = nextSlotTime;
     }
     return generatedSlots;
+  }
+
+  Future<void> requestBooking({
+    required dynamic venueId,
+    required String groundId,
+    required DateTime bookingDate,
+    required DateTime startTime,
+    required DateTime endTime,
+    required num totalPrice,
+  }) async {
+    isBooking.value = true;
+
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      
+      if (userId == null) {
+        throw Exception('User is not logged in.');
+      }
+
+      await Supabase.instance.client.from('bookings').insert({
+        'is_deleted': false,
+        'venue_id': venueId,
+        'ground_id': groundId,
+        'user_id': userId,
+        'booking_date': DateFormat('yyyy-MM-dd').format(bookingDate),
+        'start_time': DateFormat('HH:mm:ss').format(startTime),
+        'end_time': DateFormat('HH:mm:ss').format(endTime),
+        'total_price': totalPrice,
+        'status': 'pending',
+        'booking_type': 'app_booking',
+      });
+
+      Get.back(); 
+      Get.snackbar(
+        'Request Sent', 
+        'Your booking request has been sent to the owner.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+      
+    } catch (e) {
+      Get.snackbar(
+        'Error', 
+        'Failed to request booking: $e', 
+        backgroundColor: Colors.red, 
+        colorText: Colors.white,
+      );
+    } finally {
+      isBooking.value = false;
+    }
   }
 
   TimeOfDay _parseTime(String time) {

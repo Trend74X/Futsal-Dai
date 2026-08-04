@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -24,39 +25,23 @@ class PlayerBookingConfirm extends StatefulWidget {
 }
 
 class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
+  final PlayerController _con = Get.put(PlayerController());
+  
   bool isBooking = false;
 
-  // --- MOCK BOOKING FUNCTION ---
-  // You will move this to your PlayerController or execute your Supabase insert here
   Future<void> confirmBookingRequest() async {
     setState(() => isBooking = true);
     
     try {
-      // Example Supabase insertion logic:
-      /*
-      await Supabase.instance.client.from('bookings').insert({
-        'venue_id': widget.venueData.id,
-        'ground_id': widget.selectedGround['id'],
-        'user_id': Supabase.instance.client.auth.currentUser?.id,
-        'booking_date': DateFormat('yyyy-MM-dd').format(widget.selectedDate),
-        'start_time': DateFormat('HH:mm:ss').format(widget.selectedSlot['slot_start']),
-        'end_time': DateFormat('HH:mm:ss').format(widget.selectedSlot['slot_end']),
-        'total_price': widget.selectedSlot['price'],
-        'status': 'pending', // Pending owner verification
-      });
-      */
-
-      // Simulating network delay
-      await Future.delayed(const Duration(seconds: 2));
-
-      Get.back(); // Close bottom sheet
-      Get.snackbar(
-        'Request Sent', 
-        'Your booking request has been sent to the owner.',
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
+      _con.requestBooking(
+        venueId: widget.venueData.id,
+        groundId: widget.selectedGround['id'],
+        bookingDate: widget.selectedDate,
+        startTime: widget.selectedSlot['slot_start'],
+        endTime: widget.selectedSlot['slot_end'],
+        totalPrice: widget.selectedSlot['price'],
       );
-      
+      Get.back(); // Close bottom sheet
     } catch (e) {
       Get.snackbar('Error', 'Failed to request booking.', backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
