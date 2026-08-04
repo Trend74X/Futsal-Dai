@@ -40,6 +40,7 @@ class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
         startTime: widget.selectedSlot['slot_start'],
         endTime: widget.selectedSlot['slot_end'],
         totalPrice: widget.selectedSlot['price'],
+        groundName: widget.selectedGround['ground_name']
       );
       Get.back(); // Close bottom sheet
     } catch (e) {

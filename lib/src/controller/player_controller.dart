@@ -213,6 +213,7 @@ class PlayerController extends GetxController {
   Future<void> requestBooking({
     required dynamic venueId,
     required String groundId,
+    required String groundName,
     required DateTime bookingDate,
     required DateTime startTime,
     required DateTime endTime,
@@ -238,9 +239,9 @@ class PlayerController extends GetxController {
         'total_price': totalPrice,
         'status': 'pending',
         'booking_type': 'app_booking',
+        'ground_name': groundName
       });
 
-      Get.back(); 
       Get.snackbar(
         'Request Sent', 
         'Your booking request has been sent to the owner.',

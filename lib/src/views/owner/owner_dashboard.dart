@@ -6,6 +6,7 @@ import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/owner/owner_pending_all.dart';
 import 'package:futsal_dai/src/views/owner/owner_slot_entry.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 
 class OwnerDashboard extends StatefulWidget {
@@ -113,20 +114,24 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               ),
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
               child: Text(
-                '${ownerCon.pendingBookings.length} NEW', // Dynamically count pending items
+                ownerCon.pendingBookings.length > 5 
+                  ? '5+ NEW' 
+                  : '${ownerCon.pendingBookings.length} NEW',
                 style: boldStyle(whiteTextColor, 10.sp),
               ),
             )),
             const Spacer(),
-            ownerCon.pendingBookings.isEmpty
-              ? SizedBox()
-              : InkWell(
-                onTap: () => Get.to(() => OwnerPendingAll()),
-                child: Text(
-                  'SEE ALL',
-                  style: boldStyle(primaryColor, 12.sp),
+            Obx(() =>
+              ownerCon.pendingBookings.isEmpty
+                ? SizedBox()
+                : InkWell(
+                  onTap: () => Get.to(() => OwnerPendingAll()),
+                  child: Text(
+                    'SEE ALL',
+                    style: boldStyle(primaryColor, 12.sp),
+                  ),
                 ),
-              ),
+            )
           ],
         ),
         SizedBox(height: 16.h),
@@ -150,7 +155,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
             return ListView.separated(
               shrinkWrap: true,
-              itemCount: ownerCon.pendingBookings.length,
+              itemCount: ownerCon.pendingBookings.length > 5 ? 5 : ownerCon.pendingBookings.length,
               scrollDirection: Axis.horizontal,
               separatorBuilder: (ctx, idx) => SizedBox(width: 12.w),
               itemBuilder: (context, index) {
@@ -166,14 +171,12 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   }
 
   Widget pendingQueCard(Map<String, dynamic> data) {
-    // Extract data (adjust the keys based on your actual Supabase query result)
-    // Assuming the user data was joined via a 'profiles' table
     final String userName = data['Users']?['full_name'] ?? 'Unknown User';
+    final String profilePic = data['Users']?['profile_pic'] ?? '';
     final String phone = data['Users']?['phone_number'] ?? 'N/A';
     final String date = data['booking_date'] ?? '';
     final String startTime = data['start_time']?.substring(0, 5) ?? ''; // '19:00:00' -> '19:00'
     final String endTime = data['end_time']?.substring(0, 5) ?? '';
-    
     // Just grabbing the first letter for the avatar
     final String initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
@@ -197,12 +200,19 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                   shape: BoxShape.circle,
                   color: Color(0xFF3F465C),
                 ),
-                child: Center(
-                  child: Text(
-                    initial,
-                    style: boldStyle(const Color(0xFFADB4CE), 20.sp),
-                  ),
-                )
+                child: profilePic == ''
+                  ? Center(
+                    child: Text(
+                      initial,
+                      style: boldStyle(const Color(0xFFADB4CE), 20.sp),
+                    ),
+                  )
+                  : ClipOval(
+                    child: DisplayNetworkImage(
+                      imageUrl: profilePic,
+                      boxFit: .cover,
+                    ),
+                  )
               ),
               SizedBox(width: 8.w),
               

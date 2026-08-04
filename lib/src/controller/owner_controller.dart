@@ -201,7 +201,7 @@ class OwnerController extends GetxController {
     try {
       final response = await supabase
           .from('bookings')
-          .select('*, Users(full_name, phone_number)') // Assuming you have a profiles table joined for user details
+          .select('*, Users(full_name, phone_number, profile_pic)') // Assuming you have a profiles table joined for user details
           .eq('venue_id', venueId)
           .eq('status', 'pending')
           .eq('is_deleted', false)
