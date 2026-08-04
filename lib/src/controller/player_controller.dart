@@ -228,19 +228,55 @@ class PlayerController extends GetxController {
         throw Exception('User is not logged in.');
       }
 
-      await Supabase.instance.client.from('bookings').insert({
+      // Pre-format the dates for both the check and the payload
+      final formattedDate = DateFormat('yyyy-MM-dd').format(bookingDate);
+      final formattedStartTime = DateFormat('HH:mm:ss').format(startTime);
+      final formattedEndTime = DateFormat('HH:mm:ss').format(endTime);
+
+      final payload = {
         'is_deleted': false,
         'venue_id': venueId,
         'ground_id': groundId,
         'user_id': userId,
-        'booking_date': DateFormat('yyyy-MM-dd').format(bookingDate),
-        'start_time': DateFormat('HH:mm:ss').format(startTime),
-        'end_time': DateFormat('HH:mm:ss').format(endTime),
+        'booking_date': formattedDate,
+        'start_time': formattedStartTime,
+        'end_time': formattedEndTime,
         'total_price': totalPrice,
         'status': 'pending',
         'booking_type': 'app_booking',
         'ground_name': groundName
-      });
+      };
+
+      // 1. Check if a booking already exists for this exact slot
+      final existingBooking = await Supabase.instance.client
+          .from('bookings')
+          .select('id')
+          .eq('venue_id', venueId)
+          .eq('ground_id', groundId)
+          .eq('booking_date', formattedDate)
+          .eq('start_time', formattedStartTime)
+          .maybeSingle(); // Returns null if no record is found
+
+      if (existingBooking != null) {
+        // 2. UPDATE if it exists
+        await Supabase.instance.client
+            .from('bookings')
+            .update(payload)
+            .eq('id', existingBooking['id']);
+      } else {
+        // 3. INSERT if it does not exist
+        await Supabase.instance.client
+            .from('bookings')
+            .insert(payload);
+      }
+
+      // --- NEW: UI REFRESH LOGIC ---
+      // Find the slot in your observable list and update its status locally
+      final slotIndex = availableSlots.indexWhere((slot) => slot['slot_start'] == startTime);
+      if (slotIndex != -1) {
+        availableSlots[slotIndex]['status'] = 'pending';
+        availableSlots.refresh(); // Tells GetX to redraw the grid immediately
+      }
 
       Get.snackbar(
         'Request Sent', 

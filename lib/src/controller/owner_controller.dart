@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OwnerController extends GetxController {
@@ -199,13 +200,16 @@ class OwnerController extends GetxController {
   Future<void> fetchPendingBookings(int venueId) async {
     isLoadingPending.value = true;
     try {
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final response = await supabase
           .from('bookings')
-          .select('*, Users(full_name, phone_number, profile_pic)') // Assuming you have a profiles table joined for user details
+          .select('*, Users(full_name, phone_number, profile_pic)')
           .eq('venue_id', venueId)
           .eq('status', 'pending')
           .eq('is_deleted', false)
-          .order('created_at', ascending: false);
+          .gte('booking_date', todayStr)
+          .order('booking_date', ascending: true)
+          .order('start_time', ascending: true);
 
       pendingBookings.assignAll(List<Map<String, dynamic>>.from(response));
     } catch (e) {

@@ -339,7 +339,6 @@ class _FutsalDetailState extends State<FutsalDetail> {
         ),
         SizedBox(height: 16.h),
         Obx(() {
-          // 1. Show Loading State
           if (playerCon.isLoadingDetails.value) {
             return Center(
               child: Padding(
@@ -349,7 +348,6 @@ class _FutsalDetailState extends State<FutsalDetail> {
             );
           }
 
-          // 2. Check if Closed
           if (playerCon.todayHours.value != null && playerCon.todayHours.value!['is_closed'] == true) {
             return Container(
               width: double.infinity,
@@ -367,14 +365,12 @@ class _FutsalDetailState extends State<FutsalDetail> {
             );
           }
 
-          // 3. Handle Empty Slots
           if (playerCon.availableSlots.isEmpty) {
             return Center(
               child: Text("No slots available.", style: TextStyle(color: subtitleTextColor, fontSize: 14.sp))
             );
           }
 
-          // 4. Show the Grid
           return GridView.builder(
             padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
@@ -392,7 +388,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
               
               return InkWell(
                 onTap: () {
-                  if (data['status'] == 'available') {
+                  if (data['status'] == 'available' || data['status'] == 'rejected') {
                     setState(() {
                       if (selectedIndex == index) {
                         selectedIndex = null;
@@ -427,13 +423,13 @@ class _FutsalDetailState extends State<FutsalDetail> {
                         ),
                       ),
                       Text(
-                        data['status'] == 'available' 
+                        data['status'] == 'available' || data['status'] == 'rejected'
                           ? "Rs. ${data['price'].toInt()}"
                           : "${data['status'][0].toUpperCase()}${data['status'].substring(1)}",
                         style: TextStyle(
                           color: selectedIndex == index 
                                   ? Colors.black 
-                                  : data['status'] == 'available' 
+                                  : data['status'] == 'available' || data['status'] == 'rejected'
                                     ? primaryColor // primaryTextColor
                                     : data['status'] == 'pending'
                                       ? Colors.brown
@@ -497,11 +493,8 @@ class _FutsalDetailState extends State<FutsalDetail> {
                 
                 return GestureDetector(
                   onTap: () {
-                    // Update the selected ground ID
                     playerCon.selectedGroundId.value = ground['id'];
-                    // Regenerate the slots specifically for this ground
                     playerCon.generateSlotsForSelectedGround(selectedDate, widget.data);
-                    // Clear user selection
                     setState(() => selectedIndex = null); 
                   },
                   child: Container(
