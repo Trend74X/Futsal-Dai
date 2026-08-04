@@ -29,8 +29,10 @@ class _FutsalDetailState extends State<FutsalDetail> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+      isFav = await playerCon.checkFavoriteStatus(widget.data.id);
+      setState(() { });
     });
   }
 
@@ -110,7 +112,11 @@ class _FutsalDetailState extends State<FutsalDetail> {
                           shape: .circle
                         ),
                         child: IconButton(
-                          onPressed: () => setState(() => isFav = !isFav),
+                          onPressed: () async {
+                            setState(() => isFav = !isFav);
+                            bool success = await playerCon.toggleFavorite(widget.data.id, isFav);
+                            if(!success) setState(() => isFav = !isFav);
+                          },
                           icon: Icon(
                             Icons.favorite,
                             color: isFav ? primaryColor : white,

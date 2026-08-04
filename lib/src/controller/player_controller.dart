@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/model/futsal_venue_model.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -41,7 +42,6 @@ class PlayerController extends GetxController {
       nearbyVenues.value = (response as List)
         .map((item) => FutsalVenueModel.fromJson(item as Map<String, dynamic>))
         .toList();
-      log(nearbyVenues.toString());
       isLoadingNearByData(false);
     } catch (e) {
       isLoadingNearByData(false);
@@ -301,4 +301,45 @@ class PlayerController extends GetxController {
     final parts = time.split(':');
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
+
+  /// Favotites
+
+  Future<bool> checkFavoriteStatus(int venueId) async {
+    try {
+      final response = await supabase
+          .from('favorite_venues')
+          .select('id')
+          .eq('user_id', read('userId'))
+          .eq('venue_id', venueId)
+          .maybeSingle();
+      return response != null;
+    } catch (e) {
+      log('Error checking favorite status: $e');
+      return false;
+    }
+  }
+
+  Future<bool> toggleFavorite(int venueId, bool isFav) async {
+    try {
+      
+      if (isFav) {
+        await supabase.from('favorite_venues').insert({
+          'user_id': read('userId'),
+          'venue_id': venueId,
+        });
+      } else {
+        await supabase
+            .from('favorite_venues')
+            .delete()
+            .eq('user_id', read('userId'))
+            .eq('venue_id', venueId);
+      }
+      return true;
+    } catch (e) {
+      isFav = !isFav;
+      Get.snackbar('Error', 'Failed to update favorite status.');
+      return false;
+    }
+  }
+
 }
