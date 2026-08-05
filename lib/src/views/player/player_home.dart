@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/player_controller.dart';
@@ -76,12 +74,21 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
       hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
       onChanged: (value) => setState(() { }),
       onFieldSubmitted: (value) {
-        if(value != '') log('searched $value');
+        if(value != '') {
+          _con.loadNearbyVenues(
+            searchQuery: value,
+            selectedAmenities: getSelectedAmenities(),
+          );
+        }
       },
       prefixIcon: Icon(Icons.search, color: disableButton),
       suffixIcon: IconButton(
         onPressed: () {
           searchCon.clear();
+          _con.loadNearbyVenues(
+            searchQuery: '',
+            selectedAmenities: getSelectedAmenities(),
+          );
           setState(() { });
         }, 
         icon: Visibility(
@@ -106,6 +113,10 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
           return InkWell(
             onTap: () => setState(() {
               data['isSelected'] = !data['isSelected'];
+              _con.loadNearbyVenues(
+                searchQuery: searchCon.text,
+                selectedAmenities: getSelectedAmenities(),
+              );
             }),
             child: Container(
               height: 34.h,
@@ -476,6 +487,14 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
         ],
       ),
     );
+  }
+
+  List<String> getSelectedAmenities() {
+    List<String> amenitiesList = amenities
+      .where((amenity) => amenity['isSelected'] == true)
+      .map((amenity) => amenity['label'] as String)
+      .toList();
+    return amenitiesList;
   }
 
 }

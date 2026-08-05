@@ -30,15 +30,17 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: Container(
         child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
-        // Matches the top rounded corner radius seen in your design
+        clipBehavior: Clip.antiAlias, 
         decoration: const BoxDecoration(
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          color: red,
+          borderRadius: .only(
+            topLeft: .circular(24),
+            topRight: .circular(24),
           ),
         ),
         child: NavigationBar(
@@ -119,16 +121,16 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
       decoration: BoxDecoration(
         // Applies the background color to the WHOLE block if selected
         color: isSelected ? indicatorColor : Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: .circular(16),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: .min,
         children: [
           SvgPicture.asset(
             iconPath,
-            colorFilter: ColorFilter.mode(
+            colorFilter: .mode(
               isSelected ? activeColor : inactiveColor, 
-              BlendMode.srcIn,
+              .srcIn,
             ),
             height: 24,
           ),
@@ -137,7 +139,7 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
             label,
             style: TextStyle(
               fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontWeight: isSelected ? .bold : .normal,
               color: isSelected ? activeColor : inactiveColor,
             ),
           ),
