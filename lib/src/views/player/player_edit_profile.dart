@@ -1,12 +1,15 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
+import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
@@ -14,6 +17,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 
@@ -25,10 +29,11 @@ class PlayerEditProfile extends StatefulWidget {
 }
 
 class _PlayerEditProfileState extends State<PlayerEditProfile> {
+  final AuthController authCon = Get.find();
+  final AppController appCon = Get.find();
 
   final Geocoding geocoding    = Geocoding();
   final formKey                = GlobalKey<FormState>();
-  final AuthController authCon = Get.find();
 
   final fullNameCon = TextEditingController();
   final phoneNoCon  = TextEditingController();
@@ -69,22 +74,19 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
           decoration: bgImg(),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
-            child: SafeArea(
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height: 64.h),
                   IconButton(
                     onPressed: () => Get.back(),
                     icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
                   ),
                   Center(child: profileImageWidget()),
                   SizedBox(height: 24.h),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: updateForm(),
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
+                  updateForm(),
+                  SizedBox(height: 48.h),
                 ]
               ),
             )
@@ -101,7 +103,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
         padding: EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          color: Color(0xFF0E171D),
+          color: lightFilledBgColor,
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.08), 
             width: 1.0,
@@ -164,30 +166,68 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
                 },
               ),
               SizedBox(height: 8.h),
-              CustomTextFormField(
-                headingText: "Location Address",
-                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-                textInputAction: TextInputAction.done,
-                keyboardType: TextInputType.streetAddress,
-                controller: addressCon,
-                maxLines: 1,
-                hintText: 'Tap icon to fetch GPS location',
-                hintStyle: TextStyle(fontSize: 14.sp, color: disableButton, fontWeight: FontWeight.normal),
-                validator: (value) => validateIsEmpty(string: value!),
-                suffixIcon: isFetchingLocation
-                    ? Padding(
-                        padding: EdgeInsets.all(12.r),
-                        child: SizedBox(
-                          width: 16.w,
-                          height: 16.h,
-                          child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2),
-                        ),
-                      )
-                    : IconButton(
-                        icon: Icon(Icons.my_location, color: primaryColor),
-                        onPressed: _getCurrentLocation,
-                      ),
+              Container(
+                height: 140.h,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.black26,
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: CustomMapScreen(
+                  initialLat: latitude!,
+                  initialLng: longitude!,
+                  showCurrentLocation: true,
+                  showDirection: false,
+                  isSelectionMode: true,
+                  onLocationSelected: (LatLng location) async {
+                    log("PARENT RECEIVED: ${location.latitude}, ${location.longitude}");
+                    setState(() {
+                      latitude = location.latitude;
+                      longitude = location.longitude;
+                      addressCon.text = 'Fetching address...';
+                    });
+
+                    addressCon.text = await appCon.getAddressFromLatLng(location.latitude, location.longitude);
+                  },
+                )
               ),
+              SizedBox(height: 12.h),
+              // Address Field
+              CustomTextFormField(
+                headingText: "ADDRESS / LOCATION",
+                controller: addressCon,
+                hintText: 'Search neighborhood or street...',
+                prefixIcon: Icon(Icons.location_on_outlined, color: subtitleTextColor, size: 20.sp),
+                headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
+                hintStyle: regularStyle(Color(0xFF6B7280), 16.sp),
+                autoValidateMode: .onUserInteraction,
+                validator: (value) => validateIsEmpty(string: value!),
+              ),
+              // CustomTextFormField(
+              //   headingText: "Location Address",
+              //   headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+              //   textInputAction: TextInputAction.done,
+              //   keyboardType: TextInputType.streetAddress,
+              //   controller: addressCon,
+              //   maxLines: 1,
+              //   hintText: 'Tap icon to fetch GPS location',
+              //   hintStyle: TextStyle(fontSize: 14.sp, color: disableButton, fontWeight: FontWeight.normal),
+              //   validator: (value) => validateIsEmpty(string: value!),
+              //   suffixIcon: isFetchingLocation
+              //       ? Padding(
+              //           padding: EdgeInsets.all(12.r),
+              //           child: SizedBox(
+              //             width: 16.w,
+              //             height: 16.h,
+              //             child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2),
+              //           ),
+              //         )
+              //       : IconButton(
+              //           icon: Icon(Icons.my_location, color: primaryColor),
+              //           onPressed: _getCurrentLocation,
+              //         ),
+              // ),
               
               if (latitude != null && longitude != null) ...[
                 SizedBox(height: 4.h),
@@ -200,6 +240,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
                 ),
               ],
               SizedBox(height: 24.h),
+
               CustomUsualButton(
                 text: 'Update Profile',
                 fontSize: 16.sp,

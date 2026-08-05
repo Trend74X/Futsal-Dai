@@ -164,6 +164,16 @@ class AuthController extends GetxController {
         updatePayload["latitude"] = data["latitude"];
       }
 
+      // Only add address if they are not null
+      if (data["address"] != null) {
+        updatePayload["address"] = data["address"];
+      }
+
+      // Only add email if they are not null
+      if (data["email"] != null) {
+        updatePayload["email"] = data["email"];
+      }
+
       // Only update avatar_url in DB if a new picture was uploaded
       if (avatarUrl != null) {
         updatePayload["profile_pic"] = avatarUrl;
