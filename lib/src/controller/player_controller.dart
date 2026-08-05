@@ -167,10 +167,8 @@ class PlayerController extends GetxController {
     TimeOfDay openTime = _parseTime(openingTimeStr);
     TimeOfDay closeTime = _parseTime(closingTimeStr);
     
-    DateTime startTime = DateTime(
-        selectedDate.year, selectedDate.month, selectedDate.day, openTime.hour, openTime.minute);
-    DateTime endTime = DateTime(
-        selectedDate.year, selectedDate.month, selectedDate.day, closeTime.hour, closeTime.minute);
+    DateTime startTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, openTime.hour, openTime.minute);
+    DateTime endTime = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, closeTime.hour, closeTime.minute);
 
     if (endTime.isBefore(startTime)) {
       endTime = endTime.add(const Duration(days: 1));
@@ -181,6 +179,11 @@ class PlayerController extends GetxController {
     while (currentSlotTime.isBefore(endTime)) {
       DateTime nextSlotTime = currentSlotTime.add(Duration(minutes: durationMin));
       
+      if (currentSlotTime.isBefore(DateTime.now())) {
+        currentSlotTime = nextSlotTime;
+        continue;
+      }
+
       String slotLabel = "${DateFormat('HH:mm').format(currentSlotTime)} - ${DateFormat('HH:mm').format(nextSlotTime)}";
 
       double currentPrice = basePrice;

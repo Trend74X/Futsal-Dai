@@ -14,7 +14,6 @@ import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
@@ -460,61 +459,61 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
   }
 
   // --- Fetch GPS Location and Reverse Geocode ---
-  Future<void> _getCurrentLocation() async {
-    setState(() => isFetchingLocation = true);
+  // Future<void> _getCurrentLocation() async {
+  //   setState(() => isFetchingLocation = true);
 
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        showToast(message: 'Location services are disabled on your phone.', isSuccess: false);
-        setState(() => isFetchingLocation = false);
-        return;
-      }
+  //   try {
+  //     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  //     if (!serviceEnabled) {
+  //       showToast(message: 'Location services are disabled on your phone.', isSuccess: false);
+  //       setState(() => isFetchingLocation = false);
+  //       return;
+  //     }
 
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          showToast(message: 'Location permissions are required.', isSuccess: false);
-          setState(() => isFetchingLocation = false);
-          return;
-        }
-      }
+  //     LocationPermission permission = await Geolocator.checkPermission();
+  //     if (permission == LocationPermission.denied) {
+  //       permission = await Geolocator.requestPermission();
+  //       if (permission == LocationPermission.denied) {
+  //         showToast(message: 'Location permissions are required.', isSuccess: false);
+  //         setState(() => isFetchingLocation = false);
+  //         return;
+  //       }
+  //     }
 
-      if (permission == LocationPermission.deniedForever) {
-        showToast(message: 'Please enable location permission in settings.', isSuccess: false);
-        setState(() => isFetchingLocation = false);
-        return;
-      }
+  //     if (permission == LocationPermission.deniedForever) {
+  //       showToast(message: 'Please enable location permission in settings.', isSuccess: false);
+  //       setState(() => isFetchingLocation = false);
+  //       return;
+  //     }
 
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      );
+  //     Position position = await Geolocator.getCurrentPosition(
+  //       locationSettings: const LocationSettings(
+  //         accuracy: LocationAccuracy.high,
+  //       ),
+  //     );
 
-      latitude = position.latitude;
-      longitude = position.longitude;
+  //     latitude = position.latitude;
+  //     longitude = position.longitude;
 
-      // Directly call package-level function
-      List<Placemark> placemarks = await geocoding.placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
+  //     // Directly call package-level function
+  //     List<Placemark> placemarks = await geocoding.placemarkFromCoordinates(
+  //       position.latitude,
+  //       position.longitude,
+  //     );
 
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        String formattedAddress = "${place.street}, ${place.subLocality}, ${place.locality}";
+  //     if (placemarks.isNotEmpty) {
+  //       Placemark place = placemarks[0];
+  //       String formattedAddress = "${place.street}, ${place.subLocality}, ${place.locality}";
         
-        setState(() {
-          addressCon.text = formattedAddress;
-        });
-      }
-    } catch (e) {
-      showToast(message: 'Failed to retrieve location: $e', isSuccess: false);
-    } finally {
-      setState(() => isFetchingLocation = false);
-    }
-  }
+  //       setState(() {
+  //         addressCon.text = formattedAddress;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     showToast(message: 'Failed to retrieve location: $e', isSuccess: false);
+  //   } finally {
+  //     setState(() => isFetchingLocation = false);
+  //   }
+  // }
 
 }

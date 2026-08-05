@@ -85,8 +85,12 @@ class _FutsalDetailState extends State<FutsalDetail> {
                         SizedBox(height: 16.h),
                         availableSlots(),
                         SizedBox(height: 16.h),
-                        if(widget.data.isPeakEnabled) dynamicPricing(),
-                        if(widget.data.isPeakEnabled) SizedBox(height: 16.h),
+                        // Show dynamic pricing only if peak is enabled AND the venue is open today
+                        if (widget.data.isPeakEnabled && playerCon.todayHours.value != null && 
+                            playerCon.todayHours.value!['is_closed'] == false) ...[
+                          dynamicPricing(),
+                          SizedBox(height: 16.h),
+                        ],
                         totalPriceWidget()
                       ],
                     ),
@@ -285,12 +289,13 @@ class _FutsalDetailState extends State<FutsalDetail> {
               String dayNumber = DateFormat('d').format(date); // 10, 11
 
               return GestureDetector(
-                onTap: () {
+                onTap: () async {
                   setState(() {
                     selectedDate = date;
                     selectedIndex = null;
                   });
-                  playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+                  await playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+                  setState(() { });
                 },
                 child: Container(
                   width: 60.w,
@@ -381,7 +386,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
             padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
-            itemCount: playerCon.availableSlots.length,
+            itemCount: playerCon.availableSlots.length, // Directly use the controller's list
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               crossAxisSpacing: 12.w,
@@ -389,7 +394,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
               mainAxisExtent: 106.h,
             ),
             itemBuilder: (context, index) {
-              var data = playerCon.availableSlots[index]; // Use the controller's reactive list
+              var data = playerCon.availableSlots[index]; 
               bool isSelected = selectedIndex == index;
               
               return InkWell(
@@ -411,8 +416,8 @@ class _FutsalDetailState extends State<FutsalDetail> {
                             : data['status'] == 'booked' 
                               ? filledBgColor
                               : data['status'] == 'pending'
-                                ? Colors.brown.withValues(alpha: 0.2) // Replace with your brown color
-                                : const Color(0xFF222D1E), // Your lightFilledBgColor
+                                ? Colors.brown.withValues(alpha: 0.2) 
+                                : const Color(0xFF222D1E), 
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
@@ -425,7 +430,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
                         style: TextStyle(
                           fontSize: 12.sp,
                           fontWeight: FontWeight.bold,
-                          color: selectedIndex == index ? Colors.black : subtitleTextColor
+                          color: isSelected ? Colors.black : subtitleTextColor
                         ),
                       ),
                       Text(
@@ -433,10 +438,10 @@ class _FutsalDetailState extends State<FutsalDetail> {
                           ? "Rs. ${data['price'].toInt()}"
                           : "${data['status'][0].toUpperCase()}${data['status'].substring(1)}",
                         style: TextStyle(
-                          color: selectedIndex == index 
+                          color: isSelected 
                                   ? Colors.black 
                                   : data['status'] == 'available' || data['status'] == 'rejected'
-                                    ? primaryColor // primaryTextColor
+                                    ? primaryColor 
                                     : data['status'] == 'pending'
                                       ? Colors.brown
                                       : subtitleTextColor, 
@@ -454,9 +459,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
                             ? "Awaiting confirmation"
                             : "",
                         style: TextStyle(
-                          color: selectedIndex == index 
-                                  ? Colors.black 
-                                  : subtitleTextColor, 
+                          color: isSelected ? Colors.black : subtitleTextColor, 
                           fontSize: 11.sp,
                           fontWeight: FontWeight.w500,
                           height: 1.2
@@ -691,7 +694,12 @@ class _FutsalDetailState extends State<FutsalDetail> {
                   ),
                   isScrollControlled: true, 
                   ignoreSafeArea: false,
-                );
+                ).then((_) {
+                  setState(() {
+                    selectedIndex = null; 
+                  });
+                  playerCon.fetchDailyVenueData(widget.data.id, selectedDate, widget.data);
+                });
               }
             )
           ],
