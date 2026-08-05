@@ -4,6 +4,7 @@ import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
+import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -63,40 +64,79 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
   }
 
   Widget searchBarField() {
-    return CustomTextFormField(
-      headingText: "",
-      headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
-      textInputAction: TextInputAction.search,
-      keyboardType: TextInputType.text,
-      controller: searchCon,
-      maxLines: 1,
-      hintText: 'Search By Name',
-      hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-      onChanged: (value) => setState(() { }),
-      onFieldSubmitted: (value) {
-        if(value != '') {
-          _con.loadNearbyVenues(
-            searchQuery: value,
-            selectedAmenities: getSelectedAmenities(),
-          );
-        }
-      },
-      prefixIcon: Icon(Icons.search, color: disableButton),
-      suffixIcon: IconButton(
-        onPressed: () {
-          searchCon.clear();
-          _con.loadNearbyVenues(
-            searchQuery: '',
-            selectedAmenities: getSelectedAmenities(),
-          );
-          setState(() { });
-        }, 
-        icon: Visibility(
-          visible: searchCon.text != '',
-          child: Icon(Icons.close, color: disableButton)
+    return Row(
+      children: [
+        Expanded(
+          child: CustomTextFormField(
+            headingText: "",
+            headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+            textInputAction: TextInputAction.search,
+            keyboardType: TextInputType.text,
+            controller: searchCon,
+            maxLines: 1,
+            hintText: 'Search By Name',
+            hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+            onChanged: (value) => setState(() { }),
+            onFieldSubmitted: (value) {
+              if(value != '') {
+                _con.loadNearbyVenues(
+                  searchQuery: value,
+                  selectedAmenities: getSelectedAmenities(),
+                );
+              }
+            },
+            prefixIcon: Icon(Icons.search, color: disableButton),
+            suffixIcon: IconButton(
+              onPressed: () {
+                searchCon.clear();
+                _con.loadNearbyVenues(
+                  searchQuery: '',
+                  selectedAmenities: getSelectedAmenities(),
+                );
+                setState(() { });
+              }, 
+              icon: Visibility(
+                visible: searchCon.text != '',
+                child: Icon(Icons.close, color: disableButton)
+              )
+            ),
+            height: 56.h,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        InkWell(
+          onTap: () {
+            if (_con.nearbyVenues.isEmpty) return;
+            Get.to(() => CustomMapScreen(
+              initialLat: _con.nearbyVenues.first.latitude,
+              initialLng: _con.nearbyVenues.first.longitude,
+              showCurrentLocation: true,
+              showDirection: true,
+              isSelectionMode: false,
+              isFullScreenView: true,
+              enableSearch: true,
+              searchMode: MapSearchMode.futsalOnly,
+              venues: _con.nearbyVenues.map((venue) => MapVenueItem(
+                id: venue.id,
+                name: venue.name,
+                address: venue.address,
+                lat: venue.latitude,
+                lng: venue.longitude,
+                originalData: venue, // Passes your full model straight to FutsalDetail
+              )).toList(),
+            ));
+          },
+          child: Container(
+            height: 48.h,
+            width: 48.w,
+            decoration: BoxDecoration(
+              border: .all(color: black2),
+              borderRadius: .circular(8.r)
+            ),
+            child: Icon(Icons.map_outlined, color: primaryColor)
+          ),
         )
-      ),
-      height: 56.h,
+      ],
     );
   }
 
@@ -175,7 +215,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
             ),
             Spacer(),
             Text(
-              'SEE MAP',
+              'SEE ALL',
               style: TextStyle(
                 color: primaryTextColor,
                 fontSize: 12.sp,

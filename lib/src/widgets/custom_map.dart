@@ -6,18 +6,48 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
+import 'package:futsal_dai/src/views/player/futsal_detail.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+
+// Enum for the three search behavior types
+enum MapSearchMode {
+  placeOnly,    // 1. Search map places via Nominatim
+  futsalOnly,   // 2. Search locally by futsal name in the passed venues list
+  both,         // 3. Search both (tries local futsal match first, falls back to map place search)
+}
+
+// Model for multiple map venues
+class MapVenueItem {
+  final int id;
+  final String name;
+  final String address;
+  final double lat;
+  final double lng;
+  final dynamic originalData; // Passes full model to FutsalDetail
+
+  MapVenueItem({
+    required this.id,
+    required this.name,
+    required this.address,
+    required this.lat,
+    required this.lng,
+    required this.originalData,
+  });
+}
 
 class CustomMapScreen extends StatefulWidget {
   final double initialLat, initialLng;
   final bool isFullScreenView, showDirection, showCurrentLocation;
   final bool isSelectionMode;
   final bool enableSearch;
+  final MapSearchMode searchMode; // Search mode flag
   final Function(LatLng selectedLocation)? onLocationSelected;
+  final List<MapVenueItem> venues; // Multiple venues list
 
   const CustomMapScreen({
     super.key,
@@ -28,7 +58,9 @@ class CustomMapScreen extends StatefulWidget {
     this.isFullScreenView = false,
     this.isSelectionMode = false,
     this.enableSearch = false,
+    this.searchMode = MapSearchMode.placeOnly, // Default to normal map search
     this.onLocationSelected,
+    this.venues = const [],
   });
 
   @override
@@ -49,6 +81,9 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
   // For route
   List<LatLng> routePoints = [];
   bool isLoadingRoute = false;
+
+  // Track active popup venue card
+  MapVenueItem? activePopupVenue;
 
   @override
   void initState() {
@@ -83,10 +118,20 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
   @override
   void didUpdateWidget(covariant CustomMapScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    // Update coordinates if initial lat/lng changed
     if (oldWidget.initialLat != widget.initialLat || oldWidget.initialLng != widget.initialLng) {
       setState(() {
         selectedLocation = LatLng(widget.initialLat, widget.initialLng);
       });
+    }
+
+    // If venues list updates from empty to loaded, center camera on the first venue
+    if (oldWidget.venues.isEmpty && widget.venues.isNotEmpty) {
+      setState(() {
+        selectedLocation = LatLng(widget.venues.first.lat, widget.venues.first.lng);
+      });
+      mapController.move(selectedLocation, 14.0);
     }
   }
 
@@ -141,37 +186,72 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
     FocusScope.of(context).unfocus();
 
     try {
-      final url = Uri.parse(
-          'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1');
+      String trimmedQuery = query.trim().toLowerCase();
+      bool foundMatch = false;
 
-      final response = await http.get(url, headers: {
-        'User-Agent': 'com.example.futsal_dai',
-      });
+      // 1. Search locally by futsal name if mode is futsalOnly or both
+      if (widget.searchMode == MapSearchMode.futsalOnly || widget.searchMode == MapSearchMode.both) {
+        final matchedVenue = widget.venues.firstWhereOrNull(
+          (venue) => venue.name.toLowerCase().contains(trimmedQuery),
+        );
 
-      if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body);
-
-        if (data.isNotEmpty) {
-          final double lat = double.parse(data[0]['lat']);
-          final double lon = double.parse(data[0]['lon']);
-          final newLocation = LatLng(lat, lon);
-
+        if (matchedVenue != null) {
+          final newLocation = LatLng(matchedVenue.lat, matchedVenue.lng);
           setState(() {
             selectedLocation = newLocation;
-            routePoints.clear(); 
+            activePopupVenue = matchedVenue; // Open preview card automatically
+            routePoints.clear();
           });
 
-          mapController.move(newLocation, 15.0);
+          mapController.move(newLocation, 16.0);
+          foundMatch = true;
+        }
+      }
 
-          if (widget.onLocationSelected != null) {
-            widget.onLocationSelected!(newLocation);
+      // If local match found and mode is strictly futsalOnly, stop here
+      if (foundMatch && widget.searchMode == MapSearchMode.futsalOnly) {
+        setState(() => isLoadingSearch = false);
+        return;
+      }
+
+      // 2. Search online via Nominatim if no local match found, or if mode is placeOnly / both
+      if (!foundMatch && (widget.searchMode == MapSearchMode.placeOnly || widget.searchMode == MapSearchMode.both)) {
+        final url = Uri.parse(
+            'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1');
+
+        final response = await http.get(url, headers: {
+          'User-Agent': 'com.example.futsal_dai',
+        });
+
+        if (response.statusCode == 200) {
+          final List data = jsonDecode(response.body);
+
+          if (data.isNotEmpty) {
+            final double lat = double.parse(data[0]['lat']);
+            final double lon = double.parse(data[0]['lon']);
+            final newLocation = LatLng(lat, lon);
+
+            setState(() {
+              selectedLocation = newLocation;
+              routePoints.clear(); 
+              activePopupVenue = null; 
+            });
+
+            mapController.move(newLocation, 15.0);
+
+            if (widget.onLocationSelected != null) {
+              widget.onLocationSelected!(newLocation);
+            }
+          } else {
+            _showSnackBar('Location not found. Try a different name.');
           }
         } else {
-          _showSnackBar('Location not found. Try a different name.');
+          _showSnackBar('Failed to search location.');
         }
-      } else {
-        _showSnackBar('Failed to search location.');
+      } else if (!foundMatch && widget.searchMode == MapSearchMode.futsalOnly) {
+        _showSnackBar('Futsal venue not found.');
       }
+
     } catch (e) {
       _showSnackBar('Error: $e');
     } finally {
@@ -240,7 +320,9 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
             isSelectionMode: widget.isSelectionMode, 
             showCurrentLocation: widget.showCurrentLocation,
             showDirection: widget.showDirection,
-            enableSearch: widget.enableSearch, 
+            enableSearch: widget.enableSearch,
+            searchMode: widget.searchMode, // Pass search mode forward
+            venues: widget.venues, 
             onLocationSelected: (newLocation) {
               setState(() {
                 selectedLocation = newLocation;
@@ -268,8 +350,8 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
               initialZoom: 13.0,
               interactionOptions: InteractionOptions(
                 flags: widget.isFullScreenView
-                  ? InteractiveFlag.all
-                  : InteractiveFlag.none
+                  ? InteractiveFlag.all // Full map controls in fullscreen
+                  : (InteractiveFlag.pinchZoom | InteractiveFlag.drag), // Pan/zoom enabled
               ),
               cameraConstraint: CameraConstraint.contain(
                 bounds: LatLngBounds(
@@ -283,7 +365,8 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                   
                   setState(() {
                     selectedLocation = point; 
-                    routePoints.clear();      
+                    routePoints.clear();
+                    activePopupVenue = null;      
                   });
       
                   if (widget.onLocationSelected != null) {
@@ -303,22 +386,50 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                     Polyline(
                       points: routePoints,
                       strokeWidth: 6.0,
-                      color: textBlue,
+                      color: primaryColor,
                     ),
                   ],
                 ),
               MarkerLayer(
                 markers: [
-                  Marker(
-                    point: selectedLocation,
-                    width: 40,
-                    height: 40,
-                    child: const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
+                  // 1. Render multiple venue markers
+                  ...widget.venues.map((venue) {
+                    bool isSelected = activePopupVenue?.id == venue.id;
+                    return Marker(
+                      point: LatLng(venue.lat, venue.lng),
+                      width: 50,
+                      height: 50,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            activePopupVenue = venue;
+                            selectedLocation = LatLng(venue.lat, venue.lng);
+                          });
+                          mapController.move(LatLng(venue.lat, venue.lng), mapController.camera.zoom);
+                        },
+                        child: Icon(
+                          Icons.location_on,
+                          color: isSelected ? primaryColor : Colors.red,
+                          size: isSelected ? 45 : 35,
+                        ),
+                      ),
+                    );
+                  }),
+
+                  // 2. Fallback single marker if no venues list provided
+                  if (widget.venues.isEmpty)
+                    Marker(
+                      point: selectedLocation,
+                      width: 40,
+                      height: 40,
+                      child: const Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 40,
+                      ),
                     ),
-                  ),
+
+                  // 3. Current user location marker
                   if (currentLocation != null)
                     Marker(
                       point: currentLocation!,
@@ -355,7 +466,7 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                 width: 45.w,
                 decoration: const BoxDecoration(
                   color: filledBgColor,
-                  shape: .circle,
+                  shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(color: Colors.black12, blurRadius: 6, spreadRadius: 1),
                   ],
@@ -384,8 +495,12 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                 child: CustomTextFormField(
                   controller: searchController,
                   headingText: '',
-                  textInputAction: .search,
-                  hintText: 'Search Location...',
+                  textInputAction: TextInputAction.search,
+                  hintText: widget.searchMode == MapSearchMode.futsalOnly 
+                      ? 'Search Futsal Name...' 
+                      : widget.searchMode == MapSearchMode.both 
+                          ? 'Search Futsal or Place...' 
+                          : 'Search Location...',
                   onFieldSubmitted: searchPlace,
                   suffixIcon: isLoadingSearch
                     ? Transform.scale(
@@ -403,12 +518,11 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
           // --- Floating Overlay Buttons ---
           Positioned(
             top: widget.enableSearch
-              ? (widget.isFullScreenView ? 120.h : 71.h)
+              ? (widget.isFullScreenView ? 130.h : 71.h)
               : (widget.isFullScreenView ? 70.h : 16.h),
             right: 16.w,
             child: Column(
               children: [
-                // HIDE the Fullscreen enter button if we are already in fullscreen
                 if (!widget.isFullScreenView)
                   FloatingActionButton.small(
                     heroTag: 'fullscreen_enter_btn',
@@ -417,8 +531,6 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                     child: const Icon(Icons.fullscreen, color: primaryColor),
                   ),
                 if (widget.showCurrentLocation) ...[
-                  // Adds space only if the fullscreen button is visible, 
-                  // to prevent extra gap at the top in fullscreen mode
                   if (!widget.isFullScreenView) SizedBox(height: 8.h),
                   FloatingActionButton.small(
                     heroTag: widget.isFullScreenView ? 'loc_btn_full' : 'loc_btn_small',
@@ -447,19 +559,87 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                     child: const Icon(Icons.directions_outlined, color: primaryColor),
                   ),
                 ],
+                if (widget.showDirection) ...[
+                  SizedBox(height: 8.h),
+                  FloatingActionButton.small(
+                    heroTag: 'share_to_map',
+                    backgroundColor: lightFilledBgColor,
+                    onPressed: () => launchMapDirections(latitude: widget.initialLat, longitude: widget.initialLng),
+                    child: const Icon(Icons.map_outlined, color: primaryColor),
+                  ),
+                ],
               ],
             ),
           ),
 
-          if (widget.isFullScreenView)
+          // --- Venue Preview Card Dialog Popup Overlay ---
+          if (activePopupVenue != null)
             Positioned(
-              top: 240.h,
-              right: 16.w,
-              child: FloatingActionButton.small(
-                heroTag: 'share_to_map',
-                backgroundColor: lightFilledBgColor,
-                onPressed: () => launchMapDirections(latitude: widget.initialLat, longitude: widget.initialLng),
-                child: const Icon(Icons.map_outlined, color: primaryColor),
+              bottom: 30.h,
+              left: 20.w,
+              right: 20.w,
+              child: GestureDetector(
+                onTap: () {
+                  Get.to(() => FutsalDetail(data: activePopupVenue!.originalData));
+                },
+                child: Container(
+                  padding: EdgeInsets.all(16.sp),
+                  decoration: BoxDecoration(
+                    color: containerBgColor,
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: primaryColor, width: 1.w),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black45, blurRadius: 10, spreadRadius: 2),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              activePopupVenue!.name,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 4.h),
+                            Text(
+                              activePopupVenue!.address,
+                              style: TextStyle(
+                                color: subtitleTextColor,
+                                fontSize: 14.sp,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          color: primaryColor,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          'View',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
         ],

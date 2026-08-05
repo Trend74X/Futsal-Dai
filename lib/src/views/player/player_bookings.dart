@@ -269,7 +269,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                               initialLng: 85.321441768245,
                               showCurrentLocation: true,
                               showDirection: true,
-                              enableSearch: true,
+                              enableSearch: false,
                               isFullScreenView: true,
                             )),
                             child: Container(
