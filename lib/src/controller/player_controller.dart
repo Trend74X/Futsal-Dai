@@ -26,7 +26,14 @@ class PlayerController extends GetxController {
   // Track the currently selected ground to filter slots (Using RxnInt for Supabase int8 IDs)
   RxnString selectedGroundId = RxnString(null);
 
-  Future<void> loadNearbyVenues() async {
+  // --- FAVORITES LIST LOGIC ---
+  RxList<FutsalVenueModel> favoriteVenuesList = <FutsalVenueModel>[].obs;
+  RxBool isLoadingFavs = false.obs;
+
+  Future<void> loadNearbyVenues({
+    String searchQuery = '',
+    List<String> selectedAmenities = const [],
+  }) async {
     try {
       isLoadingNearByData(true);
       final response = await supabase.rpc(
@@ -35,7 +42,9 @@ class PlayerController extends GetxController {
           'user_lat': 27.6712,     // e.g. 27.6712
           'user_long': 85.3214,    // e.g. 85.3214
           'max_km': 10.0,          // Distance limit in kilometers
-          'limit_count': 8
+          'limit_count': 8,
+          'search_text': searchQuery, 
+          'amenities_filter': selectedAmenities,
         },
       );
 
@@ -339,6 +348,29 @@ class PlayerController extends GetxController {
       isFav = !isFav;
       Get.snackbar('Error', 'Failed to update favorite status.');
       return false;
+    }
+  }
+
+  Future<void> fetchFavoriteVenues() async {
+    isLoadingFavs.value = true;
+    try {
+      final response = await supabase
+          .from('favorite_venues')
+          .select('futsal_venues(*)') 
+          .eq('user_id', read('userId'))
+          .order('created_at', ascending: false);
+
+      favoriteVenuesList.assignAll(
+        (response as List).map((item) {
+          final venueData = item['futsal_venues'] as Map<String, dynamic>;
+          return FutsalVenueModel.fromJson(venueData);
+        }).toList(),
+      );
+    } catch (e) {
+      log('Error fetching favorite venues list: $e');
+      Get.snackbar('Error', 'Could not load favorites.');
+    } finally {
+      isLoadingFavs.value = false;
     }
   }
 

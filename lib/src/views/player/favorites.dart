@@ -1,7 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:futsal_dai/src/helper/constant.dart';
+import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/share_url.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
@@ -17,6 +17,13 @@ class FavoritePage extends StatefulWidget {
 }
 
 class _FavoritePageState extends State<FavoritePage> {
+  final PlayerController _con = Get.put(PlayerController());
+
+  @override
+  void initState() {
+    super.initState();
+    _con.fetchFavoriteVenues();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,15 +37,29 @@ class _FavoritePageState extends State<FavoritePage> {
             child: Padding(
               padding: .symmetric(horizontal: 16.sp, vertical: 8.h),
               child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: .start,
-                  children: [
-                    SizedBox(height: 16.h),
-                    titleAndCountsWidgets(),
-                    SizedBox(height: 16.h),
-                    savedCourtsWidget()
-                  ],
-                ),
+                child: Obx(()=>
+                  _con.isLoadingFavs.isTrue
+                    ? Center(child: CircularProgressIndicator(color: primaryColor))
+                    : Column(
+                      crossAxisAlignment: .start,
+                      children: [
+                        SizedBox(height: 16.h),
+                        titleAndCountsWidgets(),
+                        SizedBox(height: 16.h),
+                        if (_con.favoriteVenuesList.isEmpty) 
+                          SizedBox(
+                            height: Get.width,
+                            child: Center(
+                              child: Text(
+                                'No venues favorites or saved right now.',
+                                style: semiBoldStyle(Colors.grey, 14.sp),
+                              )
+                            ),
+                          ),
+                        savedCourtsWidget()
+                      ],
+                    ),
+                )
               ),
             ),
           ),
@@ -70,7 +91,7 @@ class _FavoritePageState extends State<FavoritePage> {
               ),
               padding: .symmetric(vertical: 4.h, horizontal: 8.w),
               child: Text(
-                '3 Venues',
+                '${_con.favoriteVenuesList.length} Venues',
                 style: boldStyle(whiteTextColor, 12.sp),
               ),
             )
@@ -82,18 +103,18 @@ class _FavoritePageState extends State<FavoritePage> {
 
   Widget savedCourtsWidget() {
     return ListView.separated(
-      itemCount: favoritesStalls.length,
+      itemCount: _con.favoriteVenuesList.length,
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       separatorBuilder: (context, index) => SizedBox(height: 16.h), 
       itemBuilder: (context, index) {
-        var data = favoritesStalls[index];
-        return futsalCards(context, data);
+        var data = _con.favoriteVenuesList[index];
+        return futsalCards(context, data, index);
       }, 
     );
   }
 
-  Widget futsalCards(BuildContext context, dynamic data) {
+  Widget futsalCards(BuildContext context, dynamic data, int index) {
     return InkWell(
       onTap: () => Get.to(() => FutsalDetail(data: data)),
       child: Container(
@@ -120,8 +141,13 @@ class _FavoritePageState extends State<FavoritePage> {
                 Positioned(
                   right: 8.w,
                   child: IconButton(
-                    onPressed: () => setState(() => data['isFav'] = !data['isFav']),
-                    icon: Icon(Icons.favorite, color: data['isFav'] ? primaryColor : subtitleTextColor)
+                    onPressed: () async {
+                      bool success = await _con.toggleFavorite(data.id, false);
+                      setState(() {
+                        if(success) _con.favoriteVenuesList.removeAt(index);
+                      });
+                    },
+                    icon: Icon(Icons.favorite, color: primaryColor)
                   )
                 )
               ],
@@ -135,7 +161,7 @@ class _FavoritePageState extends State<FavoritePage> {
                     children: [
                       Expanded(
                         child: Text(
-                          data['name'],
+                          data.name,
                           style: boldStyle(whiteTextColor, 28.sp).copyWith(height: 1.0),
                         ),
                       ),
@@ -143,7 +169,7 @@ class _FavoritePageState extends State<FavoritePage> {
                         crossAxisAlignment: .start,
                         children: [
                           Text(
-                            "\$${data['price']}",
+                            "Rs. ${data.basePrice.toInt()}",
                             style: boldStyle(primaryTextColor, 14.sp).copyWith(height: 1.0),
                           ),
                           Text(
@@ -159,9 +185,12 @@ class _FavoritePageState extends State<FavoritePage> {
                     children: [
                       Icon(Icons.location_on_outlined, color: whiteTextColor, size: 15.sp),
                       SizedBox(width: 4.w),
-                      Text(
-                        data['location'],
-                        style: regularStyle(whiteTextColor, 14.sp),
+                      Expanded(
+                        child: Text(
+                          data.address,
+                          style: regularStyle(whiteTextColor, 14.sp).copyWith(height: 1.1),
+                          maxLines: 2,
+                        ),
                       )
                     ],
                   ),

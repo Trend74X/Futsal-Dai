@@ -28,12 +28,13 @@ class _PlayerBottomsheetState extends State<PlayerBottomsheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: Container(
         // decoration: bgImg(),
         child: _screens[_currentIndex],
       ),
       bottomNavigationBar: Container(
-        // Matches the top rounded corner radius seen in your design
+        clipBehavior: Clip.antiAlias, 
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(24),
