@@ -1,28 +1,40 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:get/get.dart';
 
 class PlayerGroupDetail extends StatefulWidget {
-  const PlayerGroupDetail({super.key});
+  final dynamic data;
+  const PlayerGroupDetail({super.key, required this.data});
 
   @override
   State<PlayerGroupDetail> createState() => _PlayerGroupDetailState();
 }
 
 class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
+  final GroupController controller = Get.put(GroupController());
 
-  final searchCon    = TextEditingController();
+  List pendingList = [];
+  List joinedList = [];
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      joinedList = widget.data.groupMembers.where((member) => member.status == 'active').toList();
+      pendingList = widget.data.groupMembers.where((member) => member.status == 'pending').toList();
+    });
+  }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: appBarWidget(
         title: 'Manage Group', 
-        action: Icon(Icons.edit, color: subtitleTextColor)
+        // action: Icon(Icons.edit, color: subtitleTextColor)
       ),
       extendBodyBehindAppBar: true,
       body: SizedBox.expand(
@@ -40,11 +52,11 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
                     SizedBox(height: 12.h),
                     searchWidget(),
                     SizedBox(height: 16.h),
-                    labelWidget(label: 'Pending Invites (2)'),
+                    labelWidget(label: 'Pending Invites (${pendingList.length})'),
                     SizedBox(height: 8.h),
                     pendingListWidget(),
                     SizedBox(height: 16.h),
-                    labelWidget(label: 'Group Members'),
+                    labelWidget(label: 'Group Members (${joinedList.length})'),
                     SizedBox(height: 8.h),
                     membersListWidget(),
                     SizedBox(height: 12.h),
@@ -63,11 +75,11 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
       crossAxisAlignment: .start,
       children: [
         Text(
-          'Weekend Warriors',
+          widget.data.name,
           style: boldStyle(primaryTextColor, 32.sp),
         ),
         Text(
-          '12 MEMBERS JOINED • 2 PENDING INVITES',
+          '${joinedList.length} MEMBERS JOINED • ${pendingList.length} PENDING INVITES',
           style: semiBoldStyle(whiteTextColor, 14.sp),
         )
       ],
@@ -82,36 +94,48 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
           headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
           textInputAction: TextInputAction.search,
           keyboardType: TextInputType.text,
-          controller: searchCon,
+          controller: controller.searchController,
           maxLines: 1,
           hintText: 'Search Player By Name or Email',
           hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-          onChanged: (value) => setState(() { }),
-          onFieldSubmitted: (value) {
-            if(value != '') log('searched $value');
+          onChanged: (value) {
+            controller.searchUsers(value);
+            setState(() { });
           },
+          onFieldSubmitted: (value) => controller.searchUsers,
           prefixIcon: Icon(Icons.search, color: disableButton),
           suffixIcon: IconButton(
             onPressed: () {
-              searchCon.clear();
+              controller.searchController.clear();
+              controller.searchResults.clear();
               setState(() { });
             }, 
             icon: Visibility(
-              visible: searchCon.text != '',
+              visible: controller.searchController.text != '',
               child: Icon(Icons.close, color: disableButton)
             )
           ),
           height: 56.h,
         ),
         SizedBox(height: 18.h),
-        addWidget(name: 'Anish Shakya', email: 'shk_anic01@gmail.com'),
-        SizedBox(height: 8.h),
-        addWidget(name: 'Amrit Shakya', email: 'amrit.shk00@gmail.com'),
+        Obx(() {
+          if (controller.searchResults.isEmpty) return const SizedBox.shrink();
+          return ListView.separated(
+            shrinkWrap: true,
+            itemCount: controller.searchResults.length,
+            physics: NeverScrollableScrollPhysics(),
+            separatorBuilder: (context, index) => SizedBox(height: 8.h),
+            itemBuilder:(context, index) {
+              var data = controller.searchResults[index];
+              return addWidget(data: data);
+            },
+          );
+        })
       ]
     );
   }
 
-  Widget addWidget({required String name, required String email}) {
+  Widget addWidget({required dynamic data}) {
     return Container(
       padding: .symmetric(vertical: 12.h, horizontal: 8.w),
       decoration: BoxDecoration(
@@ -129,18 +153,25 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
             ),
           ),
           SizedBox(width: 8.w),
-          Column(
-            crossAxisAlignment: .start,
-            children: [
-              Text(
-                name,
-                style: semiBoldStyle(whiteTextColor, 20.sp)
-              ),
-              Text(
-                email,
-                style: regularStyle(whiteTextColor, 14.sp)
-              )
-            ],
+          Expanded(
+            flex: 7,
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  data['full_name'],
+                  style: semiBoldStyle(whiteTextColor, 20.sp),
+                  maxLines: 1,
+                  overflow: .ellipsis
+                ),
+                Text(
+                  "@${data['username']}",
+                  style: regularStyle(whiteTextColor, 14.sp),
+                  maxLines: 1,
+                  overflow: .ellipsis
+                )
+              ],
+            ),
           ),
           Spacer(),
           Container(
@@ -174,17 +205,19 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
   }
 
   Widget pendingListWidget() {
-    return Column(
-      crossAxisAlignment: .start,
-      children: [
-        pendingWidget(name: 'Pradip'),
-        SizedBox(height: 8.h),
-        pendingWidget(name: 'Sandip Shakya'),
-      ],
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: pendingList.length,
+      separatorBuilder:(context, index) => SizedBox(height: 8.h), 
+      itemBuilder:(context, index) {
+        var data = pendingList[index];
+        return pendingTileWidget(data: data);        
+      }, 
     );
   }
 
-  Widget pendingWidget({required String name}) {
+  Widget pendingTileWidget({required dynamic data}) {
     return Container(
       padding: .symmetric(vertical: 12.h, horizontal: 8.w),
       decoration: BoxDecoration(
@@ -202,18 +235,25 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
             ),
           ),
           SizedBox(width: 8.w),
-          Column(
-            crossAxisAlignment: .start,
-            children: [
-              Text(
-                name,
-                style: semiBoldStyle(whiteTextColor, 20.sp)
-              ),
-              Text(
-                'PENDING',
-                style: boldStyle(Color(0xFFFFB95F), 10.sp)
-              )
-            ],
+          Expanded(
+            flex: 7,
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  data.user!.fullName,
+                  style: semiBoldStyle(whiteTextColor, 18.sp),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis
+                ),
+                Text(
+                  '@${data.user!.username}',
+                  style: boldStyle(subtitleTextColor, 12.sp),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis
+                )
+              ],
+            ),
           ),
           Spacer(),
           Container(
@@ -234,21 +274,19 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
   }
 
   Widget membersListWidget() {
-    return Column(
-      crossAxisAlignment: .start,
-      children: [
-        membersWidget(name: 'Ashok Shakya', count: '24'),
-        SizedBox(height: 8.h),
-        membersWidget(name: 'Pradip', count: '12'),
-        SizedBox(height: 8.h),
-        membersWidget(name: 'Sajit Shakya', count: '8'),
-        SizedBox(height: 8.h),
-        membersWidget(name: 'Sandip Shakya', count: '8'),
-      ],
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: joinedList.length,
+      separatorBuilder:(context, index) => SizedBox(height: 8.h), 
+      itemBuilder:(context, index) {
+        var data = joinedList[index];
+        return membersWidget(data: data);        
+      }, 
     );
   }
 
-  Widget membersWidget({required String name, required String count}) {
+  Widget membersWidget({required dynamic data}) {
     return Container(
       padding: .symmetric(vertical: 12.h, horizontal: 8.w),
       decoration: BoxDecoration(
@@ -270,12 +308,16 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
             crossAxisAlignment: .start,
             children: [
               Text(
-                name,
-                style: semiBoldStyle(whiteTextColor, 20.sp)
+                data.user!.fullName,
+                style: semiBoldStyle(whiteTextColor, 18.sp),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis
               ),
               Text(
-                'Matches Played : $count',
-                style: boldStyle(subtitleTextColor, 14.sp)
+                '@${data.user!.username}',
+                style: boldStyle(subtitleTextColor, 12.sp),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis
               )
             ],
           ),
