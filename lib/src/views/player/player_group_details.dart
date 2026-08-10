@@ -76,11 +76,11 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
       children: [
         Text(
           widget.data.name,
-          style: boldStyle(primaryTextColor, 32.sp),
+          style: boldStyle(primaryTextColor, 28.sp),
         ),
         Text(
           '${joinedList.length} MEMBERS JOINED • ${pendingList.length} PENDING INVITES',
-          style: semiBoldStyle(whiteTextColor, 14.sp),
+          style: semiBoldStyle(whiteTextColor, 12.sp),
         )
       ],
     );
@@ -97,7 +97,7 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
           controller: controller.searchController,
           maxLines: 1,
           hintText: 'Search Player By Name or Email',
-          hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+          hintStyle: TextStyle(fontSize: 14.sp, color: disableButton, fontWeight: .normal),
           onChanged: (value) {
             controller.searchUsers(value);
             setState(() { });
@@ -160,13 +160,13 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
               children: [
                 Text(
                   data['full_name'],
-                  style: semiBoldStyle(whiteTextColor, 20.sp),
+                  style: semiBoldStyle(whiteTextColor, 18.sp),
                   maxLines: 1,
                   overflow: .ellipsis
                 ),
                 Text(
                   "@${data['username']}",
-                  style: regularStyle(whiteTextColor, 14.sp),
+                  style: regularStyle(subtitleTextColor, 14.sp),
                   maxLines: 1,
                   overflow: .ellipsis
                 )
@@ -200,7 +200,7 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
   Widget labelWidget({required String label}) {
     return Text(
       label,
-      style: semiBoldStyle(white, 20.sp),
+      style: semiBoldStyle(white, 18.sp),
     );
   }
 
@@ -244,13 +244,13 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
                   data.user!.fullName,
                   style: semiBoldStyle(whiteTextColor, 18.sp),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis
+                  overflow: .ellipsis
                 ),
                 Text(
                   '@${data.user!.username}',
-                  style: boldStyle(subtitleTextColor, 12.sp),
+                  style: boldStyle(subtitleTextColor, 14.sp),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis
+                  overflow: .ellipsis
                 )
               ],
             ),
@@ -311,18 +311,18 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
                 data.user!.fullName,
                 style: semiBoldStyle(whiteTextColor, 18.sp),
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis
+                overflow: .ellipsis
               ),
               Text(
                 '@${data.user!.username}',
-                style: boldStyle(subtitleTextColor, 12.sp),
+                style: boldStyle(subtitleTextColor, 14.sp),
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis
+                overflow: .ellipsis
               )
             ],
           ),
-          Spacer(),
-          Icon(Icons.more_vert, color: whiteTextColor)
+          // Spacer(),
+          // Icon(Icons.more_vert, color: whiteTextColor)
         ],
       ),
     );

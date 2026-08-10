@@ -33,6 +33,8 @@ class PlayerController extends GetxController {
   Future<void> loadNearbyVenues({
     String searchQuery = '',
     List<String> selectedAmenities = const [],
+    int limit = 8,
+    double maxKm = 10.0
   }) async {
     try {
       isLoadingNearByData(true);
@@ -41,8 +43,8 @@ class PlayerController extends GetxController {
         params: {
           'user_lat': 27.6712,     // e.g. 27.6712
           'user_long': 85.3214,    // e.g. 85.3214
-          'max_km': 10.0,          // Distance limit in kilometers
-          'limit_count': 8,
+          'max_km': maxKm,          // Distance limit in kilometers
+          'limit_count': limit,
           'search_text': searchQuery, 
           'amenities_filter': selectedAmenities,
         },

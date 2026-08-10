@@ -20,6 +20,12 @@ class _ResetPasswordState extends State<ResetPassword> {
   final emailCon = TextEditingController();
 
   @override
+  void dispose() {
+    emailCon.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: appBarWidget(title: ''),

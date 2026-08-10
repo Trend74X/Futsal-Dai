@@ -27,6 +27,15 @@ class _VerifyPasswordPageState extends State<VerifyPasswordPage> {
 
   bool isnewPassObscure     = true;
   bool isConfirmPassObscure = true;
+
+  @override
+  void dispose() {
+    emailCon.dispose();
+    securityCon.dispose();
+    passCon.dispose();
+    confirmPassCon.dispose();
+    super.dispose();
+  }
   
   @override
   Widget build(BuildContext context) {

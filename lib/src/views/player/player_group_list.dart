@@ -123,8 +123,8 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
         child: Row(
           children: [
             Container(
-              height: 56.h,
-              width: 56.w,
+              height: 52.h,
+              width: 52.w,
               decoration: BoxDecoration(
                 color: lightFilledBgColor,
                 shape: .circle
@@ -136,16 +136,16 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
               children: [
                 Text(
                   data.name,
-                  style: semiBoldStyle(whiteTextColor, 20.sp)
+                  style: semiBoldStyle(whiteTextColor, 18.sp)
                 ),
                 Text(
                   '$count Members',
-                  style: regularStyle(whiteTextColor, 14.sp)
+                  style: regularStyle(subtitleTextColor, 14.sp)
                 )
               ],
             ),
             Spacer(),
-            Icon(Icons.arrow_forward_ios, color: subtitleTextColor)
+            Icon(Icons.arrow_forward_ios, color: subtitleTextColor, size: 18.sp)
           ],
         ),
       ),

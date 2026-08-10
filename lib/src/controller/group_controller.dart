@@ -123,7 +123,24 @@ class GroupController extends GetxController {
       final currentUserId = supabase.auth.currentUser?.id;
       if (currentUserId == null) return;
 
-      // Fetch groups where the user is a member using the junction table relation
+      // 1. First, find all group IDs where the current user is involved (either as accepted or pending)
+      final myMemberships = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', currentUserId);
+
+      // Extract the group IDs into a list of strings
+      final List<String> groupIds = (myMemberships as List)
+          .map((item) => item['group_id'].toString())
+          .toList();
+
+      // If the user isn't in any groups, clear the list and exit
+      if (groupIds.isEmpty) {
+        groupsList.clear();
+        return;
+      }
+
+      // 2. Fetch those specific groups and include ALL their members (pending & accepted)
       final response = await supabase
           .from('groups')
           .select('''
@@ -135,6 +152,7 @@ class GroupController extends GetxController {
             group_members (
               user_id,
               status,
+              role,
               Users (
                 id,
                 full_name,
@@ -143,9 +161,10 @@ class GroupController extends GetxController {
                 role
               )
             )
-          ''');
+          ''')
+          .inFilter('id', groupIds) // Filters only groups you belong to
+          .order('created_at', ascending: false);  // Sorting newest first
 
-      // groupsList.assignAll(List<Map<String, dynamic>>.from(response));
       groupsList.assignAll(
         (response as List).map((groupJson) => GroupModel.fromJson(groupJson)).toList(),
       );
