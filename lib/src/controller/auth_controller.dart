@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
+import 'package:futsal_dai/src/views/auth/verify_password_page.dart';
 import 'package:futsal_dai/src/views/owner/owner_bottomsheet.dart';
 import 'package:futsal_dai/src/views/player/player_bottomsheet.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
@@ -100,6 +101,46 @@ class AuthController extends GetxController {
     } catch (error) {
       if (!context.mounted) return;
       showToast(message: 'An unexpected error occurred while logging out.', isSuccess: false);
+    }
+  }
+
+  Future<void> resetPassword(BuildContext context, String email) async {
+    try {
+      await supabase.auth.resetPasswordForEmail(email);
+      if (!context.mounted) return;
+      Get.to(() => VerifyPasswordPage(email: email));
+      showToast(message: 'Password reset link sent to your email!', isSuccess: true);
+    } on AuthException catch (error) {
+      if (!context.mounted) return;
+      showToast(message: error.message, isSuccess: false);
+    } catch (error) {
+      if (!context.mounted) return;
+      showToast(message: 'An unexpected error occurred while changing password.', isSuccess: false);
+    }
+  }
+  
+  Future<void> verifyAndResetPassword(BuildContext context, String email, String token, String newPass) async {
+    try {
+      final response = await supabase.auth.verifyOTP(
+        email: email,
+        token: token,
+        type: OtpType.recovery,
+      );
+      if (!context.mounted) return;
+      if (response.session != null) {
+        await supabase.auth.updateUser(
+          UserAttributes(password: newPass),
+        );
+        if (!context.mounted) return;
+        showToast(message: 'Password updated successfully!', isSuccess: true);
+        Get.offAll(() => LogInPage());
+      }
+    } on AuthException catch (error) {
+      if (!context.mounted) return;
+      showToast(message: error.message, isSuccess: false);
+    } catch (error) {
+      if (!context.mounted) return;
+      showToast(message: 'An unexpected error occurred while changing password.', isSuccess: false);
     }
   }
 
