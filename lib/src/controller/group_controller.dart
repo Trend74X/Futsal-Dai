@@ -35,8 +35,9 @@ class GroupController extends GetxController {
       final response = await supabase
           .from('Users')
           .select('id, full_name, username, profile_pic')
+          .eq('role', 'player')
           .or('full_name.ilike.%$query%,username.ilike.%$query%')
-          .limit(5);
+          .limit(8);
 
       searchResults.assignAll(List<Map<String, dynamic>>.from(response));
     } catch (e) {
@@ -172,6 +173,22 @@ class GroupController extends GetxController {
       Get.snackbar('Error', 'Failed to load groups: $e');
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> addMemberToGroup(String groupId, String userId) async {
+    try {
+      // Insert into group_members table with 'pending' status
+      await supabase.from('group_members').insert({
+        'group_id': groupId,
+        'user_id': userId,
+        'status': 'pending',
+        'role': 'member',
+      });
+
+      showToast(message: 'Invitation sent successfully!', isSuccess: true);
+    } catch (e) {
+      showToast(message: 'Failed to add member: $e', isSuccess: false);
     }
   }
 

@@ -29,6 +29,14 @@ class _VerifyPasswordPageState extends State<VerifyPasswordPage> {
   bool isConfirmPassObscure = true;
 
   @override
+  void initState() {
+    super.initState();
+    setState(() {
+      emailCon.text = widget.email;
+    });
+  }
+
+  @override
   void dispose() {
     emailCon.dispose();
     securityCon.dispose();
@@ -100,7 +108,7 @@ class _VerifyPasswordPageState extends State<VerifyPasswordPage> {
             maxLines: 1,
             hintText: '123456',
             hintStyle: TextStyle(fontSize: 14.sp, color: disableButton, fontWeight: .normal),
-            validator: (value) => validateEmail(string: value!),
+            validator: (value) => validateMinMaxLength(string: value!, minLegth: 6, maxLength: 10)
           ),
           SizedBox(height: 12.h),
           CustomTextFormField(
@@ -117,7 +125,7 @@ class _VerifyPasswordPageState extends State<VerifyPasswordPage> {
             inputFormatters: [
               LengthLimitingTextInputFormatter(20),
             ],
-            validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 20),
+            validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 10),
             onChanged: (value) { setState(() {}); },
             suffixIcon: IconButton(
               onPressed: () => setState(() => isnewPassObscure = !isnewPassObscure),

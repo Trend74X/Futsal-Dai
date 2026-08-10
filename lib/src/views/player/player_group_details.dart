@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/model/group_model.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
@@ -174,22 +175,39 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
             ),
           ),
           Spacer(),
-          Container(
-            padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-            decoration: BoxDecoration(
-              color: transparent,
-              borderRadius: .circular(18.r),
-              border: .all(color: primaryColor)
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.add, color: primaryColor),
-                SizedBox(width: 4.w),
-                Text(
-                  'Add',
-                  style: boldStyle(primaryColor, 12.sp),
-                )
-              ],
+          InkWell(
+            onTap: () async {
+              await controller.addMemberToGroup(widget.data.id, data['id']);
+              await controller.fetchMyGroups();
+              final newMember = GroupMemberModel(
+                userId: data['id'],
+                status: 'pending',
+                role  : 'member',
+                user  : UserModel.fromJson(data),   // Adjust this if your nested user model constructor differs
+              );
+              setState(() {
+                pendingList.add(newMember);
+                controller.searchController.clear();
+                controller.searchResults.clear();
+              });
+            },
+            child: Container(
+              padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+              decoration: BoxDecoration(
+                color       : transparent,
+                borderRadius: .circular(18.r),
+                border      : .all(color: primaryColor)
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.add, color: primaryColor),
+                  SizedBox(width: 4.w),
+                  Text(
+                    'Add',
+                    style: boldStyle(primaryColor, 12.sp),
+                  )
+                ],
+              ),
             ),
           )
         ],

@@ -17,11 +17,11 @@ class GroupModel {
 
   factory GroupModel.fromJson(Map<String, dynamic> json) {
     return GroupModel(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'],
-      image: json['image'],
-      createdBy: json['created_by'] ?? '',
+      id          : json['id'] ?? '',
+      name        : json['name'] ?? '',
+      description : json['description'],
+      image       : json['image'],
+      createdBy   : json['created_by'] ?? '',
       groupMembers: (json['group_members'] as List<dynamic>?)
               ?.map((item) => GroupMemberModel.fromJson(item))
               .toList() ??
@@ -45,26 +45,30 @@ class GroupMemberModel {
   final String userId;
   final String status;
   final UserModel? user;
+  final String role;
 
   GroupMemberModel({
     required this.userId,
     required this.status,
     this.user,
+    required this.role,
   });
 
   factory GroupMemberModel.fromJson(Map<String, dynamic> json) {
     return GroupMemberModel(
       userId: json['user_id'] ?? '',
       status: json['status'] ?? 'pending',
-      user: json['Users'] != null ? UserModel.fromJson(json['Users']) : null,
+      role  : json['role'],
+      user  : json['Users'] != null ? UserModel.fromJson(json['Users']): null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'user_id': userId,
-      'status': status,
-      'Users': user?.toJson(),
+      'status' : status,
+      'role'   : role,
+      'Users'  : user?.toJson(),
     };
   }
 }
@@ -84,18 +88,18 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] ?? '',
-      fullName: json['full_name'] ?? '',
-      username: json['username'] ?? '',
+      id        : json['id'] ?? '',
+      fullName  : json['full_name'] ?? '',
+      username  : json['username'] ?? '',
       profilePic: json['profile_pic'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'full_name': fullName,
-      'username': username,
+      'id'         : id,
+      'full_name'  : fullName,
+      'username'   : username,
       'profile_pic': profilePic,
     };
   }
