@@ -7,6 +7,7 @@ import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/views/auth/register.dart';
+import 'package:futsal_dai/src/views/auth/reset_password.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -116,7 +117,7 @@ class _LogInPageState extends State<LogInPage> {
                 keyboardType: TextInputType.text,
                 autoValidateMode: AutovalidateMode.onUserInteraction,
                 controller: passwordCon,
-                obscureText: true,
+                obscureText: isObscure,
                 maxLines: 1,
                 hintText: '********',
                 hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
@@ -127,24 +128,23 @@ class _LogInPageState extends State<LogInPage> {
                 onChanged: (value){
                   setState(() {});
                 },
-                // suffixIcon: IconButton(
-                //   onPressed: (){
-                //     setState(() {
-                //       isObscure = !isObscure;
-                //     });
-                //   },
-                //   icon: DisplayNetworkImage(
-                //     imageUrl: isObscure ? 'assets/icons/eye_outlined.svg' : 'assets/icons/hide_post_icon.svg',
-                //   )
-                // ),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => isObscure = !isObscure),
+                  icon: Icon(
+                    isObscure ? Icons.remove_red_eye_outlined : Icons.visibility_off_outlined,
+                  )
+                ),
               ),
               SizedBox(height: 8.h),
               Row(
                 mainAxisAlignment: .end,
                 children: [
-                  Text(
-                    'Forgot Password?',
-                    style: TextStyle(fontSize: 16.sp, color: primaryTextColor, fontWeight: .bold),
+                  InkWell(
+                    onTap: () => Get.to(() => ResetPassword()),
+                    child: Text(
+                      'Forgot Password?',
+                      style: TextStyle(fontSize: 16.sp, color: primaryTextColor, fontWeight: .bold),
+                    ),
                   )
                 ]
               ),

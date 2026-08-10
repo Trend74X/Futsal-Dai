@@ -22,8 +22,10 @@ class _RegisterPageState extends State<RegisterPage> {
   final AuthController authCon = Get.find();
 
   String selectedRole = 'player';
+  bool isObsecure = true;
 
   final fullNameCon = TextEditingController();
+  final userNameCon = TextEditingController();
   final phoneNoCon  = TextEditingController();
   final emailCon    = TextEditingController();
   final passwordCon = TextEditingController();
@@ -277,6 +279,25 @@ class _RegisterPageState extends State<RegisterPage> {
                 hintText: 'Cristiano Ronaldo',
                 hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
                 inputFormatters: [
+                  LengthLimitingTextInputFormatter(40),
+                ],
+                validator: (value) => validateIsEmpty(string: value!),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 8.h),
+              CustomTextFormField(
+                headingText: "User Name (Cannot be changed later)",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                autoValidateMode: AutovalidateMode.onUserInteraction,
+                controller: userNameCon,
+                maxLines: 1,
+                hintText: 'futsal_pro',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                inputFormatters: [
                   LengthLimitingTextInputFormatter(20),
                 ],
                 validator: (value) => validateIsEmpty(string: value!),
@@ -329,7 +350,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 textInputAction: TextInputAction.next,
                 keyboardType: TextInputType.text,
                 autoValidateMode: AutovalidateMode.onUserInteraction,
-                obscureText: true,
+                obscureText: isObsecure,
                 controller: passwordCon,
                 maxLines: 1,
                 hintText: '••••••••',
@@ -338,9 +359,13 @@ class _RegisterPageState extends State<RegisterPage> {
                   LengthLimitingTextInputFormatter(20),
                 ],
                 validator: (value) => validateMinMaxLength(string: value!, minLegth: 8, maxLength: 20),
-                onChanged: (value){
-                  setState(() {});
-                },
+                onChanged: (value) => setState(() {}),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(() => isObsecure = !isObsecure),
+                  icon: Icon(
+                    isObsecure ? Icons.remove_red_eye_outlined : Icons.visibility_off_outlined,
+                  )
+                ),
               ),
               SizedBox(height: 24.h),
               CustomUsualButton(
@@ -351,11 +376,12 @@ class _RegisterPageState extends State<RegisterPage> {
                   final isValid = formKey.currentState!.validate();
                   if (!isValid) return;
                   var data = {
-                    "full_name": fullNameCon.text.trim(),
+                    "full_name"   : fullNameCon.text.trim(),
                     "phone_number": phoneNoCon.text.trim(),
-                    "email": emailCon.text.trim(),
-                    "password": passwordCon.text.trim(),
-                    "role": selectedRole,
+                    "email"       : emailCon.text.trim(),
+                    "password"    : passwordCon.text.trim(),
+                    "username"    : userNameCon.text.trim(),
+                    "role"        : selectedRole,
                   };
                   bool isSignedUp = await authCon.signUp(data);
                   if(isSignedUp) Get.offAll(() => LogInPage());

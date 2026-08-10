@@ -139,7 +139,8 @@ class GroupController extends GetxController {
                 id,
                 full_name,
                 username,
-                profile_pic
+                profile_pic,
+                role
               )
             )
           ''');
