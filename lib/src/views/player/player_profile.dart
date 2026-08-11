@@ -8,6 +8,7 @@ import 'package:futsal_dai/src/views/player/favorites.dart';
 import 'package:futsal_dai/src/views/player/player_edit_profile.dart';
 import 'package:futsal_dai/src/views/player/player_group_list.dart';
 import 'package:futsal_dai/src/views/player/player_transactions.dart';
+import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
@@ -251,7 +252,13 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
   Widget logOutBtn() {
     return CustomUsualButton(
       text: 'Log Out', 
-      onPressed: () => _authCon.signOutUser(context),
+      onPressed: () => customAlertDialog(
+              title: 'Log Out',
+              content: 'Are you sure you want to log out?',
+              confirmText: 'Log Out',
+              cancelText: 'Cancel',
+              confirmAction: () => _authCon.signOutUser(context)
+            ),
       fontColor: Color(0xFFFFB4AB),
       borderColor: Color(0xFFFFB4AB),
       bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.05),
