@@ -232,6 +232,7 @@ class PlayerController extends GetxController {
     required DateTime startTime,
     required DateTime endTime,
     required num totalPrice,
+    String? groupId,
   }) async {
     isBooking.value = true;
 
@@ -252,6 +253,7 @@ class PlayerController extends GetxController {
         'venue_id': venueId,
         'ground_id': groundId,
         'user_id': userId,
+        'group_id': groupId,
         'booking_date': formattedDate,
         'start_time': formattedStartTime,
         'end_time': formattedEndTime,
