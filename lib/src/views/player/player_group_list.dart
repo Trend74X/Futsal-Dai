@@ -113,7 +113,10 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
 
   Widget groupListTile({required dynamic data, required int count}) {
     return InkWell(
-      onTap: () => Get.to(() => PlayerGroupDetail(data: data)),
+      onTap: () async {
+        await Get.to(() => PlayerGroupDetail(data: data));
+        setState(() { });
+      },
       child: Container(
         decoration: BoxDecoration(
           color: filledBgColor,

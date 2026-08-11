@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/model/group_model.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
@@ -20,6 +21,7 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
 
   List pendingList = [];
   List joinedList = [];
+  bool isAdmin = false;
 
   @override
   void initState() {
@@ -27,6 +29,8 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
     setState(() {
       joinedList = widget.data.groupMembers.where((member) => member.status == 'active').toList();
       pendingList = widget.data.groupMembers.where((member) => member.status == 'pending').toList();
+      String? adminUserId = joinedList.where((member) => member.role == 'admin').firstOrNull?.userId;
+      isAdmin = read('userId') == adminUserId;
     });
   }
   
@@ -50,9 +54,9 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
                   children: [
                     SizedBox(height: 12.h),
                     headerWidget(),
-                    SizedBox(height: 12.h),
-                    searchWidget(),
-                    SizedBox(height: 16.h),
+                    SizedBox(height: isAdmin ? 12.h : 24.h),
+                    if(isAdmin) searchWidget(),
+                    if(isAdmin) SizedBox(height: 16.h),
                     labelWidget(label: 'Pending Invites (${pendingList.length})'),
                     SizedBox(height: 8.h),
                     pendingListWidget(),
@@ -230,12 +234,12 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
       separatorBuilder:(context, index) => SizedBox(height: 8.h), 
       itemBuilder:(context, index) {
         var data = pendingList[index];
-        return pendingTileWidget(data: data);        
+        return pendingTileWidget(data: data, index: index);        
       }, 
     );
   }
 
-  Widget pendingTileWidget({required dynamic data}) {
+  Widget pendingTileWidget({required dynamic data, required int index}) {
     return Container(
       padding: .symmetric(vertical: 12.h, horizontal: 8.w),
       decoration: BoxDecoration(
@@ -273,19 +277,58 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
               ],
             ),
           ),
-          Spacer(),
-          Container(
-            padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-            decoration: BoxDecoration(
-              color: transparent,
-              borderRadius: .circular(18.r),
-              border: .all(color: Color(0xFFFFB4AB))
+          if(isAdmin) Spacer(),
+          if(isAdmin)
+            InkWell(
+              onTap: () async {
+                await controller.updateGroupInvite(widget.data.id, data.userId, 'remove');
+                await controller.fetchMyGroups();
+                setState(() => pendingList.removeAt(index));
+              },
+              child: Container(
+                padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+                decoration: BoxDecoration(
+                  color: transparent,
+                  borderRadius: .circular(18.r),
+                  border: .all(color: Color(0xFFFFB4AB))
+                ),
+                child: Text(
+                  'Cancel',
+                  style: boldStyle(Color(0xFFFFB4AB), 12.sp),
+                ),
+              ),
             ),
-            child: Text(
-              'Cancel',
-              style: boldStyle(Color(0xFFFFB4AB), 12.sp),
+          if(data.user!.id == read('userId')) Spacer(),
+          if(data.user!.id == read('userId'))
+            InkWell(
+              onTap: () async {
+                await controller.updateGroupInvite(widget.data.id, data.userId, 'active');
+                await controller.fetchMyGroups();
+
+                final newMember = GroupMemberModel(
+                  userId: data.userId,
+                  status: 'active',
+                  role  : 'member',
+                  user  : data.user
+                );
+                setState(() {
+                  pendingList.removeAt(index);
+                  joinedList.add(newMember);
+                });
+              },
+              child: Container(
+                padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+                decoration: BoxDecoration(
+                  color: transparent,
+                  borderRadius: .circular(18.r),
+                  border: .all(color: primaryTextColor)
+                ),
+                child: Text(
+                  'Accept',
+                  style: boldStyle(primaryTextColor, 12.sp),
+                ),
+              ),
             ),
-          )
         ],
       ),
     );
@@ -299,12 +342,12 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
       separatorBuilder:(context, index) => SizedBox(height: 8.h), 
       itemBuilder:(context, index) {
         var data = joinedList[index];
-        return membersWidget(data: data);        
+        return membersWidget(data: data, index: index);
       }, 
     );
   }
 
-  Widget membersWidget({required dynamic data}) {
+  Widget membersWidget({required dynamic data, required int index}) {
     return Container(
       padding: .symmetric(vertical: 12.h, horizontal: 8.w),
       decoration: BoxDecoration(
@@ -322,25 +365,36 @@ class _PlayerGroupDetailState extends State<PlayerGroupDetail> {
             ),
           ),
           SizedBox(width: 8.w),
-          Column(
-            crossAxisAlignment: .start,
-            children: [
-              Text(
-                data.user!.fullName,
-                style: semiBoldStyle(whiteTextColor, 18.sp),
-                maxLines: 1,
-                overflow: .ellipsis
-              ),
-              Text(
-                '@${data.user!.username}',
-                style: boldStyle(subtitleTextColor, 14.sp),
-                maxLines: 1,
-                overflow: .ellipsis
-              )
-            ],
+          Expanded(
+            flex: 7,
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  data.user!.fullName,
+                  style: semiBoldStyle(whiteTextColor, 18.sp),
+                  maxLines: 1,
+                  overflow: .ellipsis
+                ),
+                Text(
+                  '@${data.user!.username}',
+                  style: boldStyle(subtitleTextColor, 14.sp),
+                  maxLines: 1,
+                  overflow: .ellipsis
+                )
+              ],
+            ),
           ),
-          // Spacer(),
-          // Icon(Icons.more_vert, color: whiteTextColor)
+          if(data.user!.id == read('userId')) Spacer(),
+          if(data.user!.id == read('userId')) 
+            IconButton(
+              onPressed: () async {
+                await controller.updateGroupInvite(widget.data.id, data.userId, 'remove');
+                await controller.fetchMyGroups();
+                setState(() => joinedList.removeAt(index));
+              }, 
+              icon: Icon(Icons.exit_to_app_outlined, color: primaryTextColor)
+            )
         ],
       ),
     );

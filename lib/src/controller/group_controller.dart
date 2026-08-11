@@ -192,6 +192,30 @@ class GroupController extends GetxController {
     }
   }
 
+  Future<void> updateGroupInvite(String groupId, String userId, String status) async {
+    try {
+
+      if (status == 'active') {
+        await supabase
+            .from('group_members')
+            .update({'status': status})
+            .eq('group_id', groupId)
+            .eq('user_id', userId);
+        showToast(message: 'Invitation updated successfully!', isSuccess: true);
+      } else if (status == 'remove') {
+        await supabase
+            .from('group_members')
+            .delete()
+            .eq('group_id', groupId)
+            .eq('user_id', userId);
+        showToast(message: 'Group left successfully!', isSuccess: true);
+      }
+
+    } catch (e) {
+      showToast(message: 'Failed to updated member: $e', isSuccess: false);
+    }
+  }
+
   @override
   void onClose() {
     groupNameCon.dispose();
