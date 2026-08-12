@@ -2,7 +2,9 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/model/booking_model.dart';
 import 'package:futsal_dai/src/model/futsal_venue_model.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -10,6 +12,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class PlayerController extends GetxController {
   final supabase = Supabase.instance.client; 
   RxBool isBooking = false.obs;
+  RxBool isLoadingBookings = false.obs;
   
   RxBool isLoadingNearByData = false.obs;
   RxList nearbyVenues = [].obs;
@@ -29,6 +32,10 @@ class PlayerController extends GetxController {
   // --- FAVORITES LIST LOGIC ---
   RxList<FutsalVenueModel> favoriteVenuesList = <FutsalVenueModel>[].obs;
   RxBool isLoadingFavs = false.obs;
+
+  // --- Bookings ---
+  List myMatches = [];
+  dynamic venueDetail;
 
   Future<void> loadNearbyVenues({
     String searchQuery = '',
@@ -232,6 +239,7 @@ class PlayerController extends GetxController {
     required DateTime startTime,
     required DateTime endTime,
     required num totalPrice,
+    required String venueName,
     String? groupId,
   }) async {
     isBooking.value = true;
@@ -249,18 +257,19 @@ class PlayerController extends GetxController {
       final formattedEndTime = DateFormat('HH:mm:ss').format(endTime);
 
       final payload = {
-        'is_deleted': false,
-        'venue_id': venueId,
-        'ground_id': groundId,
-        'user_id': userId,
-        'group_id': groupId,
+        'is_deleted'  : false,
+        'venue_id'    : venueId,
+        'ground_id'   : groundId,
+        'venue_name'  : venueName,
+        'user_id'     : userId,
+        'group_id'    : groupId,
         'booking_date': formattedDate,
-        'start_time': formattedStartTime,
-        'end_time': formattedEndTime,
-        'total_price': totalPrice,
-        'status': 'pending',
-        'booking_type': 'app_booking',
-        'ground_name': groundName
+        'start_time'  : formattedStartTime,
+        'end_time'    : formattedEndTime,
+        'total_price' : totalPrice,
+        'ground_name' : groundName,
+        'status'      : 'pending',
+        'booking_type': 'app_booking'
       };
 
       // 1. Check if a booking already exists for this exact slot
@@ -271,29 +280,44 @@ class PlayerController extends GetxController {
           .eq('ground_id', groundId)
           .eq('booking_date', formattedDate)
           .eq('start_time', formattedStartTime)
-          .maybeSingle(); // Returns null if no record is found
+          .maybeSingle();
+
+      String bookingId;
 
       if (existingBooking != null) {
-        // 2. UPDATE if it exists
+        // 2. UPDATE if it exists and fetch the ID
+        bookingId = existingBooking['id'];
         await Supabase.instance.client
             .from('bookings')
             .update(payload)
-            .eq('id', existingBooking['id']);
+            .eq('id', bookingId);
       } else {
-        // 3. INSERT if it does not exist
-        await Supabase.instance.client
+        // 3. INSERT if it does not exist and return the new ID
+        final insertResponse = await Supabase.instance.client
             .from('bookings')
-            .insert(payload);
+            .insert(payload)
+            .select('id')
+            .single();
+            
+        bookingId = insertResponse['id'];
       }
 
-      // --- NEW: UI REFRESH LOGIC ---
-      // Find the slot in your observable list and update its status locally
+      // --- CREATE OR UPDATE EMPTY MATCH ATTENDANCE RECORD ---
+      await Supabase.instance.client
+          .from('match_attendance')
+          .upsert({
+            'booking_id': bookingId,
+            'attendance_data': {}
+          }, onConflict: 'booking_id');
+
+      // --- UI REFRESH LOGIC ---
       final slotIndex = availableSlots.indexWhere((slot) => slot['slot_start'] == startTime);
       if (slotIndex != -1) {
         availableSlots[slotIndex]['status'] = 'pending';
-        availableSlots.refresh(); // Tells GetX to redraw the grid immediately
+        availableSlots.refresh();
       }
-
+      
+      Get.back();
       Get.snackbar(
         'Request Sent', 
         'Your booking request has been sent to the owner.',
@@ -378,6 +402,38 @@ class PlayerController extends GetxController {
       Get.snackbar('Error', 'Could not load favorites.');
     } finally {
       isLoadingFavs.value = false;
+    }
+  }
+ 
+  Future<void> getBookingDatas() async {
+    isLoadingBookings.value = true;
+    try {
+      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await supabase
+          .from('bookings')
+          .select('''
+            *,
+            futsal_venues (
+              id,
+              name,
+              address,
+              main_image_url,
+              phone_number,
+              latitude,
+              longitude
+            )
+          ''')
+          .eq('user_id', read('userId'))
+          .gte('booking_date', today)
+          .order('created_at', ascending: false)
+          .order('start_time', ascending: true);
+
+      myMatches.assignAll((response as List).map((item) => BookingModel.fromJson(item)).toList());
+    } catch (e) {
+      log('Error fetching favorite venues list: $e');
+      showToast(message: 'Could not load favorites.', isSuccess: false);
+    } finally {
+      isLoadingBookings.value = false;
     }
   }
 

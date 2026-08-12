@@ -1,6 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/group_controller.dart';
+import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
@@ -9,6 +11,7 @@ import 'package:futsal_dai/src/views/player/player_team_shuffler.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class PlayerBookingPage extends StatefulWidget {
   const PlayerBookingPage({super.key});
@@ -18,8 +21,23 @@ class PlayerBookingPage extends StatefulWidget {
 }
 
 class _PlayerBookingPageState extends State<PlayerBookingPage> {
+  final playerCon = Get.put(PlayerController());
+  final groupCon  = Get.put(GroupController());
 
-  String selected = 'Upcoming';
+  String selected        = 'Upcoming';
+  List   upcomingMatches = [];
+  List   pendingMatches  = [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await playerCon.getBookingDatas();
+      upcomingMatches = playerCon.myMatches.where((match) => match.status == 'booked').toList();
+      pendingMatches  = playerCon.myMatches.where((match) => match.status == 'pending').toList();
+      setState(() { });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,17 +46,21 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
         child: Container(
           decoration: bgImg(),
           child: SafeArea(
+            bottom: false,
             child: Padding(
               padding: .all(16.sp),
-              child: Column(
-                crossAxisAlignment: .start,
-                children: [
-                  titlesWidget(),
-                  SizedBox(height: 16.h),
-                  tabButtons(),
-                  SizedBox(height: 24.h),
-                  tabViews()
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  children: [
+                    titlesWidget(),
+                    SizedBox(height: 16.h),
+                    tabButtons(),
+                    SizedBox(height: 24.h),
+                    tabViews(),
+                    SizedBox(height: 8.h),
+                  ],
+                ),
               ),
             )
           ),
@@ -142,230 +164,244 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   }
 
   Widget upcomingWidget() {
-    return InkWell(
-      onTap: () => Get.to(() => MatchAttendance()),
-      child: Container(
-        margin: .all(4.sp),
-        decoration: BoxDecoration(
-          color: Color(0xFF0F172A),
-          borderRadius: .circular(24.r),
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withValues(alpha: 0.5),
-              offset: Offset(0, 0),
-              blurRadius: 9.sp,
-              spreadRadius: 3.sp
-            )
-          ]
-        ),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: .start,
-              children: [
-                ClipRRect(
-                  borderRadius: .only(
-                    topLeft: .circular(24.r),
-                    topRight: .circular(24.r)
-                  ),
-                  child: SizedBox(
-                    height: 128.h,
-                    width: .infinity,
-                    child: Image.asset(
-                      'assets/images/court.png',
-                      fit: .cover,
-                    )
+    return upcomingMatches.isEmpty
+      ? SizedBox(
+        height: Get.height * 0.5,
+        child: Center(
+          child: Text(
+            'There is no upcoming matches.',
+            style: semiBoldStyle(subtitleTextColor, 14.sp),
+          )
+        )
+      )
+      : ListView.separated(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        itemCount: upcomingMatches.length,
+        separatorBuilder:(context, index) => SizedBox(height: 16.h), 
+        itemBuilder:(context, index) {
+          var data = upcomingMatches[index];
+          String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
+          String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
+          return InkWell(
+            onTap: () => Get.to(() => MatchAttendance()),
+            child: Container(
+              margin: .all(4.sp),
+              decoration: BoxDecoration(
+                color: Color(0xFF0F172A),
+                borderRadius: .circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.5),
+                    offset: Offset(0, 0),
+                    blurRadius: 9.sp,
+                    spreadRadius: 3.sp
                   )
-                ),
-                Padding(
-                  padding: .all(16.sp),
-                  child: Column(
+                ]
+              ),
+              child: Stack(
+                children: [
+                  Column(
                     crossAxisAlignment: .start,
                     children: [
-                      Text(
-                        'X-Arena Pro',
-                        style: TextStyle(
-                          color: primaryTextColor,
-                          fontSize: 20.sp,
-                          fontWeight: .w600
+                      ClipRRect(
+                        borderRadius: .only(
+                          topLeft: .circular(24.r),
+                          topRight: .circular(24.r)
                         ),
-                      ),
-                      Text(
-                        '[PITCH 1 • INDOOR 5-A-SIDE]',
-                        style: TextStyle(
-                          color: subtitleTextColor,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Row(
-                        crossAxisAlignment: .start,
-                        children: [
-                          Icon(Icons.date_range_rounded, color: primaryTextColor, size: 15.sp),
-                          SizedBox(width: 8.w),
-                          Column(
-                            crossAxisAlignment: .start,
-                            children: [
-                              Text(
-                                'Sat, Dec 16 | 7:00 PM - 8:00 PM',
-                                style: TextStyle(
-                                  color: whiteTextColor,
-                                  fontSize: 14.sp,
-                                ),
-                              ),
-                              SizedBox(height: 8.h),
-                              Row(
-                                children: [
-                                  Icon(Icons.timer, color: primaryTextColor, size: 15.sp),
-                                  SizedBox(width: 8.w),
-                                  Text(
-                                    'Starts in 2h 15m',
-                                    style: TextStyle(
-                                      color: Color(0xFF2AE500),
-                                      fontSize: 12.sp,
-                                      fontWeight: .bold
-                                    ),
-                                  )
-                                ],
-                              )
-                            ],
+                        child: SizedBox(
+                          height: 128.h,
+                          width: .infinity,
+                          child: Image.asset(
+                            'assets/images/court.png',
+                            fit: .cover,
                           )
-                        ],
+                        )
                       ),
-                      SizedBox(height: 16.h),
-                      Row(
-                        children: [
-                          Icon(Icons.flash_on, color: subtitleTextColor, size: 12.sp),
-                          SizedBox(width: 8.w),
-                          Text(
-                            'Extra Bibs Requested',
-                            style: TextStyle(
-                              color: subtitleTextColor,
-                              fontSize: 12.sp
+                      Padding(
+                        padding: .all(16.sp),
+                        child: Column(
+                          crossAxisAlignment: .start,
+                          children: [
+                            Text(
+                              data.venueName,
+                              style: semiBoldStyle(primaryTextColor, 20.sp).copyWith(height: 1.0)
                             ),
-                          )
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Image.asset('assets/icons/ball.png', color: subtitleTextColor, height: 12.h),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '2 Match Balls',
-                            style: TextStyle(
-                              color: subtitleTextColor,
-                              fontSize: 12.sp
-                            ),
-                          )
-                        ],
-                      ),
-                      SizedBox(height: 16.h),
-                      Row(
-                        children: [
-                          InkWell(
-                            // onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
-                            onTap: () => Get.to(() => CustomMapScreen(
-                              initialLat: 27.6743885773776,
-                              initialLng: 85.321441768245,
-                              showCurrentLocation: true,
-                              showDirection: true,
-                              enableSearch: false,
-                              isFullScreenView: true,
-                            )),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: .all(
-                                  color: primaryTextColor
-                                ),
-                                borderRadius: .circular(12.r)
-                              ),
-                              padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                              child: Row(
-                                mainAxisSize: .min,
-                                children: [
-                                  Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
-                                  SizedBox(width: 8.w),
-                                  Text(
-                                    'Get Directions',
-                                    style: TextStyle(
-                                      color: primaryTextColor,
-                                      fontSize: 16.sp,
-                                    )
-                                  )
-                                ],
+                            SizedBox(height: 4.h),
+                            Text(
+                              data.groundName,
+                              style: TextStyle(
+                                color: subtitleTextColor,
+                                fontSize: 12.sp,
                               ),
                             ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => makePhoneCall('9809809809'),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: .all(
-                                   color:  primaryTextColor
-                                  ),
-                                  borderRadius: .circular(12.r)
-                                ),
-                                padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                                child: Row(
-                                  mainAxisSize: .min,
+                            SizedBox(height: 8.h),
+                            Row(
+                              crossAxisAlignment: .start,
+                              children: [
+                                Icon(Icons.date_range_rounded, color: primaryTextColor, size: 15.sp),
+                                SizedBox(width: 8.w),
+                                Column(
+                                  crossAxisAlignment: .start,
                                   children: [
-                                    Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
-                                    SizedBox(width: 8.w),
                                     Text(
-                                      'Call Owner',
+                                      '$date | $time',
                                       style: TextStyle(
-                                        color: primaryTextColor,
-                                        fontSize: 16.sp,
-                                      )
-                                    )
+                                        color: whiteTextColor,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                    // SizedBox(height: 8.h),
+                                    // Row(
+                                    //   children: [
+                                    //     Icon(Icons.timer, color: primaryTextColor, size: 15.sp),
+                                    //     SizedBox(width: 8.w),
+                                    //     Text(
+                                    //       'Starts in 2h 15m',
+                                    //       style: TextStyle(
+                                    //         color: Color(0xFF2AE500),
+                                    //         fontSize: 12.sp,
+                                    //         fontWeight: .bold
+                                    //       ),
+                                    //     )
+                                    //   ],
+                                    // )
                                   ],
-                                ),
-                              ),
+                                )
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 12.h),
-                      // Center(
-                      //   child: Text(
-                      //     'Free cancellation valid for 45 more minutes',
-                      //     style: TextStyle(
-                      //       color: subtitleTextColor,
-                      //       fontSize: 10.sp
-                      //     ),
-                      //   ),
-                      // ),
-                      // SizedBox(height: 12.h),
+                            // SizedBox(height: 16.h),
+                            // Row(
+                            //   children: [
+                            //     Icon(Icons.flash_on, color: subtitleTextColor, size: 12.sp),
+                            //     SizedBox(width: 8.w),
+                            //     Text(
+                            //       'Extra Bibs Requested',
+                            //       style: TextStyle(
+                            //         color: subtitleTextColor,
+                            //         fontSize: 12.sp
+                            //       ),
+                            //     )
+                            //   ],
+                            // ),
+                            // Row(
+                            //   children: [
+                            //     Image.asset('assets/icons/ball.png', color: subtitleTextColor, height: 12.h),
+                            //     SizedBox(width: 8.w),
+                            //     Text(
+                            //       '2 Match Balls',
+                            //       style: TextStyle(
+                            //         color: subtitleTextColor,
+                            //         fontSize: 12.sp
+                            //       ),
+                            //     )
+                            //   ],
+                            // ),
+                            SizedBox(height: 16.h),
+                            Row(
+                              children: [
+                                InkWell(
+                                  // onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
+                                  onTap: () => Get.to(() => CustomMapScreen(
+                                    initialLat: data.futsalVenues!.latitude,
+                                    initialLng: data.futsalVenues!.longitude,
+                                    showCurrentLocation: true,
+                                    showDirection: true,
+                                    enableSearch: false,
+                                    isFullScreenView: true,
+                                  )),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: .all(color: primaryTextColor),
+                                      borderRadius: .circular(12.r)
+                                    ),
+                                    padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                                    child: Row(
+                                      mainAxisSize: .min,
+                                      children: [
+                                        Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
+                                        SizedBox(width: 8.w),
+                                        Text(
+                                          'Get Directions',
+                                          style: regularStyle(primaryTextColor, 16.sp)
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => makePhoneCall(data.futsalVenues!.phoneNumber),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        border: .all(
+                                        color:  primaryTextColor
+                                        ),
+                                        borderRadius: .circular(12.r)
+                                      ),
+                                      padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                                      child: Row(
+                                        mainAxisSize: .min,
+                                        children: [
+                                          Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
+                                          SizedBox(width: 8.w),
+                                          Text(
+                                            'Call Owner',
+                                            style: TextStyle(
+                                              color: primaryTextColor,
+                                              fontSize: 16.sp,
+                                            )
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 12.h),
+                            // Center(
+                            //   child: Text(
+                            //     'Free cancellation valid for 45 more minutes',
+                            //     style: TextStyle(
+                            //       color: subtitleTextColor,
+                            //       fontSize: 10.sp
+                            //     ),
+                            //   ),
+                            // ),
+                            // SizedBox(height: 12.h),
+                          ],
+                        ),
+                      )
                     ],
                   ),
-                )
-              ],
-            ),
-            Align(
-              alignment: .topRight,
-              child: InkWell(
-                onTap: () => Get.to(() => PlayerTeamShuffler()),
-                child: Container(
-                  margin: .all(16.sp),
-                  decoration: BoxDecoration(
-                    color: filledBgColor,
-                    borderRadius: .circular(12.r)
-                  ),
-                  padding: .all(12.sp),
-                  child: Icon(
-                    Icons.diversity_3,
-                    size: 24.sp,
-                    color: primaryColor,
-                  ),
-                ),
+                  Align(
+                    alignment: .topRight,
+                    child: InkWell(
+                      onTap: () => Get.to(() => PlayerTeamShuffler()),
+                      child: Container(
+                        margin: .all(16.sp),
+                        decoration: BoxDecoration(
+                          color: filledBgColor,
+                          borderRadius: .circular(12.r)
+                        ),
+                        padding: .all(12.sp),
+                        child: Icon(
+                          Icons.diversity_3,
+                          size: 24.sp,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
               ),
-            )
-          ],
-        ),
-      ),
-    );
+            ),
+          );
+        } 
+      );
+
   }
 
   Widget pendingWidget() {

@@ -14,6 +14,7 @@ class UserModel {
   final double? longitude;
   final double? latitude;
   final String? address;
+  final String? userName;
 
   UserModel({
     required this.id,
@@ -25,6 +26,7 @@ class UserModel {
     required this.phoneNumber,
     required this.role,
     required this.email,
+    required this.userName,
     this.profilePic,
     this.longitude,
     this.latitude,
@@ -38,10 +40,10 @@ class UserModel {
       createdAt: DateTime.parse(json['created_at'] as String),
       deletedAt: json['deleted_at'] != null
                   ? DateTime.parse(json['deleted_at'] as String) 
-                  :  null,
+               :   null,
       updatedAt: json['updated_at'] != null
                   ? DateTime.parse(json['updated_at'] as String) 
-                  :  null,
+                 :   null,
       isDeleted  : json['is_deleted'] as bool,
       fullName   : json['full_name'] as String,
       phoneNumber: json['phone_number'] as String,
@@ -50,7 +52,8 @@ class UserModel {
       profilePic : json['profile_pic'] ?? '',
       longitude  : json['longitude'] ?? 0.0,
       latitude   : json['latitude'] ?? 0.0,
-      address    : json['address'] ?? ''
+      address    : json['address'] ?? '',
+      userName   : json['username'] ?? ''
     );
   }
 

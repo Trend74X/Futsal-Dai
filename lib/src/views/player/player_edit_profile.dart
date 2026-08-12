@@ -34,6 +34,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
   final Geocoding geocoding    = Geocoding();
   final formKey                = GlobalKey<FormState>();
 
+  final userNameCon = TextEditingController();
   final fullNameCon = TextEditingController();
   final phoneNoCon  = TextEditingController();
   final emailCon    = TextEditingController();
@@ -58,6 +59,7 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
       phoneNoCon.text  = profile.phoneNumber;
       emailCon.text    = profile.email;
       addressCon.text  = profile.address ?? '';
+      userNameCon.text = profile.userName ?? '';
       
       // Convert String? to double? safely
       latitude  = profile.latitude;
@@ -112,6 +114,23 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
           key: formKey,
           child: Column(
             children: [
+              CustomTextFormField(
+                headingText: "User Name",
+                headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+                textInputAction: TextInputAction.next,
+                keyboardType: TextInputType.text,
+                // autoValidateMode: AutovalidateMode.onUserInteraction,
+                readOnly: true,
+                controller: userNameCon,
+                maxLines: 1,
+                hintText: 'user_1234',
+                hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+                // validator: (value) => validateIsEmpty(string: value!),
+                onChanged: (value){
+                  setState(() {});
+                },
+              ),
+              SizedBox(height: 8.h),
               CustomTextFormField(
                 headingText: "Full Name",
                 headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),

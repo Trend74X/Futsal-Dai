@@ -51,7 +51,6 @@ class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
     setState(() => isBooking = true);
 
     try {
-      Get.back();
       await _con.requestBooking(
         venueId: widget.venueData.id,
         groundId: widget.selectedGround['id'],
@@ -61,6 +60,7 @@ class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
         totalPrice: widget.selectedSlot['price'],
         groundName: widget.selectedGround['ground_name'],
         groupId: selectedGroup?.id,
+        venueName: widget.venueData.name
       );
     } catch (e) {
       Get.snackbar(
