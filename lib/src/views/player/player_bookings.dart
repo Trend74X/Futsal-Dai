@@ -1,4 +1,3 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
@@ -235,6 +234,22 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                                 fontSize: 12.sp,
                               ),
                             ),
+                            SizedBox(height: 4.h),
+                            Row(
+                              crossAxisAlignment: .center,
+                              children: [
+                                Icon(Icons.location_on_outlined, color: primaryTextColor, size: 13.sp),
+                                SizedBox(width: 4.w),
+                                Expanded(
+                                  child: Text(
+                                    data.futsalVenues.address,
+                                    style: regularStyle(subtitleTextColor, 14.sp).copyWith(height: 1.0),
+                                    maxLines: 2,
+                                    overflow: .ellipsis,
+                                  ),
+                                )
+                              ],
+                            ),
                             SizedBox(height: 8.h),
                             Row(
                               crossAxisAlignment: .start,
@@ -405,116 +420,111 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   }
 
   Widget pendingWidget() {
-    return Container(
-      margin: .all(4.sp),
-      decoration: BoxDecoration(
-        color: filledBgColor,
-        borderRadius: .circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFFF59E0B).withValues(alpha: 0.5),
-            offset: Offset(0, 0),
-            blurRadius: 9.sp,
-            spreadRadius: 3.sp
+    return pendingMatches.isEmpty
+      ? SizedBox(
+        height: Get.height * 0.5,
+        child: Center(
+          child: Text(
+            'There is no pending matches.',
+            style: semiBoldStyle(subtitleTextColor, 14.sp),
           )
-        ]
-      ),
-      child: Column(
-        crossAxisAlignment: .start,
-        children: [
-          ClipRRect(
-            borderRadius: .only(
-              topLeft: .circular(24.r),
-              topRight: .circular(24.r)
+        )
+      )
+      : ListView.separated(
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        itemCount: pendingMatches.length,
+        separatorBuilder:(context, index) => SizedBox(height: 16.h), 
+        itemBuilder:(context, index) {
+          var data = pendingMatches[index];
+          return Container(
+            margin: .all(4.sp),
+            decoration: BoxDecoration(
+              color: filledBgColor,
+              borderRadius: .circular(24.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0xFFF59E0B).withValues(alpha: 0.5),
+                  offset: Offset(0, 0),
+                  blurRadius: 9.sp,
+                  spreadRadius: 3.sp
+                )
+              ]
             ),
-            child: SizedBox(
-              height: 128.h,
-              width: .infinity,
-              child: Image.asset(
-                'assets/images/court.png',
-                fit: .cover,
-              )
-            )
-          ),
-          Padding(
-            padding: .all(16.sp),
             child: Column(
+              crossAxisAlignment: .start,
               children: [
-                Text(
-                  'Prismatic Futsal & Recreation Center',
-                  style: TextStyle(
-                    color: whiteTextColor,
-                    fontWeight: .bold,
-                    fontSize: 28.sp,
-                    height: 1.0
+                ClipRRect(
+                  borderRadius: .only(
+                    topLeft: .circular(24.r),
+                    topRight: .circular(24.r)
                   ),
-                ),
-                SizedBox(height: 8.h),
-                Row(
-                  children: [
-                    Icon(Icons.location_on_outlined, color: subtitleTextColor, size: 13.sp),
-                    SizedBox(width: 4.w),
-                    Text(
-                      'Sanepa, Lalitpur, Nepal',
-                      style: TextStyle(
-                        color: subtitleTextColor,
-                        fontSize: 14.sp
-                      ),
+                  child: SizedBox(
+                    height: 128.h,
+                    width: .infinity,
+                    child: Image.asset(
+                      'assets/images/court.png',
+                      fit: .cover,
                     )
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                Container(
-                  decoration: BoxDecoration(
-                    color: lightFilledBgColor.withValues(alpha: 0.5),
-                    borderRadius: .circular(12.r)
-                  ),
-                  padding: .all(16.sp),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        color: whiteTextColor,
-                        fontSize: 14.sp,
-                        height: 1.3,
-                      ),
-                      children: [
-                        const TextSpan(
-                          text: "The manager of Prismatic Futsal & Recreation Center will call your number (",
-                        ),
-                        TextSpan(
-                          text: "+977 9809809801",
-                          style: const TextStyle(
-                            color: Color(0xFFF59E0B),
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () => makePhoneCall('+977 9809809801'),
-                        ),
-                        const TextSpan(
-                          text: ") directly to verify this booking request within 15 minutes before the slot expires.",
-                        ),
-                      ],
-                    ),
                   )
                 ),
-                SizedBox(height: 16.h),
-                CustomUsualButton(
-                  text: 'Call Owner Directly', 
-                  onPressed: () {},
-                  fontColor: Color(0xFFF59E0B),
-                  fontWeight: .w600,
-                  fontSize: 20.sp,
-                  borderColor: Color(0xFFF59E0B),
-                  bgColor: Color(0xFFF59E0B).withValues(alpha: 0.01),
-                  height: 64.h,
-                ),
-                SizedBox(height: 8.h),
-              ],
+                Padding(
+                  padding: .all(16.sp),
+                  child: Column(
+                    children: [
+                      Text(
+                        data.venueName,
+                        style: boldStyle(whiteTextColor, 28.sp).copyWith(height: 1.0)
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_outlined, color: Color(0xFFF59E0B), size: 13.sp),
+                          SizedBox(width: 4.w),
+                          Expanded(
+                            child: Text(
+                              data.futsalVenues.address,
+                              style: regularStyle(subtitleTextColor, 14.sp).copyWith(height: 1.0),
+                              maxLines: 2,
+                              overflow: .ellipsis,
+                            ),
+                          )
+                        ],
+                      ),
+                      SizedBox(height: 12.h),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: lightFilledBgColor.withValues(alpha: 0.5),
+                          borderRadius: .circular(12.r)
+                        ),
+                        padding: .all(16.sp),
+                        child: Text(
+                          "Your booking request has been submitted to ${data.venueName} for confirmation. If it is not confirmed within 2 to 3 hours, please feel free to contact the venue owner directly to check on its status.",
+                          style: regularStyle(whiteTextColor, 14.sp).copyWith(height: 1.3),
+                        )
+                      ),
+                      SizedBox(height: 16.h),
+                      CustomUsualButton(
+                        text: 'Call Owner Directly', 
+                        onPressed: () => makePhoneCall(data.futsalVenues!.phoneNumber),
+                        fontColor: Color(0xFFF59E0B),
+                        fontWeight: .w600,
+                        fontSize: 18.sp,
+                        borderColor: Color(0xFFF59E0B),
+                        bgColor: Color(0xFFF59E0B).withValues(alpha: 0.01),
+                        height: 52.h,
+                      ),
+                      SizedBox(height: 8.h),
+                    ],
+                  )
+                )
+              ]
             )
-          )
-        ]
-      )
-    );
+          );
+        }
+      );
+      
+      
   }
 
   Widget pastWidget() {
