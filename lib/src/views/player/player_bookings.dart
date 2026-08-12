@@ -81,31 +81,33 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
             fontSize: 28.sp
           ),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: primaryColor.withValues(alpha: 0.1),
-            borderRadius: .circular(8.r),
-            border: Border.all(
-              color: primaryTextColor,
-            )
-          ),
-          padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-          margin: .only(top: 2.h),
-          child: Row(
-            mainAxisSize: .min,
-            children: [
-              Icon(Icons.timer_outlined, color: primaryTextColor, size: 12.sp),
-              SizedBox(width: 8.w),
-              Text(
-                'NEXT MATCH: IN 4 HOURS',
-                style: TextStyle(
-                  color: primaryTextColor,
-                  fontSize: 12.sp,
-                ),
+        upcomingMatches.isEmpty
+          ? SizedBox()
+          : Container(
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.1),
+              borderRadius: .circular(8.r),
+              border: Border.all(
+                color: primaryTextColor,
               )
-            ],
-          ),
-        )
+            ),
+            padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+            margin: .only(top: 2.h),
+            child: Row(
+              mainAxisSize: .min,
+              children: [
+                Icon(Icons.timer_outlined, color: primaryTextColor, size: 12.sp),
+                SizedBox(width: 8.w),
+                Text(
+                  'NEXT MATCH: IN 4 HOURS',
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontSize: 12.sp,
+                  ),
+                )
+              ],
+            ),
+          )
       ],
     );
   }

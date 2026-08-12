@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
+import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 
@@ -20,6 +22,9 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
   int selectedTeams = 2;
   bool membershuffled = false;
 
+  // Local temporary list to handle manual guest players for the shuffle session only
+  List<Map<String, dynamic>> manualPlayers = [];
+
   // Holds the generated teams structure: { 0: [player1, player2], 1: [player3, player4] }
   Map<int, List<dynamic>> generatedTeams = {};
 
@@ -34,16 +39,84 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
 
   // Getter to compute present members safely without triggering setState during build
   List get presentMembers {
-    final membersList = (controller.attendanceDetail.isNotEmpty &&
-            controller.attendanceDetail[0]['group_members'] != null)
+    final membersList = (controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['group_members'] != null)
         ? List.from(controller.attendanceDetail[0]['group_members'])
         : [];
 
-    return membersList.where((member) {
+    final dbInMembers = membersList.where((member) {
       final userId = member['user_id']?.toString();
       final status = controller.matchAttendanceMap[userId];
       return status == 'IN';
     }).toList();
+
+    // Combine database checked-in members with manual guest players
+    return [...dbInMembers, ...manualPlayers];
+  }
+
+  // --- DIALOG FOR MANUAL GUEST PLAYER ---
+  void _showAddManualPlayerDialog(BuildContext context) {
+    final TextEditingController nameController = TextEditingController();
+
+    Get.defaultDialog(
+      title: "Add Guest Player",
+      titleStyle: boldStyle(whiteTextColor, 18.sp),
+      titlePadding: .only(top: 28.h),
+      backgroundColor: filledBgColor,
+      content: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+        child: Column(
+          children: [
+            CustomTextFormField(
+              headingText: "",
+              headingTextStyle: regularStyle(subtitleTextColor, 16.sp),
+              textInputAction: .done,
+              keyboardType: .text,
+              autoValidateMode: AutovalidateMode.onUserInteraction,
+              controller: nameController,
+              maxLines: 1,
+              hintText: 'Enter player name',
+              hintStyle: regularStyle(disableButton, 16.sp),
+              validator: (value) => validateIsEmpty(string: value!),
+              onChanged: (value) => setState(() {}),
+              filled: true,
+              filledColor: filledBlueColor,
+            ),
+            SizedBox(height: 16.h),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Get.back(),
+                  child: Text('Cancel', style: regularStyle(subtitleTextColor, 14.sp)),
+                ),
+                SizedBox(width: 8.w),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor),
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isNotEmpty) {
+                      setState(() {
+                        manualPlayers.add({
+                          'is_manual': true,
+                          'role': 'Guest',
+                          'Users': {
+                            'full_name': name,
+                            'profile_pic': null,
+                          }
+                        });
+                        membershuffled = false; // Reset shuffle cache if added mid-way
+                      });
+                      Get.back();
+                    }
+                  },
+                  child: Text('Add', style: boldStyle(const Color(0xFF107100), 14.sp)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // --- SHUFFLE LOGIC ---
@@ -130,7 +203,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       children: [
         Text('Shuffle Strategy', style: boldStyle(whiteTextColor, 28.sp)),
         Text(
-          '$count PLAYERS CHECKED-IN • READY TO SPLIT',
+          '$count PLAYERS READY • READY TO SPLIT',
           style: boldStyle(primaryColor, 12.sp),
         ),
       ],
@@ -234,7 +307,23 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                     );
                   },
                 ),
-                SizedBox(height: 16.h),
+                SizedBox(height: 12.h),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: primaryColor, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
+                    minimumSize: Size(double.infinity, 44.h),
+                  ),
+                  onPressed: () => _showAddManualPlayerDialog(context),
+                  icon: Icon(Icons.person_add_alt_1_outlined, size: 16.sp, color: primaryColor),
+                  label: Text(
+                    'Add Guest Player',
+                    style: regularStyle(primaryColor, 14.sp),
+                  ),
+                ),
+                SizedBox(height: 12.h),
                 InkWell(
                   onTap: () {
                     shuffleTeams();
@@ -281,7 +370,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                 padding: EdgeInsets.symmetric(vertical: 24.h),
                 child: Center(
                   child: Text(
-                    'No players checked-in (IN) yet.',
+                    'No players checked-in (IN) or added yet.',
                     style: regularStyle(subtitleTextColor, 14.sp),
                   ),
                 ),
@@ -294,6 +383,8 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                 itemBuilder: (context, index) {
                   var member = currentPresent[index];
                   var user = member['Users'] ?? {};
+                  bool isManual = member['is_manual'] == true;
+
                   return Container(
                     width: double.infinity,
                     margin: EdgeInsets.all(4.sp),
@@ -329,7 +420,16 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                               ),
                             ],
                           ),
-                        )
+                        ),
+                        if (isManual)
+                          IconButton(
+                            icon: Icon(Icons.close, color: const Color(0xFFFFB4AB), size: 18.sp),
+                            onPressed: () {
+                              setState(() {
+                                manualPlayers.remove(member);
+                              });
+                            },
+                          ),
                       ],
                     ),
                   );
@@ -439,5 +539,5 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       ],
     );
   }
-  
+
 }
