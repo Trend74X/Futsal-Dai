@@ -115,7 +115,7 @@ class FutsalVenueDetailModel {
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       phoneNumber: json['phone_number'] ?? '',
-      mainImageUrl: json['main_image_url'],
+      mainImageUrl: json['main_image_url'] ?? '',
     );
   }
 

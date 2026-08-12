@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/controller/player_controller.dart';
-import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/player/match_attendance.dart';
@@ -26,6 +25,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   String selected        = 'Upcoming';
   List   upcomingMatches = [];
   List   pendingMatches  = [];
+  List   bookedMatches   = [];
 
   @override
   void initState() {
@@ -34,6 +34,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
       await playerCon.getBookingDatas();
       upcomingMatches = playerCon.myMatches.where((match) => match.status == 'booked').toList();
       pendingMatches  = playerCon.myMatches.where((match) => match.status == 'pending').toList();
+      bookedMatches  = playerCon.myMatches.where((match) => match.status == 'booked').toList();
       setState(() { });
     });
   }
@@ -437,6 +438,8 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
         separatorBuilder:(context, index) => SizedBox(height: 16.h), 
         itemBuilder:(context, index) {
           var data = pendingMatches[index];
+          String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
+          String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
           return Container(
             margin: .all(4.sp),
             decoration: BoxDecoration(
@@ -479,8 +482,8 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                       SizedBox(height: 8.h),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, color: Color(0xFFF59E0B), size: 13.sp),
-                          SizedBox(width: 4.w),
+                          Icon(Icons.location_on_outlined, color: Color(0xFFF59E0B), size: 15.sp),
+                          SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
                               data.futsalVenues.address,
@@ -490,6 +493,21 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                             ),
                           )
                         ],
+                      ),
+                      SizedBox(height: 8.h),
+                      Row(
+                        crossAxisAlignment: .start,
+                        children: [
+                          Icon(Icons.date_range_rounded, color: Color(0xFFF59E0B), size: 15.sp),
+                          SizedBox(width: 8.w),
+                          Text(
+                            '$date | $time',
+                            style: TextStyle(
+                              color: whiteTextColor,
+                              fontSize: 14.sp,
+                            ),
+                          )
+                        ]
                       ),
                       SizedBox(height: 12.h),
                       Container(
@@ -523,22 +541,21 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
           );
         }
       );
-      
-      
   }
 
   Widget pastWidget() {
     return ListView.separated(
-      itemCount: pastMatches.length,
+      itemCount: bookedMatches.length,
       shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
       separatorBuilder: (context, index) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
-        var data = pastMatches[index];
+        var data = bookedMatches[index];
+        String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
+        String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
         return Container(
           decoration: BoxDecoration(
-            color: data['status'] == 'completed'
-                    ? Color(0xFF1E293B).withValues(alpha: 0.9)
-                    : Color(0xFF93000A).withValues(alpha: 0.25),
+            color: lightFilledBgColor,
             borderRadius: .circular(12.r)
           ),
           padding: .symmetric(vertical: 16.h, horizontal: 12.w),
@@ -564,7 +581,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                   crossAxisAlignment: .start,
                   children: [
                     Text(
-                      data['label'],
+                      data.venueName,
                       style: TextStyle(
                         color: whiteTextColor,
                         fontSize: 20.sp,
@@ -573,68 +590,69 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                       ),
                       maxLines: 2,
                     ),
+                    SizedBox(height: 8.w),
                     Text(
-                      data['date'],
+                      '$date | $time',
                       style: TextStyle(
                         color: subtitleTextColor,
                         fontSize: 14.sp,
                       ),
                     ),
-                    data['status'] != 'completed'
+                    data.status != 'booked'
                       ? SizedBox.shrink()
                       : Text(
-                        "Paid: Rs. ${data['amount']}",
+                        "Paid: Rs. ${data.totalPrice.toInt()}",
                         style: TextStyle(
                           color: subtitleTextColor,
                           fontSize: 14.sp,
                         ),
                       ),
-                    SizedBox(height: 8.h),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: data['status'] == 'completed'
-                              ? primaryColor.withValues(alpha: 0.1)
-                              : Color(0xFF93000A).withValues(alpha: 0.2),
-                        borderRadius: .circular(12.r),
-                        border: Border.all(
-                          color: data['status'] == 'completed'
-                                  ? Color(0xFFEFFFE3).withValues(alpha: 0.2)
-                                  : Color(0xFFFFB4AB).withValues(alpha: 0.3)
-                        )
-                      ),
-                      padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-                      child: Text(
-                        data['status'].toUpperCase(),
-                        style: TextStyle(
-                          color: data['status'] == 'completed'
-                                  ? primaryColor
-                                  : Color(0xFFFFB4AB),
-                          fontSize: 10.sp
-                        ),
-                      ),
-                    )
+                    // SizedBox(height: 8.h),
+                    // Container(
+                    //   decoration: BoxDecoration(
+                    //     color: data['status'] == 'completed'
+                    //           ? primaryColor.withValues(alpha: 0.1)
+                    //           : Color(0xFF93000A).withValues(alpha: 0.2),
+                    //     borderRadius: .circular(12.r),
+                    //     border: Border.all(
+                    //       color: data['status'] == 'completed'
+                    //               ? Color(0xFFEFFFE3).withValues(alpha: 0.2)
+                    //               : Color(0xFFFFB4AB).withValues(alpha: 0.3)
+                    //     )
+                    //   ),
+                    //   padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+                    //   child: Text(
+                    //     data['status'].toUpperCase(),
+                    //     style: TextStyle(
+                    //       color: data['status'] == 'completed'
+                    //               ? primaryColor
+                    //               : Color(0xFFFFB4AB),
+                    //       fontSize: 10.sp
+                    //     ),
+                    //   ),
+                    // )
                   ],
                 ),
               ),
-              SizedBox(width: 4.w),
-              Visibility(
-                visible: data['status'] == 'completed',
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: .circular(8.r)
-                  ),
-                  padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-                  child: Text(
-                    'REBOOK',
-                    style: TextStyle(
-                      color: Color(0xFF107100),
-                      fontWeight: .bold,
-                      fontSize: 12.sp
-                    ),
-                  ),
-                ),
-              )
+              // SizedBox(width: 4.w),
+              // Visibility(
+              //   visible: data['status'] == 'completed',
+              //   child: Container(
+              //     decoration: BoxDecoration(
+              //       color: primaryColor,
+              //       borderRadius: .circular(8.r)
+              //     ),
+              //     padding: .symmetric(vertical: 4.h, horizontal: 8.w),
+              //     child: Text(
+              //       'REBOOK',
+              //       style: TextStyle(
+              //         color: Color(0xFF107100),
+              //         fontWeight: .bold,
+              //         fontSize: 12.sp
+              //       ),
+              //     ),
+              //   ),
+              // )
             ],
           ),
         );
