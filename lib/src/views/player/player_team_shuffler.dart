@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:futsal_dai/src/helper/constant.dart';
+import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
+import 'package:get/get.dart';
 
 class PlayerTeamShuffler extends StatefulWidget {
-  const PlayerTeamShuffler({super.key});
+  final String bookingId, groupId;
+  const PlayerTeamShuffler({super.key, required this.bookingId, required this.groupId});
 
   @override
   State<PlayerTeamShuffler> createState() => _PlayerTeamShufflerState();
 }
 
 class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
+  final controller = Get.put(GroupController());
 
-  List presentMembers = [];
   int selectedTeams = 2;
   bool membershuffled = false;
 
@@ -23,25 +26,38 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
   @override
   void initState() {
     super.initState();
-    getPresentMembers();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await controller.getMatchAttendanceData(widget.groupId, widget.bookingId);
+      setState(() {}); // Safe to call here after fetch completes
+    });
   }
 
-  void getPresentMembers() {
-    presentMembers.clear();
-    for (var member in squadStatusList) {
-      if (member['status'] == 'IN') {
-        presentMembers.add(member);
-      }
-    }
-    setState(() {});
+  // Getter to compute present members safely without triggering setState during build
+  List get presentMembers {
+    final membersList = (controller.attendanceDetail.isNotEmpty &&
+            controller.attendanceDetail[0]['group_members'] != null)
+        ? List.from(controller.attendanceDetail[0]['group_members'])
+        : [];
+
+    return membersList.where((member) {
+      final userId = member['user_id']?.toString();
+      final status = controller.matchAttendanceMap[userId];
+      return status == 'IN';
+    }).toList();
   }
 
   // --- SHUFFLE LOGIC ---
   void shuffleTeams() {
-    if (presentMembers.isEmpty) return;
+    final currentPresent = presentMembers;
+    if (currentPresent.isEmpty) return;
+
+    if(currentPresent.length < selectedTeams) {
+      showToast(message: 'Active members are not enough to shuffle.', isSuccess: false);
+      return;
+    }
 
     // 1. Create a copy and shuffle randomly
-    List shuffledList = List.from(presentMembers)..shuffle();
+    List shuffledList = List.from(currentPresent)..shuffle();
 
     // 2. Initialize empty lists for each team
     Map<int, List<dynamic>> tempTeams = {};
@@ -74,19 +90,32 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
             padding: EdgeInsets.symmetric(horizontal: 16.w),
             child: SafeArea(
               child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 12.h),
-                    headerWidget(),
-                    SizedBox(height: 12.h),
-                    shuffleWidget(),
-                    SizedBox(height: 16.h),
-                    membershuffled == false
-                        ? squadStatus()
-                        : shuffledTeamsWidget(),
-                  ],
-                ),
+                child: Obx(() {
+                  if (controller.isLoading.isTrue) {
+                    return SizedBox(
+                      height: Get.height * 0.8,
+                      child: Center(
+                        child: CircularProgressIndicator(color: primaryColor),
+                      ),
+                    );
+                  }
+
+                  final currentPresent = presentMembers;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 12.h),
+                      headerWidget(currentPresent.length),
+                      SizedBox(height: 12.h),
+                      shuffleWidget(),
+                      SizedBox(height: 16.h),
+                      membershuffled == false
+                          ? squadStatus(currentPresent)
+                          : shuffledTeamsWidget(),
+                    ],
+                  );
+                }),
               ),
             ),
           ),
@@ -95,13 +124,13 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
     );
   }
 
-  Widget headerWidget() {
+  Widget headerWidget(int count) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Shuffle Strategy', style: boldStyle(whiteTextColor, 28.sp)),
         Text(
-          '${presentMembers.length} PLAYERS CHECKED-IN • READY TO SPLIT',
+          '$count PLAYERS CHECKED-IN • READY TO SPLIT',
           style: boldStyle(primaryColor, 12.sp),
         ),
       ],
@@ -124,7 +153,6 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Dropdown Container
                 LayoutBuilder(
                   builder: (context, constraints) {
                     return Theme(
@@ -148,7 +176,6 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                           setState(() {
                             selectedTeams = value;
                           });
-                          // Re-shuffle if teams were already generated
                           if (membershuffled) {
                             shuffleTeams();
                           }
@@ -222,7 +249,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.casino_outlined, // Updated to dice icon
+                          Icons.casino_outlined,
                           size: 18.sp,
                           color: const Color(0xFF107100),
                         ),
@@ -243,63 +270,75 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
     );
   }
 
-  Widget squadStatus() {
+  Widget squadStatus(List currentPresent) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('Available Players Feed', style: regularStyle(whiteTextColor, 16.sp)),
         SizedBox(height: 8.h),
-        ListView.separated(
-          itemCount: presentMembers.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          separatorBuilder: (context, index) => SizedBox(height: 4.w),
-          itemBuilder: (context, index) {
-            var data = presentMembers[index];
-            return Container(
-              width: double.infinity,
-              margin: EdgeInsets.all(4.sp),
-              padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-              decoration: BoxDecoration(
-                color: filledBgColor,
-                borderRadius: BorderRadius.circular(24.r),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    height: 48.h,
-                    width: 48.w,
-                    decoration: BoxDecoration(
-                      color: lightFilledBgColor,
-                      shape: BoxShape.circle,
-                    ),
+        currentPresent.isEmpty
+            ? Padding(
+                padding: EdgeInsets.symmetric(vertical: 24.h),
+                child: Center(
+                  child: Text(
+                    'No players checked-in (IN) yet.',
+                    style: regularStyle(subtitleTextColor, 14.sp),
                   ),
-                  SizedBox(width: 8.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              )
+            : ListView.separated(
+                itemCount: currentPresent.length,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                separatorBuilder: (context, index) => SizedBox(height: 4.w),
+                itemBuilder: (context, index) {
+                  var member = currentPresent[index];
+                  var user = member['Users'] ?? {};
+                  return Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.all(4.sp),
+                    padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+                    decoration: BoxDecoration(
+                      color: filledBgColor,
+                      borderRadius: BorderRadius.circular(24.r),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          data['name'],
-                          style: regularStyle(whiteTextColor, 16.sp),
+                        CircleAvatar(
+                          radius: 24.r,
+                          backgroundColor: lightFilledBgColor,
+                          backgroundImage: user['profile_pic'] != null
+                              ? NetworkImage(user['profile_pic'])
+                              : null,
+                          child: user['profile_pic'] == null
+                              ? Icon(Icons.person, color: subtitleTextColor)
+                              : null,
                         ),
-                        Text(
-                          "Matches Played: ${data['matches_played']}",
-                          style: regularStyle(subtitleTextColor, 14.sp),
-                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                user['full_name'] ?? 'Unknown User',
+                                style: regularStyle(whiteTextColor, 16.sp),
+                              ),
+                              Text(
+                                "Role: ${member['role'] ?? 'Member'}",
+                                style: regularStyle(subtitleTextColor, 14.sp),
+                              ),
+                            ],
+                          ),
+                        )
                       ],
                     ),
-                  )
-                ],
+                  );
+                },
               ),
-            );
-          },
-        ),
       ],
     );
   }
 
-  // --- DISPLAY SHUFFLED TEAMS RESULT ---
   Widget shuffledTeamsWidget() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -338,7 +377,6 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Team Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -360,21 +398,33 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                     ],
                   ),
                   SizedBox(height: 12.h),
-                  // Team Members
-                  ...teamPlayers.map((player) {
+                  ...teamPlayers.map((member) {
+                    var user = member['Users'] ?? {};
                     return Padding(
                       padding: EdgeInsets.only(bottom: 8.h),
                       child: Row(
                         children: [
-                          Icon(Icons.person, color: subtitleTextColor, size: 18.sp),
-                          SizedBox(width: 8.w),
-                          Text(
-                            player['name'],
-                            style: regularStyle(whiteTextColor, 15.sp),
+                          CircleAvatar(
+                            radius: 14.r,
+                            backgroundColor: lightFilledBgColor,
+                            backgroundImage: user['profile_pic'] != null
+                                ? NetworkImage(user['profile_pic'])
+                                : null,
+                            child: user['profile_pic'] == null
+                                ? Icon(Icons.person, size: 12.sp, color: subtitleTextColor)
+                                : null,
                           ),
-                          const Spacer(),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              user['full_name'] ?? 'Unknown User',
+                              style: regularStyle(whiteTextColor, 15.sp),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                           Text(
-                            '${player['matches_played']} MP',
+                            member['role'] ?? 'Member',
                             style: regularStyle(subtitleTextColor, 12.sp),
                           ),
                         ],
@@ -389,5 +439,5 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       ],
     );
   }
-
+  
 }

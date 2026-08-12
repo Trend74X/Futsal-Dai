@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/model/group_model.dart';
@@ -20,6 +22,10 @@ class GroupController extends GetxController {
   var selectedMembers = <Map<String, dynamic>>[].obs;
   var isSearching     = false.obs;
   var isLoading       = false.obs;
+
+  // attendance
+  var attendanceDetail = <Map<String, dynamic>>[].obs;
+  var matchAttendanceMap = <String, dynamic>{}.obs;
 
   // Search users function
   Future<void> searchUsers(String query) async {
@@ -213,6 +219,141 @@ class GroupController extends GetxController {
 
     } catch (e) {
       showToast(message: 'Failed to updated member: $e', isSuccess: false);
+    }
+  }
+
+  Future<void> getGroupData(String groupId) async {
+    isLoading.value = true;
+    try {
+      final response = await supabase
+        .from('groups')
+        .select('''
+          id,
+          name,
+          description,
+          image,
+          created_by,
+          group_members (
+            user_id,
+            status,
+            role,
+            Users (
+              id,
+              full_name,
+              username,
+              profile_pic,
+              role
+            )
+          )
+        ''')
+        .eq('id', groupId);
+
+      // Convert the response to a list of mutable maps
+      List<Map<String, dynamic>> groupsList = List<Map<String, dynamic>>.from(response);
+
+      // Sort the nested group_members alphabetically by the user's full_name
+      for (var group in groupsList) {
+        if (group['group_members'] != null) {
+          (group['group_members'] as List).sort((a, b) {
+            final nameA = a['Users']?['full_name'] ?? '';
+            final nameB = b['Users']?['full_name'] ?? '';
+            return nameA.toString().compareTo(nameB.toString());
+          });
+        }
+      }
+
+      // Assign to your observable list
+      attendanceDetail.assignAll(groupsList);
+    } catch (e) {
+      log('Error fetching favorite venues list: $e');
+      showToast(message: 'Could not load favorites.', isSuccess: false);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> getMatchAttendanceData(String groupId, String bookingId) async {
+    isLoading.value = true;
+    try {
+      // 1. Fetch group data and members
+      final groupResponse = await supabase
+          .from('groups')
+          .select('''
+            id,
+            name,
+            description,
+            image,
+            created_by,
+            group_members (
+              user_id,
+              status,
+              role,
+              Users (
+                id,
+                full_name,
+                username,
+                profile_pic,
+                role
+              )
+            )
+          ''')
+          .eq('id', groupId)
+          .eq('group_members.status', 'active');
+
+      List<Map<String, dynamic>> groupsList = List<Map<String, dynamic>>.from(groupResponse);
+
+      // Sort nested members alphabetically
+      for (var group in groupsList) {
+        if (group['group_members'] != null) {
+          (group['group_members'] as List).sort((a, b) {
+            final nameA = a['Users']?['full_name'] ?? '';
+            final nameB = b['Users']?['full_name'] ?? '';
+            return nameA.toString().compareTo(nameB.toString());
+          });
+        }
+      }
+      attendanceDetail.assignAll(groupsList);
+
+      // 2. Fetch match attendance JSON map for this booking
+      final attendanceResponse = await supabase
+          .from('match_attendance')
+          .select('attendance_data')
+          .eq('booking_id', bookingId)
+          .maybeSingle();
+
+      if (attendanceResponse != null && attendanceResponse['attendance_data'] != null) {
+        matchAttendanceMap.assignAll(Map<String, dynamic>.from(attendanceResponse['attendance_data']));
+      } else {
+        matchAttendanceMap.clear();
+      }
+
+    } catch (e) {
+      log('Error fetching match attendance data: $e');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Function to update user's choice ('IN' or 'OUT')
+  Future<void> updateAttendance(String bookingId, String status) async {
+    try {
+      final userId = supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      // Update local state map immediately for responsive UI
+      matchAttendanceMap[userId] = status;
+      matchAttendanceMap.refresh();
+
+      // Send update to Supabase JSON column using jsonb_set
+      await supabase.rpc('update_user_attendance', params: {
+        'p_booking_id': bookingId,
+        'p_user_id': userId,
+        'p_status': status,
+      });
+      
+    } catch (e) {
+      log('Error updating attendance: $e');
+      Get.snackbar('Error', 'Failed to update attendance status', backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
 

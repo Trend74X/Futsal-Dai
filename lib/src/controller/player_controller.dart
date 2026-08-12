@@ -408,7 +408,27 @@ class PlayerController extends GetxController {
   Future<void> getBookingDatas() async {
     isLoadingBookings.value = true;
     try {
+      final String currentUserId = supabase.auth.currentUser?.id ?? read('userId');
       final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+      // 1. First, fetch all group IDs where the current user is an 'accepted' member
+      final memberGroupsResponse = await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', currentUserId)
+          .eq('status', 'active'); // Adjust column name if status uses a different string/enum
+
+      // Extract the group IDs into a list of strings
+      List<String> groupIds = (memberGroupsResponse as List)
+          .map((item) => item['group_id'].toString())
+          .toList();
+
+      if (groupIds.isEmpty) {
+        myMatches.clear();
+        return;
+      }
+
+      // 2. Fetch bookings belonging to those groups
       final response = await supabase
           .from('bookings')
           .select('''
@@ -423,15 +443,15 @@ class PlayerController extends GetxController {
               longitude
             )
           ''')
-          .eq('user_id', read('userId'))
+          .inFilter('group_id', groupIds) // Matches any booking whose group_id is in the user's accepted groups
           .gte('booking_date', today)
           .order('created_at', ascending: false)
           .order('start_time', ascending: true);
 
       myMatches.assignAll((response as List).map((item) => BookingModel.fromJson(item)).toList());
     } catch (e) {
-      log('Error fetching favorite venues list: $e');
-      showToast(message: 'Could not load favorites.', isSuccess: false);
+      log('Error fetching bookings list: $e');
+      showToast(message: 'Could not load matches.', isSuccess: false);
     } finally {
       isLoadingBookings.value = false;
     }
