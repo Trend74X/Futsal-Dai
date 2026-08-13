@@ -152,7 +152,8 @@ class AuthController extends GetxController {
         'phone_number': userData['phone_number'],
         'role': userData['role'],
         'email': userData['email'],
-        'profile_pic': profileUrl
+        'profile_pic': profileUrl,
+        'username': userData['username']
       }).select();
       if (response.isNotEmpty)  log('Success! Inserted user: ${response.first}');
     } catch (e) {

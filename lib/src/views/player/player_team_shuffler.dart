@@ -415,7 +415,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                                 style: regularStyle(whiteTextColor, 16.sp),
                               ),
                               Text(
-                                "Role: ${member['role'] ?? 'Member'}",
+                                "Role: ${member['role'] != null && member['role'].toString().isNotEmpty ? member['role'].toString()[0].toUpperCase() + member['role'].toString().substring(1) : 'Member'}",
                                 style: regularStyle(subtitleTextColor, 14.sp),
                               ),
                             ],

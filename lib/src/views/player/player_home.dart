@@ -270,7 +270,7 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                           ),
                           Expanded(
                             child: Text(
-                              '${data.distanceKm} km - ${data.address}',
+                              '${data.distanceKm?.toStringAsFixed(2) ?? "0.00"} km - ${data.address}',
                               style: TextStyle(
                                 color: whiteTextColor,
                                 fontSize: 14.sp,
