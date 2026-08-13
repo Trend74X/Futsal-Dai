@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/notification_helper.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:futsal_dai/src/views/auth/verify_password_page.dart';
@@ -146,6 +147,7 @@ class AuthController extends GetxController {
 
   Future storeUser(String userId, Map<String, dynamic> userData, profileUrl) async {
     try {
+      String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
       final List<Map<String, dynamic>> response = await supabase.from('Users').insert({
         'id': userId,
         'full_name': userData['full_name'],
@@ -153,7 +155,8 @@ class AuthController extends GetxController {
         'role': userData['role'],
         'email': userData['email'],
         'profile_pic': profileUrl,
-        'username': userData['username']
+        'username': userData['username'],
+        'fcm': fcm
       }).select();
       if (response.isNotEmpty)  log('Success! Inserted user: ${response.first}');
     } catch (e) {
@@ -221,6 +224,9 @@ class AuthController extends GetxController {
         updatePayload["profile_pic"] = avatarUrl;
       }
 
+      String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
+      updatePayload["fcm"] = fcm;
+
       // 3. Perform update in 'Users' table matching the current user ID
       final response = await supabase
           .from('Users')
@@ -229,7 +235,7 @@ class AuthController extends GetxController {
           .select();
 
       if (response.isNotEmpty) {
-        log('User profile updated successfully: ${response.first}');
+        log('User profile updated successfully.');
         await getUserById(user.id);
         return true;
       }

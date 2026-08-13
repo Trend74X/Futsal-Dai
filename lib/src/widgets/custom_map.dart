@@ -220,7 +220,7 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
             'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1');
 
         final response = await http.get(url, headers: {
-          'User-Agent': 'com.example.futsal_dai',
+          'User-Agent': 'com.trend74x.futsaldai',
         });
 
         if (response.statusCode == 200) {
@@ -378,7 +378,7 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.example.futsal_dai',
+                userAgentPackageName: 'com.trend74x.futsaldai',
               ),
               if (routePoints.isNotEmpty)
                 PolylineLayer(

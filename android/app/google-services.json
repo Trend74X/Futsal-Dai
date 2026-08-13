@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "215514246017",
+    "project_id": "futsal-dai",
+    "storage_bucket": "futsal-dai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:215514246017:android:60196c859d70126c2dd680",
+        "android_client_info": {
+          "package_name": "com.trend74x.futsaldai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFExM3WOcB3A7yEHoyp3je3y27kP_Krc0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

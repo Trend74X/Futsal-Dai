@@ -409,7 +409,6 @@ class PlayerController extends GetxController {
     isLoadingBookings.value = true;
     try {
       final String currentUserId = supabase.auth.currentUser?.id ?? read('userId');
-      final String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
       // 1. First, fetch all group IDs where the current user is an 'accepted' member
       final memberGroupsResponse = await supabase

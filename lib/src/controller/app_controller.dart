@@ -59,7 +59,7 @@ class AppController extends GetxController {
       final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1');
 
       final response = await http.get(url, headers: {
-        'User-Agent': 'com.example.futsal_dai',
+        'User-Agent': 'com.trend74x.futsaldai',
         'Accept-Language': 'en'
       });
 
