@@ -444,7 +444,6 @@ class PlayerController extends GetxController {
             )
           ''')
           .inFilter('group_id', groupIds) // Matches any booking whose group_id is in the user's accepted groups
-          .gte('booking_date', today)
           .order('created_at', ascending: false)
           .order('start_time', ascending: true);
 

@@ -4,6 +4,7 @@ import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
+import 'package:futsal_dai/src/model/booking_model.dart';
 import 'package:futsal_dai/src/views/player/match_attendance.dart';
 import 'package:futsal_dai/src/views/player/player_team_shuffler.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
@@ -25,18 +26,108 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   String selected        = 'Upcoming';
   List   upcomingMatches = [];
   List   pendingMatches  = [];
-  List   bookedMatches   = [];
+  List   matchHistory    = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await playerCon.getBookingDatas();
-      upcomingMatches = playerCon.myMatches.where((match) => match.status == 'booked').toList();
-      pendingMatches  = playerCon.myMatches.where((match) => match.status == 'pending').toList();
-      bookedMatches  = playerCon.myMatches.where((match) => match.status == 'booked').toList();
-      setState(() { });
+      
+      List<BookingModel> filterAndSort(String status, {bool ascending = false}) {
+        final list = playerCon.myMatches
+            .where((match) => match.status == status)
+            .toList()
+          ..sort((a, b) {
+            int dateComp = ascending 
+                ? a.bookingDate.compareTo(b.bookingDate) 
+                : b.bookingDate.compareTo(a.bookingDate);
+            return dateComp != 0 
+                ? dateComp 
+                : (ascending ? a.startTime.compareTo(b.startTime) : b.startTime.compareTo(a.startTime));
+          });
+        return list.cast<BookingModel>();
+      }
+
+      // Upcoming matches (Only future dates/times)
+      final now = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+      final currentTimeStr = DateFormat('HH:mm:ss').format(now);
+
+      upcomingMatches = playerCon.myMatches.where((match) {
+        if (match.status != 'booked') return false;
+        if (match.bookingDate.compareTo(todayStr) > 0) return true;
+        if (match.bookingDate == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+        return false;
+      }).toList()
+        ..sort((a, b) {
+          int dateComp = a.bookingDate.compareTo(b.bookingDate);
+          return dateComp != 0 ? dateComp : a.startTime.compareTo(b.startTime);
+        });
+
+      pendingMatches = filterAndSort('pending');
+
+      matchHistory = playerCon.myMatches.where((match) {
+          if (match.status != 'booked') return false;
+
+          // Parse bookingDate safely (handling potential time component like '2026-08-10T00:00:00')
+          final matchDateOnly = match.bookingDate.split('T')[0];
+          final int dateComparison = matchDateOnly.compareTo(todayStr);
+
+          // 1. Show every past record that is yesterday or before (date strictly less than today)
+          if (dateComparison < 0) {
+            return true;
+          }
+
+          // 2. Show past records of today that started before the current time
+          if (dateComparison == 0) {
+            final matchStartTime = match.startTime.substring(0, 8); // Ensure 'HH:mm:ss' format
+            if (matchStartTime.compareTo(currentTimeStr) < 0) {
+              return true;
+            }
+          }
+
+          return false;
+        }).toList()
+          ..sort((a, b) {
+            int dateComp = b.bookingDate.compareTo(a.bookingDate);
+            return dateComp != 0 ? dateComp : b.startTime.compareTo(a.startTime);
+          });
+      
+      setState(() {});
     });
+  }
+
+  /// Calculates remaining time dynamically from the very first upcoming match
+  String _getRemainingTimeText() {
+    if (upcomingMatches.isEmpty) return '';
+
+    try {
+      final firstMatch = upcomingMatches.first;
+      final datePart = firstMatch.bookingDate.split('T')[0];
+      final timePart = firstMatch.startTime;
+      final matchDateTime = DateTime.parse('$datePart $timePart');
+
+      final difference = matchDateTime.difference(DateTime.now());
+
+      if (difference.isNegative) {
+        return 'STARTED / PAST';
+      }
+
+      int days = difference.inDays;
+      int hours = difference.inHours % 24;
+      int minutes = difference.inMinutes % 60;
+
+      if (days > 0) {
+        return 'NEXT MATCH: IN ${days}D ${hours}H';
+      } else if (hours > 0) {
+        return 'NEXT MATCH: IN ${hours}H ${minutes}M';
+      } else {
+        return 'NEXT MATCH: IN ${minutes}M';
+      }
+    } catch (e) {
+      return 'NEXT MATCH';
+    }
   }
 
   @override
@@ -70,6 +161,8 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   }
 
   Widget titlesWidget() {
+    String remainingText = _getRemainingTimeText();
+
     return Column(
       crossAxisAlignment: .start,
       children: [
@@ -81,7 +174,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
             fontSize: 28.sp
           ),
         ),
-        upcomingMatches.isEmpty
+        upcomingMatches.isEmpty || remainingText.isEmpty
           ? SizedBox()
           : Container(
             decoration: BoxDecoration(
@@ -99,7 +192,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                 Icon(Icons.timer_outlined, color: primaryTextColor, size: 12.sp),
                 SizedBox(width: 8.w),
                 Text(
-                  'NEXT MATCH: IN 4 HOURS',
+                  remainingText,
                   style: TextStyle(
                     color: primaryTextColor,
                     fontSize: 12.sp,
@@ -133,7 +226,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
     return Expanded(
       child: InkWell(
         onTap: () {
-          onTap;
+          onTap();
           setState(() => selected = label);
         },
         child: Container(
@@ -269,57 +362,14 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                                         fontSize: 14.sp,
                                       ),
                                     ),
-                                    // SizedBox(height: 8.h),
-                                    // Row(
-                                    //   children: [
-                                    //     Icon(Icons.timer, color: primaryTextColor, size: 15.sp),
-                                    //     SizedBox(width: 8.w),
-                                    //     Text(
-                                    //       'Starts in 2h 15m',
-                                    //       style: TextStyle(
-                                    //         color: Color(0xFF2AE500),
-                                    //         fontSize: 12.sp,
-                                    //         fontWeight: .bold
-                                    //       ),
-                                    //     )
-                                    //   ],
-                                    // )
                                   ],
                                 )
                               ],
                             ),
-                            // SizedBox(height: 16.h),
-                            // Row(
-                            //   children: [
-                            //     Icon(Icons.flash_on, color: subtitleTextColor, size: 12.sp),
-                            //     SizedBox(width: 8.w),
-                            //     Text(
-                            //       'Extra Bibs Requested',
-                            //       style: TextStyle(
-                            //         color: subtitleTextColor,
-                            //         fontSize: 12.sp
-                            //       ),
-                            //     )
-                            //   ],
-                            // ),
-                            // Row(
-                            //   children: [
-                            //     Image.asset('assets/icons/ball.png', color: subtitleTextColor, height: 12.h),
-                            //     SizedBox(width: 8.w),
-                            //     Text(
-                            //       '2 Match Balls',
-                            //       style: TextStyle(
-                            //         color: subtitleTextColor,
-                            //         fontSize: 12.sp
-                            //       ),
-                            //     )
-                            //   ],
-                            // ),
                             SizedBox(height: 16.h),
                             Row(
                               children: [
                                 InkWell(
-                                  // onTap: () => launchMapDirections(latitude: 27.68529949056445, longitude: 85.30584563183453),
                                   onTap: () => Get.to(() => CustomMapScreen(
                                     initialLat: data.futsalVenues!.latitude,
                                     initialLng: data.futsalVenues!.longitude,
@@ -379,16 +429,6 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                               ],
                             ),
                             SizedBox(height: 12.h),
-                            // Center(
-                            //   child: Text(
-                            //     'Free cancellation valid for 45 more minutes',
-                            //     style: TextStyle(
-                            //       color: subtitleTextColor,
-                            //       fontSize: 10.sp
-                            //     ),
-                            //   ),
-                            // ),
-                            // SizedBox(height: 12.h),
                           ],
                         ),
                       )
@@ -419,7 +459,6 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
           );
         } 
       );
-
   }
 
   Widget pendingWidget() {
@@ -546,120 +585,83 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   }
 
   Widget pastWidget() {
-    return ListView.separated(
-      itemCount: bookedMatches.length,
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      separatorBuilder: (context, index) => SizedBox(height: 12.h),
-      itemBuilder: (context, index) {
-        var data = bookedMatches[index];
-        String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
-        String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
-        return Container(
-          decoration: BoxDecoration(
-            color: lightFilledBgColor,
-            borderRadius: .circular(12.r)
-          ),
-          padding: .symmetric(vertical: 16.h, horizontal: 12.w),
-          child: Row(
-            crossAxisAlignment: .start,
-            children: [
-              ClipRRect(
-                borderRadius: .circular((12.r)
-                ),
-                child: SizedBox(
-                  height: 64.h,
-                  width: 64.w,
-                  child: Image.asset(
-                    'assets/images/court.png',
-                    fit: .cover,
+    return matchHistory.isEmpty
+      ? SizedBox(
+        height: Get.height * 0.5,
+        child: Center(
+          child: Text(
+            'There are no past matches.',
+            style: semiBoldStyle(subtitleTextColor, 14.sp),
+          )
+        )
+      )
+      : ListView.separated(
+        itemCount: matchHistory.length,
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        separatorBuilder: (context, index) => SizedBox(height: 12.h),
+        itemBuilder: (context, index) {
+          var data = matchHistory[index];
+          String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
+          String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
+          return Container(
+            decoration: BoxDecoration(
+              color: lightFilledBgColor,
+              borderRadius: .circular(12.r)
+            ),
+            padding: .symmetric(vertical: 16.h, horizontal: 12.w),
+            child: Row(
+              crossAxisAlignment: .start,
+              children: [
+                ClipRRect(
+                  borderRadius: .circular(12.r),
+                  child: SizedBox(
+                    height: 64.h,
+                    width: 64.w,
+                    child: Image.asset(
+                      'assets/images/court.png',
+                      fit: .cover,
+                    )
                   )
-                )
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  mainAxisSize: .min,
-                  crossAxisAlignment: .start,
-                  children: [
-                    Text(
-                      data.venueName,
-                      style: TextStyle(
-                        color: whiteTextColor,
-                        fontSize: 20.sp,
-                        fontWeight: .w600,
-                        height: 1.0
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: .min,
+                    crossAxisAlignment: .start,
+                    children: [
+                      Text(
+                        data.venueName,
+                        style: TextStyle(
+                          color: whiteTextColor,
+                          fontSize: 20.sp,
+                          fontWeight: .w600,
+                          height: 1.0
+                        ),
+                        maxLines: 2,
                       ),
-                      maxLines: 2,
-                    ),
-                    SizedBox(height: 8.w),
-                    Text(
-                      '$date | $time',
-                      style: TextStyle(
-                        color: subtitleTextColor,
-                        fontSize: 14.sp,
+                      SizedBox(height: 8.w),
+                      Text(
+                        '$date | $time',
+                        style: TextStyle(
+                          color: subtitleTextColor,
+                          fontSize: 14.sp,
+                        ),
                       ),
-                    ),
-                    data.status != 'booked'
-                      ? SizedBox.shrink()
-                      : Text(
+                      Text(
                         "Paid: Rs. ${data.totalPrice.toInt()}",
                         style: TextStyle(
                           color: subtitleTextColor,
                           fontSize: 14.sp,
                         ),
                       ),
-                    // SizedBox(height: 8.h),
-                    // Container(
-                    //   decoration: BoxDecoration(
-                    //     color: data['status'] == 'completed'
-                    //           ? primaryColor.withValues(alpha: 0.1)
-                    //           : Color(0xFF93000A).withValues(alpha: 0.2),
-                    //     borderRadius: .circular(12.r),
-                    //     border: Border.all(
-                    //       color: data['status'] == 'completed'
-                    //               ? Color(0xFFEFFFE3).withValues(alpha: 0.2)
-                    //               : Color(0xFFFFB4AB).withValues(alpha: 0.3)
-                    //     )
-                    //   ),
-                    //   padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-                    //   child: Text(
-                    //     data['status'].toUpperCase(),
-                    //     style: TextStyle(
-                    //       color: data['status'] == 'completed'
-                    //               ? primaryColor
-                    //               : Color(0xFFFFB4AB),
-                    //       fontSize: 10.sp
-                    //     ),
-                    //   ),
-                    // )
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              // SizedBox(width: 4.w),
-              // Visibility(
-              //   visible: data['status'] == 'completed',
-              //   child: Container(
-              //     decoration: BoxDecoration(
-              //       color: primaryColor,
-              //       borderRadius: .circular(8.r)
-              //     ),
-              //     padding: .symmetric(vertical: 4.h, horizontal: 8.w),
-              //     child: Text(
-              //       'REBOOK',
-              //       style: TextStyle(
-              //         color: Color(0xFF107100),
-              //         fontWeight: .bold,
-              //         fontSize: 12.sp
-              //       ),
-              //     ),
-              //   ),
-              // )
-            ],
-          ),
-        );
-      }
-    );
+              ],
+            ),
+          );
+        }
+      );
   }
-
 }
