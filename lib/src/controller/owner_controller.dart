@@ -67,11 +67,13 @@ class OwnerController extends GetxController {
     }
 
     try {
+      // 1. Update existing futsal_venues row by venueId
       await supabase
           .from('futsal_venues')
           .update(futsalVenues)
           .eq('id', venueId);
 
+      // 2. Delete pitches that were removed in the UI
       if (deletedPitchIds.isNotEmpty) {
         await supabase
             .from('futsal_grounds')
@@ -79,14 +81,34 @@ class OwnerController extends GetxController {
             .inFilter('id', deletedPitchIds);
       }
 
-      final List<Map<String, dynamic>> groundsData = futsalGround.map((ground) {
-        return {
+      // 3. Separate new pitches from existing ones
+      List<Map<String, dynamic>> existingPitches = [];
+      List<Map<String, dynamic>> newPitches = [];
+
+      for (var ground in futsalGround) {
+        final Map<String, dynamic> groundMap = {
           ...ground,
           'venue_id': venueId,
         };
-      }).toList();
 
-      await supabase.from('futsal_grounds').upsert(groundsData);
+        // If 'id' is null, empty, or doesn't exist, it's a brand new pitch
+        if (groundMap['id'] == null || (groundMap['id'] as String).isEmpty) {
+          groundMap.remove('id'); // Remove so PostgreSQL generates a new UUID
+          newPitches.add(groundMap);
+        } else {
+          existingPitches.add(groundMap);
+        }
+      }
+
+      // 4. Perform Insert for brand new pitches
+      if (newPitches.isNotEmpty) {
+        await supabase.from('futsal_grounds').insert(newPitches);
+      }
+
+      // 5. Perform Upsert/Update only for existing pitches that have valid IDs
+      if (existingPitches.isNotEmpty) {
+        await supabase.from('futsal_grounds').upsert(existingPitches);
+      }
 
       showToast(message: "Venue and pitches updated successfully!", isSuccess: true);
     } catch (e) {
