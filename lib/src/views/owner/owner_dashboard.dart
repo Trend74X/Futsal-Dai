@@ -23,13 +23,32 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   final OwnerController ownerCon = Get.put(OwnerController());
 
   String? selectedGroundId;
-  String selectedGroundName = '';
   DateTime selectedDate = DateTime.now();
+  String venueName          = '';
+  String selectedGroundName = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Fetch venue details to get the venue name
+      try {
+        final venueRes = await ownerCon.supabase
+            .from('futsal_venues')
+            .select('name')
+            .eq('id', widget.venueId)
+            .maybeSingle();
+
+        if (venueRes != null) {
+          setState(() {
+            venueName = venueRes['name'] ?? 'Venue';
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching venue name: $e');
+      }
+
+      // Existing initializations
       ownerCon.fetchPendingBookings(widget.venueId);
       await ownerCon.fetchVenueGrounds(widget.venueId);
       if (ownerCon.venueGrounds.isNotEmpty) {
@@ -433,6 +452,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
                       Get.to(() => OwnerMaunualSlotEntry(
                         venueId: widget.venueId,
+                        venueName: venueName,
                         venueGrounds: ownerCon.venueGrounds,
                         initialGroundId: selectedGroundId,
                         initialGroundName: selectedGroundName,

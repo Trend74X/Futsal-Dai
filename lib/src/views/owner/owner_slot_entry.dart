@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 
 class OwnerMaunualSlotEntry extends StatefulWidget {
   final int venueId;
+  final String venueName;
   final List<Map<String, dynamic>> venueGrounds;
   final String? initialGroundId;
   final String? initialGroundName;
@@ -27,6 +28,7 @@ class OwnerMaunualSlotEntry extends StatefulWidget {
   const OwnerMaunualSlotEntry({
     super.key,
     required this.venueId,
+    required this.venueName,
     required this.venueGrounds,
     this.initialGroundId,
     this.initialGroundName,
@@ -453,11 +455,11 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
       }
 
       double finalPrice = double.tryParse(priceController.text.trim()) ?? calculateSlotPrice();
-      String venueName = widget.initialGroundName ?? widget.venueGrounds.firstWhere((g) => g['id'].toString() == selectedGroundId, orElse: () => {'ground_name': 'Venue'})['ground_name'];
+      // String venueName = widget.initialGroundName ?? widget.venueGrounds.firstWhere((g) => g['id'].toString() == selectedGroundId, orElse: () => {'ground_name': 'Venue'})['ground_name'];
 
       await ownerCon.createManualBooking(
         venueId    : widget.venueId,
-        venueName  : venueName,
+        venueName  : widget.venueName,
         groundId   : selectedGroundId!,
         groundName : widget.initialGroundName!,
         teamName   : teamName.text.trim(),

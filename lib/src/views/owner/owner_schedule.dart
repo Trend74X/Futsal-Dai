@@ -1,18 +1,59 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/owner/owner_slot_entry.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class OwnerSchedulePage extends StatefulWidget {
-  const OwnerSchedulePage({super.key});
+  const OwnerSchedulePage({super.key}); // Removed required venueId
 
   @override
   State<OwnerSchedulePage> createState() => _OwnerSchedulePageState();
 }
 
 class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
-  
+  final OwnerController ownerCon = Get.find<OwnerController>();
+
   DateTime selectedDateTime = DateTime.now();
-  int selectedCourtIndex = 0;
+  String? selectedGroundId;
+  String selectedGroundName = '';
+  int? currentVenueId;
+  String venueName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Find venueId owned by user, then fetch its grounds automatically
+      final venueAndPitches = await ownerCon.fetchVenueAndPitchesByOwner();
+      if (venueAndPitches != null) {
+        final venue = venueAndPitches['venue'] as Map<String, dynamic>;
+        currentVenueId = venue['id'];
+        venueName = venue['name'] ?? 'Venue';
+
+        await ownerCon.fetchVenueGrounds(currentVenueId!);
+        if (ownerCon.venueGrounds.isNotEmpty) {
+          setState(() {
+            selectedGroundId = ownerCon.venueGrounds[0]['id'].toString();
+            selectedGroundName = ownerCon.venueGrounds[0]['ground_name'] ?? 'Ground';
+          });
+          _loadTimeline();
+        }
+      }
+    });
+  }
+
+  void _loadTimeline() {
+    if (selectedGroundId != null) {
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDateTime);
+      ownerCon.fetchGroundTimelineBookings(
+        groundId: selectedGroundId!,
+        dateStr: dateStr,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +72,7 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
                     SizedBox(height: 16.h),
                     pitchesFilterWidget(),
                     SizedBox(height: 16.h),
-                    timelineWidget()
+                    timelineWidget(),
                   ],
                 ),
               ),
@@ -42,7 +83,6 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
     );
   }
 
-  // Replaces the list/picker with an inline calendar widget
   Widget dateSelectionWidget() {
     return Container(
       decoration: BoxDecoration(
@@ -55,7 +95,7 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
       child: Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.dark(
-            primary: primaryColor, // Selected date circle color
+            primary: primaryColor,
             onPrimary: black,
             surface: filledBgColor,
             onSurface: whiteTextColor,
@@ -69,6 +109,7 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
             setState(() {
               selectedDateTime = newDate;
             });
+            _loadTimeline();
           },
         ),
       ),
@@ -83,62 +124,200 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
         color: filledBgColor,
         borderRadius: BorderRadius.circular(24.r),
       ),
-      child: ListView.builder(
-        itemCount: 3,
-        shrinkWrap: true,
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (context, index) {
-          return InkWell(
-            onTap: () => setState(() => selectedCourtIndex = index),
-            child: Container(
-              decoration: BoxDecoration(
-                color: selectedCourtIndex == index ? primaryColor : transparent,
-                borderRadius: BorderRadius.circular(24.r),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
-              child: Center(
-                child: Text(
-                  'Court ${index + 1} \n${index % 2 == 0 ? 'Indoor' : 'Outdoor'}',
-                  style: boldStyle(selectedCourtIndex == index ? const Color(0xFF107100) : whiteTextColor, 12.sp),
+      child: Obx(() {
+        if (ownerCon.isLoadingGrounds.value) {
+          return const Center(
+            child: SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor)),
+          );
+        }
+        if (ownerCon.venueGrounds.isEmpty) {
+          return Center(child: Text('No pitches available', style: boldStyle(subtitleTextColor, 12.sp)));
+        }
+
+        // Auto-select the first ground if not selected yet
+        if (selectedGroundId == null && ownerCon.venueGrounds.isNotEmpty) {
+          selectedGroundId = ownerCon.venueGrounds[0]['id'].toString();
+          selectedGroundName = ownerCon.venueGrounds[0]['ground_name'] ?? 'Ground';
+          _loadTimeline();
+        }
+
+        return ListView.builder(
+          itemCount: ownerCon.venueGrounds.length,
+          shrinkWrap: true,
+          scrollDirection: Axis.horizontal,
+          itemBuilder: (context, index) {
+            final ground = ownerCon.venueGrounds[index];
+            final String groundId = ground['id'].toString();
+            final String groundName = ground['ground_name'] ?? 'Pitch';
+            final String groundType = ground['ground_type'] ?? '';
+            final bool isSelected = selectedGroundId == groundId;
+
+            return InkWell(
+              onTap: () {
+                setState(() {
+                  selectedGroundId = groundId;
+                  selectedGroundName = groundName;
+                });
+                _loadTimeline();
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected ? primaryColor : transparent,
+                  borderRadius: BorderRadius.circular(24.r),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 8.h),
+                child: Center(
+                  child: Text(
+                    '$groundName\n$groundType',
+                    textAlign: TextAlign.center,
+                    style: boldStyle(isSelected ? const Color(0xFF107100) : whiteTextColor, 12.sp),
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        );
+      }),
     );
   }
 
   Widget timelineWidget() {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-      child: Column(
-        children: [
-          timeLineTile(time: '6:00\nAM', status: 'Completed', subtitle: 'Team Wolves'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '7:00\nAM', status: 'IN PROGESS', subtitle: 'Strikers FC'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '8:00\nAM', status: 'AVAILABLE'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '9:00\nAM', status: 'Booked', subtitle: 'Corporate Group A'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '10:00\nAM', status: 'Booked', subtitle: 'Corporate Group A'),
-          SizedBox(height: 8.h),
-          dividerWidget(),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '4:00\nPM', status: 'Completed', subtitle: 'Corporate Group A'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '5:00\nPM', status: 'Offline', subtitle: 'Corporate Group A'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '6:00\nPM', status: 'AVAILABLE', subtitle: ''),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '7:00\nPM', status: 'Booked', subtitle: 'Corporate Group A'),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '8:00\nPM', status: 'Cancelled', subtitle: ''),
-          SizedBox(height: 8.h),
-          timeLineTile(time: '9:00\nPM', status: 'AVAILABLE', subtitle: ''),
-        ],
-      ),
+      child: Obx(() {
+        if (ownerCon.isLoadingTimeline.value) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: CircularProgressIndicator(color: primaryColor),
+            ),
+          );
+        }
+
+        bool isToday = DateUtils.isSameDay(selectedDateTime, DateTime.now());
+        int currentHour = DateTime.now().hour;
+        List<int> allHours = List.generate(16, (index) => index + 6);
+        List<int> filteredHours = isToday
+            ? allHours.where((hour) => hour >= currentHour).toList()
+            : allHours;
+
+        if (filteredHours.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'No remaining time slots for today.',
+                style: boldStyle(subtitleTextColor, 12.sp),
+              ),
+            ),
+          );
+        }
+
+        return Column(
+          children: filteredHours.map((hour) {
+            final String timeFormatted = '${hour.toString().padLeft(2, '0')}:00';
+            final String displayTimeLabel = DateFormat('h:a').format(DateTime(0, 1, 1, hour));
+
+            Map<String, dynamic>? matchingBooking;
+            for (var b in ownerCon.groundBookings) {
+              final String startStr = b['start_time'] ?? '';
+              if (startStr.startsWith(hour.toString().padLeft(2, '0'))) {
+                matchingBooking = b;
+                break;
+              }
+            }
+
+            String status = 'AVAILABLE';
+            String? subtitle;
+
+            if (matchingBooking != null) {
+              final String dbStatus = matchingBooking['status'] ?? 'booked';
+              final String teamName = matchingBooking['team_name'] ?? 
+                                     matchingBooking['users']?['full_name'] ?? 
+                                     'Reserved';
+              final String bookingType = matchingBooking['booking_type'] ?? '';
+
+              if (dbStatus == 'booked' || dbStatus == 'confirmed') {
+                status = bookingType == 'by_phone_call' ? 'Offline' : 'Booked';
+                subtitle = teamName;
+              } else if (dbStatus == 'completed') {
+                status = 'Completed';
+                subtitle = teamName;
+              } else if (dbStatus == 'in_progress') {
+                status = 'IN PROGESS';
+                subtitle = teamName;
+              } else if (dbStatus == 'cancelled' || dbStatus == 'rejected') {
+                status = 'Cancelled';
+                subtitle = teamName;
+              }
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: timeLineTile(
+                time: displayTimeLabel,
+                status: status,
+                subtitle: subtitle,
+                onTapAvailable: () async {
+                  if (currentVenueId == null) {
+                    // Fallback: fetch venue info directly if currentVenueId hasn't loaded yet
+                    final venueAndPitches = await ownerCon.fetchVenueAndPitchesByOwner();
+                    if (venueAndPitches != null) {
+                      final venue = venueAndPitches['venue'] as Map<String, dynamic>;
+                      currentVenueId = venue['id'];
+                    } else {
+                      Get.snackbar('Error', 'Venue information not found', backgroundColor: Colors.red, colorText: Colors.white);
+                      return;
+                    }
+                  }
+
+                  final venueRes = await ownerCon.supabase
+                      .from('futsal_venues')
+                      .select('name, base_price, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
+                      .eq('id', currentVenueId!)
+                      .maybeSingle();
+
+                  final currentGround = ownerCon.venueGrounds.firstWhere(
+                    (g) => g['id'].toString() == selectedGroundId,
+                    orElse: () => {},
+                  );
+
+                  String venueName = venueRes?['name'] ?? 'Venue';
+                  double basePrice = double.tryParse(venueRes?['base_price']?.toString() ?? '1500.0') ?? 1500.0;
+                  double peakRate = double.tryParse(venueRes?['peak_rate']?.toString() ?? '0.0') ?? 0.0;
+                  bool isPeakEnabled = venueRes?['is_peak_enabled'] ?? false;
+                  String? peakStart = venueRes?['peak_start_time'];
+                  String? peakEnd = venueRes?['peak_end_time'];
+                  double groundModifier = double.tryParse(currentGround['price_modifier']?.toString() ?? '0.0') ?? 0.0;
+
+                  // DateTime slotDateTime = DateTime(
+                  //   selectedDateTime.year,
+                  //   selectedDateTime.month,
+                  //   selectedDateTime.day,
+                  //   hour,
+                  //   0,
+                  // );
+
+                  Get.to(() => OwnerMaunualSlotEntry(
+                    venueId: currentVenueId!,
+                    venueName: venueName,
+                    venueGrounds: ownerCon.venueGrounds,
+                    initialGroundId: selectedGroundId,
+                    initialGroundName: selectedGroundName,
+                    initialTimeSlot: '$timeFormatted:00',
+                    basePrice: basePrice,
+                    peakRate: peakRate,
+                    isPeakEnabled: isPeakEnabled,
+                    peakStartTime: peakStart,
+                    peakEndTime: peakEnd,
+                    groundModifier: groundModifier,
+                  ));
+                },
+              ),
+            );
+          }).toList(),
+        );
+      }),
     );
   }
 
@@ -159,8 +338,9 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
 
   Widget timeLineTile({
     required String time,
-    String? status,
+    required String status,
     String? subtitle,
+    VoidCallback? onTapAvailable,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,13 +358,13 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
           child: Container(
             height: 80.h,
             decoration: BoxDecoration(
-              color: getContainerColor(status: status!),
+              color: getContainerColor(status: status),
               borderRadius: BorderRadius.circular(8.r),
               border: Border.all(color: subtitleTextColor.withValues(alpha: 0.5)),
             ),
             child: status == 'AVAILABLE' || status == 'EMPTY'
                 ? InkWell(
-                    onTap: () {},
+                    onTap: onTapAvailable,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
