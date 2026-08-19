@@ -212,7 +212,7 @@ class PlayerController extends GetxController {
       for (var booking in existingBookings) {
         if (booking['start_time'] == DateFormat('HH:mm:ss').format(currentSlotTime) && booking['status'] != 'cancelled') {
           status = booking['status']; 
-          bookedBy = booking['user_name'] ?? 'Someone';
+          bookedBy = booking['team_name'] ?? 'Owner';
           break;
         }
       }

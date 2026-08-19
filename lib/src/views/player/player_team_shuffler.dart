@@ -382,7 +382,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                 separatorBuilder: (context, index) => SizedBox(height: 4.w),
                 itemBuilder: (context, index) {
                   var member = currentPresent[index];
-                  var user = member['Users'] ?? {};
+                  var user = member['users'] ?? {};
                   bool isManual = member['is_manual'] == true;
 
                   return Container(
@@ -499,7 +499,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                   ),
                   SizedBox(height: 12.h),
                   ...teamPlayers.map((member) {
-                    var user = member['Users'] ?? {};
+                    var user = member['users'] ?? {};
                     return Padding(
                       padding: EdgeInsets.only(bottom: 8.h),
                       child: Row(

@@ -255,8 +255,8 @@ class GroupController extends GetxController {
       for (var group in groupsList) {
         if (group['group_members'] != null) {
           (group['group_members'] as List).sort((a, b) {
-            final nameA = a['Users']?['full_name'] ?? '';
-            final nameB = b['Users']?['full_name'] ?? '';
+            final nameA = a['users']?['full_name'] ?? '';
+            final nameB = b['users']?['full_name'] ?? '';
             return nameA.toString().compareTo(nameB.toString());
           });
         }
@@ -288,7 +288,7 @@ class GroupController extends GetxController {
               user_id,
               status,
               role,
-              Users (
+              users (
                 id,
                 full_name,
                 username,
@@ -306,8 +306,8 @@ class GroupController extends GetxController {
       for (var group in groupsList) {
         if (group['group_members'] != null) {
           (group['group_members'] as List).sort((a, b) {
-            final nameA = a['Users']?['full_name'] ?? '';
-            final nameB = b['Users']?['full_name'] ?? '';
+            final nameA = a['users']?['full_name'] ?? '';
+            final nameB = b['users']?['full_name'] ?? '';
             return nameA.toString().compareTo(nameB.toString());
           });
         }

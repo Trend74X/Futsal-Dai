@@ -59,7 +59,7 @@ class GroupMemberModel {
       userId: json['user_id'] ?? '',
       status: json['status'] ?? 'pending',
       role  : json['role'],
-      user  : json['Users'] != null ? UserModel.fromJson(json['Users']): null,
+      user  : json['users'] != null ? UserModel.fromJson(json['users']): null,
     );
   }
 
@@ -68,7 +68,7 @@ class GroupMemberModel {
       'user_id': userId,
       'status' : status,
       'role'   : role,
-      'Users'  : user?.toJson(),
+      'users'  : user?.toJson(),
     };
   }
 }
@@ -77,11 +77,13 @@ class UserModel {
   final String id;
   final String fullName;
   final String username;
+  final String role;
   final String? profilePic;
 
   UserModel({
     required this.id,
     required this.fullName,
+    required this.role,
     required this.username,
     this.profilePic,
   });
@@ -90,6 +92,7 @@ class UserModel {
     return UserModel(
       id        : json['id'] ?? '',
       fullName  : json['full_name'] ?? '',
+      role      : json['role'] ?? '',
       username  : json['username'] ?? '',
       profilePic: json['profile_pic'],
     );
