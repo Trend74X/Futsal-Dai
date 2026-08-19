@@ -295,22 +295,33 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Timeline', style: semiBoldStyle(whiteTextColor, 20.sp)),
-            Obx(() {
-              if (ownerCon.isLoadingGrounds.value) {
-                return const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2));
-              }
-              return Row(
-                children: ownerCon.venueGrounds.map((ground) {
-                  final String groundId = ground['id'].toString();
-                  final String groundName = ground['ground_name'] ?? 'Pitch';
-                  final bool isSelected = selectedGroundId == groundId;
-
-                  return Padding(
-                    padding: EdgeInsets.only(left: 8.w),
-                    child: InkWell(
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Obx(() {
+                if (ownerCon.isLoadingGrounds.value) {
+                  return Align(
+                    alignment: Alignment.center,
+                    child: const SizedBox(
+                      height: 24, 
+                      width: 24, 
+                      child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
+                    ),
+                  );
+                }
+                // Wrap keeps them in the row, but drops overflow items onto the next line automatically
+                return Wrap(
+                  alignment: WrapAlignment.start, // Aligns the badges to the right side of the row
+                  spacing: 8.w, // Horizontal spacing between badges
+                  runSpacing: 8.h, // Vertical spacing if they wrap to a new line
+                  children: ownerCon.venueGrounds.map((ground) {
+                    final String groundId = ground['id'].toString();
+                    final String groundName = ground['ground_name'] ?? 'Pitch';
+                    final bool isSelected = selectedGroundId == groundId;
+              
+                    return InkWell(
                       onTap: () {
                         setState(() {
                           selectedGroundId = groundId;
@@ -319,11 +330,11 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                         _loadTimeline();
                       },
                       child: _buildHeaderBadge(groundName.toUpperCase(), isSelected: isSelected),
-                    ),
-                  );
-                }).toList(),
-              );
-            }),
+                    );
+                  }).toList(),
+                );
+              }),
+            ),
           ],
         ),
         SizedBox(height: 20.h),
