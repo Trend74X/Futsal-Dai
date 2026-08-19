@@ -96,9 +96,15 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     final now = DateTime.now();
 
     if (widget.initialTimeSlot != null && widget.initialTimeSlot!.isNotEmpty) {
-      final parts = widget.initialTimeSlot!.split(':');
-      final hour = int.parse(parts[0]);
-      selectedDateTime = DateTime(now.year, now.month, now.day, hour, 0);
+      try {
+        // Handles full date-time strings passed from the schedule page
+        selectedDateTime = DateTime.parse(widget.initialTimeSlot!);
+      } catch (_) {
+        // Fallback for simple hour formats
+        final parts = widget.initialTimeSlot!.split(':');
+        final hour = int.parse(parts[0]);
+        selectedDateTime = DateTime(now.year, now.month, now.day, hour, 0);
+      }
     } else {
       selectedDateTime = DateTime(now.year, now.month, now.day, now.hour + 1, 0);
     }

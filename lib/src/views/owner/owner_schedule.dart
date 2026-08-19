@@ -290,13 +290,15 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
                   String? peakEnd = venueRes?['peak_end_time'];
                   double groundModifier = double.tryParse(currentGround['price_modifier']?.toString() ?? '0.0') ?? 0.0;
 
-                  // DateTime slotDateTime = DateTime(
-                  //   selectedDateTime.year,
-                  //   selectedDateTime.month,
-                  //   selectedDateTime.day,
-                  //   hour,
-                  //   0,
-                  // );
+                  final parts = timeFormatted.split(':');
+                  int hour = int.parse(parts[0]);
+                  DateTime targetDateTime = DateTime(
+                    selectedDateTime.year, // Uses the date selected on your calendar picker
+                    selectedDateTime.month,
+                    selectedDateTime.day,
+                    hour,
+                    0,
+                  );
 
                   Get.to(() => OwnerMaunualSlotEntry(
                     venueId: currentVenueId!,
@@ -304,7 +306,7 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
                     venueGrounds: ownerCon.venueGrounds,
                     initialGroundId: selectedGroundId,
                     initialGroundName: selectedGroundName,
-                    initialTimeSlot: '$timeFormatted:00',
+                    initialTimeSlot: DateFormat('yyyy-MM-dd HH:mm:ss').format(targetDateTime),
                     basePrice: basePrice,
                     peakRate: peakRate,
                     isPeakEnabled: isPeakEnabled,
