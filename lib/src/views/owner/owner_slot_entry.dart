@@ -1,44 +1,116 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_datetime_picker.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
-import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
-// Ensure this path matches your project structure for DateTimePickerHelper
-// import 'package:futsal_dai/src/helper/date_time_picker_helper.dart';
-
 class OwnerMaunualSlotEntry extends StatefulWidget {
-  const OwnerMaunualSlotEntry({super.key});
+  final int venueId;
+  final List<Map<String, dynamic>> venueGrounds;
+  final String? initialGroundId;
+  final String? initialGroundName;
+  final String? initialTimeSlot;
+  final double basePrice;
+  final double peakRate;
+  final bool isPeakEnabled;
+  final String? peakStartTime;
+  final String? peakEndTime;
+  final double groundModifier;
+
+  const OwnerMaunualSlotEntry({
+    super.key,
+    required this.venueId,
+    required this.venueGrounds,
+    this.initialGroundId,
+    this.initialGroundName,
+    this.initialTimeSlot,
+    this.basePrice = 1500.0,
+    this.peakRate = 0.0,
+    this.isPeakEnabled = false,
+    this.peakStartTime,
+    this.peakEndTime,
+    this.groundModifier = 0.0,
+  });
 
   @override
   State<OwnerMaunualSlotEntry> createState() => _OwnerMaunualSlotEntryState();
 }
 
 class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
+  final OwnerController ownerCon = Get.find<OwnerController>();
   final formKey = GlobalKey<FormState>();
 
-  // Text Controllers
-  final courtSel = TextEditingController(text: 'Pitch A');
+  late final TextEditingController priceController;
+  String? selectedGroundId;
+  
+  final courtSel = TextEditingController();
   final teamName = TextEditingController();
-  final phNum = TextEditingController();
+  final phNum    = TextEditingController();
 
-  String selectedMethod = 'cash';
+  // State for booking type selection ('manual_walk_in' or 'by_phone_call')
+  String selectedBookingType = 'manual_walk_in';
 
-  // Connected DateTime Variables
   late DateTime selectedDateTime;
   DateTime get endTime => selectedDateTime.add(const Duration(hours: 1));
+
+  double calculateSlotPrice() {
+    double price = widget.basePrice + widget.groundModifier;
+
+    if (widget.isPeakEnabled && widget.peakStartTime != null && widget.peakEndTime != null) {
+      try {
+        final slotTime = TimeOfDay.fromDateTime(selectedDateTime);
+        
+        final startParts = widget.peakStartTime!.split(':');
+        final endParts = widget.peakEndTime!.split(':');
+        
+        final peakStart = TimeOfDay(hour: int.parse(startParts[0]), minute: int.parse(startParts[1]));
+        final peakEnd = TimeOfDay(hour: int.parse(endParts[0]), minute: int.parse(endParts[1]));
+
+        int slotMins = slotTime.hour * 60 + slotTime.minute;
+        int startMins = peakStart.hour * 60 + peakStart.minute;
+        int endMins = peakEnd.hour * 60 + peakEnd.minute;
+
+        bool isPeak = slotMins >= startMins && slotMins < endMins;
+        if (isPeak && widget.peakRate > 0) {
+          price = widget.peakRate + widget.groundModifier;
+        }
+      } catch (e) {
+        debugPrint('Error calculating peak price: $e');
+      }
+    }
+    return price;
+  }
 
   @override
   void initState() {
     super.initState();
     final now = DateTime.now();
-    selectedDateTime = DateTime(now.year, now.month, now.day, now.hour + 1, 0);
+
+    if (widget.initialTimeSlot != null && widget.initialTimeSlot!.isNotEmpty) {
+      final parts = widget.initialTimeSlot!.split(':');
+      final hour = int.parse(parts[0]);
+      selectedDateTime = DateTime(now.year, now.month, now.day, hour, 0);
+    } else {
+      selectedDateTime = DateTime(now.year, now.month, now.day, now.hour + 1, 0);
+    }
+
+    if (widget.initialGroundId != null) {
+      selectedGroundId = widget.initialGroundId;
+      courtSel.text = widget.initialGroundName ?? '';
+    } else if (widget.venueGrounds.isNotEmpty) {
+      selectedGroundId = widget.venueGrounds[0]['id'].toString();
+      courtSel.text = widget.venueGrounds[0]['ground_name'] ?? '';
+    }
+
+    double initialCalculatedPrice = calculateSlotPrice();
+    priceController = TextEditingController(text: initialCalculatedPrice.toStringAsFixed(0));
   }
 
   @override
@@ -46,6 +118,7 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     courtSel.dispose();
     teamName.dispose();
     phNum.dispose();
+    priceController.dispose();
     super.dispose();
   }
 
@@ -72,7 +145,7 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
           decoration: bgImg(),
           child: SafeArea(
             child: Padding(
-              padding: .all(8.sp),
+              padding: EdgeInsets.all(8.sp),
               child: SingleChildScrollView(
                 child: Column(
                   children: [
@@ -90,16 +163,16 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
 
   Widget entrySlot() {
     return ClipRRect(
-      borderRadius: .circular(24),
+      borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: .blur(sigmaX: 15.0, sigmaY: 15.0),
+        filter: ui.ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
         child: Container(
-          margin: .symmetric(horizontal: 8.w),
-          padding: .all(24.r),
+          margin: EdgeInsets.symmetric(horizontal: 8.w),
+          padding: EdgeInsets.all(24.r),
           decoration: BoxDecoration(
-            borderRadius: .circular(24),
+            borderRadius: BorderRadius.circular(24),
             color: black.withValues(alpha: 0.01),
-            border: .all(
+            border: Border.all(
               color: white.withValues(alpha: 0.08),
               width: 1.0,
             ),
@@ -107,7 +180,7 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
           child: Form(
             key: formKey,
             child: Column(
-              crossAxisAlignment: .start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Manual Slot Entry',
@@ -119,15 +192,41 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                 ),
                 SizedBox(height: 16.h),
                 
-                // Court Selection (Tapping triggers picker bottom sheet)
+                // BOOKING TYPE SELECTION DROPDOWN/CHIPS
+                Text(
+                  'BOOKING TYPE',
+                  style: boldStyle(subtitleTextColor, 12.sp),
+                ),
+                SizedBox(height: 8.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: bookingTypeButton(
+                        label: 'Manual Walk-In',
+                        value: 'manual_walk_in',
+                        icon: Icons.directions_walk,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: bookingTypeButton(
+                        label: 'Booked by Call',
+                        value: 'by_phone_call',
+                        icon: Icons.phone_callback_rounded,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+
                 GestureDetector(
                   onTap: _showCourtPicker,
                   child: AbsorbPointer(
                     child: CustomTextFormField(
                       headingText: "COURT SELECTION",
                       headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                      textInputAction: .next,
-                      autoValidateMode: .onUserInteraction,
+                      textInputAction: TextInputAction.next,
+                      autoValidateMode: AutovalidateMode.onUserInteraction,
                       controller: courtSel,
                       readOnly: true,
                       maxLines: 1,
@@ -139,7 +238,6 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                 ),
                 SizedBox(height: 16.h),
                 
-                // Time & Date Card
                 Text(
                   'TIME & DATE',
                   style: boldStyle(subtitleTextColor, 12.sp),
@@ -148,9 +246,9 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                 Container(
                   decoration: BoxDecoration(
                     color: lightFilledBgColor,
-                    borderRadius: .circular(8.r),
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                  padding: .all(16.sp),
+                  padding: EdgeInsets.all(16.sp),
                   child: Row(
                     children: [
                       Icon(Icons.calendar_today_outlined, color: primaryColor, size: 20.sp),
@@ -166,17 +264,17 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                         onTap: _handleSelectDateTime,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: primaryTextColor.withValues(alpha: 0.1),
-                            borderRadius: .circular(10.r),
-                            border: .all(
-                              color: primaryTextColor,
+                            color: primaryColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(
+                              color: primaryColor,
                               width: 0.5,
                             ),
                           ),
-                          padding: .symmetric(vertical: 4.h, horizontal: 12.w),
+                          padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 12.w),
                           child: Text(
                             'EDIT',
-                            style: boldStyle(primaryTextColor, 12.sp),
+                            style: boldStyle(primaryColor, 12.sp),
                           ),
                         ),
                       ),
@@ -185,13 +283,12 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                 ),
                 SizedBox(height: 16.h),
                 
-                // Player / Team Name
                 CustomTextFormField(
                   headingText: "PLAYER/TEAM NAME",
                   headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
-                  textInputAction: .next,
-                  keyboardType: .text,
-                  autoValidateMode: .onUserInteraction,
+                  textInputAction: TextInputAction.next,
+                  keyboardType: TextInputType.text,
+                  autoValidateMode: AutovalidateMode.onUserInteraction,
                   controller: teamName,
                   maxLines: 1,
                   hintText: 'Urban Striker FC',
@@ -206,11 +303,11 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                 ),
                 SizedBox(height: 16.h),
                 
-                // Phone Number
                 CustomTextFormField(
                   headingText: "PHONE NUMBER",
-                  keyboardType: .phone,
-                  autoValidateMode: .onUserInteraction,
+                  headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
+                  keyboardType: TextInputType.phone,
+                  autoValidateMode: AutovalidateMode.onUserInteraction,
                   controller: phNum,
                   maxLines: 1,
                   hintText: '9801234567',
@@ -224,26 +321,29 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
                   },
                 ),
                 SizedBox(height: 16.h),
-                
-                // Payment Status Selection
-                Text(
-                  'PAYMENT STATUS',
-                  style: boldStyle(subtitleTextColor, 12.sp),
+
+                CustomTextFormField(
+                  headingText: "TOTAL PRICE (NPR)",
+                  headingTextStyle: boldStyle(subtitleTextColor, 12.sp),
+                  keyboardType: TextInputType.number,
+                  autoValidateMode: AutovalidateMode.onUserInteraction,
+                  controller: priceController,
+                  maxLines: 1,
+                  filledColor: lightFilledBgColor,
+                  validator: (val) {
+                    if (val == null || double.tryParse(val) == null) {
+                      return 'Please enter a valid price';
+                    }
+                    return null;
+                  },
                 ),
-                SizedBox(height: 8.h),
-                paymentStatusTile(icon: 'assets/icons/cash.svg', label: 'Cash Paid at Venue', method: 'cash'),
-                SizedBox(height: 8.h),
-                paymentStatusTile(icon: 'assets/icons/advance.svg', label: 'Advance Deposit Paid', method: 'advance'),
-                SizedBox(height: 8.h),
-                paymentStatusTile(icon: 'assets/icons/unpaid.svg', label: 'Unpaid / Pay After Match', method: 'unpaid'),
                 SizedBox(height: 24.h),
                 
-                // Submit Button
                 CustomUsualButton(
                   text: 'Confirm & Book Slot',
                   fontColor: const Color(0xFF053900),
                   fontSize: 20.sp,
-                  fontWeight: .bold,
+                  fontWeight: FontWeight.bold,
                   onPressed: _submitForm,
                 ),
                 SizedBox(height: 16.h),
@@ -261,51 +361,32 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     );
   }
 
-  Widget paymentStatusTile({
-    required String icon,
-    required String label,
-    required String method,
-  }) {
-    final bool isSelected = selectedMethod == method;
+  // Widget helper for switching booking type options nicely
+  Widget bookingTypeButton({required String label, required String value, required IconData icon}) {
+    final bool isSelected = selectedBookingType == value;
 
     return InkWell(
-      onTap: () => setState(() => selectedMethod = method),
+      onTap: () => setState(() => selectedBookingType = value),
       child: Container(
+        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 8.w),
         decoration: BoxDecoration(
-          borderRadius: .circular(12.r),
-          border: .all(
-            color: isSelected ? primaryColor : whiteTextColor.withValues(alpha: 0.5),
-            width: 0.5.sp,
+          color: isSelected ? primaryColor.withValues(alpha: 0.2) : lightFilledBgColor,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: isSelected ? primaryColor : Colors.transparent,
+            width: 1.5,
           ),
         ),
-        padding: .symmetric(vertical: 16.h, horizontal: 16.w),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SvgPicture.asset(
-              icon,
-              width: 16.w,
-              height: 16.h,
-              fit: .cover,
-              colorFilter: .mode(
-                isSelected ? primaryColor : Colors.white,
-                .srcIn,
-              ),
-            ),
-            SizedBox(width: 8.w),
-            Text(
-              label,
-              style: regularStyle(whiteTextColor, 16.sp),
-            ),
-            const Spacer(),
-            Container(
-              height: 20.h,
-              width: 20.w,
-              decoration: BoxDecoration(
-                shape: .circle,
-                color: isSelected ? primaryColor : Colors.transparent,
-                border: .all(
-                  color: isSelected ? primaryColor : whiteTextColor,
-                ),
+            Icon(icon, color: isSelected ? primaryColor : subtitleTextColor, size: 18.sp),
+            SizedBox(width: 6.w),
+            Flexible(
+              child: Text(
+                label,
+                style: boldStyle(isSelected ? whiteTextColor : subtitleTextColor, 11.sp),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -314,7 +395,6 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     );
   }
 
-  // DateTime Picker Trigger
   void _handleSelectDateTime() async {
     final DateTime? result = await DateTimePickerHelper.pickDateTime(
       context: context,
@@ -324,30 +404,36 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     if (result != null) {
       setState(() {
         selectedDateTime = result;
+        priceController.text = calculateSlotPrice().toStringAsFixed(0);
       });
     }
   }
 
-  // Court Selector BottomSheet Modal
   void _showCourtPicker() {
     showModalBottomSheet(
       context: context,
       backgroundColor: lightFilledBgColor,
       shape: RoundedRectangleBorder(
-        borderRadius: .vertical(top: Radius.circular(20.r)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (context) {
-        final courts = ['Pitch A (Indoor)', 'Pitch B (Outdoor)', 'Pitch C (5-A-Side)'];
         return Container(
-          padding: .all(16.sp),
+          padding: EdgeInsets.all(16.sp),
           child: Column(
-            mainAxisSize: .min,
-            children: courts.map((court) {
+            mainAxisSize: MainAxisSize.min,
+            children: widget.venueGrounds.map((ground) {
+              final String name = ground['ground_name'] ?? 'Pitch';
+              final String type = ground['ground_type'] ?? '';
               return ListTile(
-                title: Text(court, style: boldStyle(whiteTextColor, 16.sp)),
+                title: Text('$name ($type)', style: boldStyle(whiteTextColor, 16.sp)),
                 onTap: () {
                   setState(() {
-                    courtSel.text = court;
+                    selectedGroundId = ground['id'].toString();
+                    courtSel.text = name;
+                    
+                    double modifier = double.tryParse(ground['price_modifier']?.toString() ?? '0.0') ?? 0.0;
+                    double base = calculateSlotPrice() - widget.groundModifier + modifier;
+                    priceController.text = base.toStringAsFixed(0);
                   });
                   Navigator.pop(context);
                 },
@@ -359,11 +445,29 @@ class _OwnerMaunualSlotEntryState extends State<OwnerMaunualSlotEntry> {
     );
   }
 
-  // Form Submission
-  void _submitForm() {
+  Future<void> _submitForm() async {
     if (formKey.currentState!.validate()) {
-      showToast(message: 'Slot reserved successfully for ${teamName.text}', isSuccess: true);
-      Get.back();
+      if (selectedGroundId == null) {
+        Get.snackbar('Error', 'Please select a court/pitch', backgroundColor: Colors.red, colorText: Colors.white);
+        return;
+      }
+
+      double finalPrice = double.tryParse(priceController.text.trim()) ?? calculateSlotPrice();
+      String venueName = widget.initialGroundName ?? widget.venueGrounds.firstWhere((g) => g['id'].toString() == selectedGroundId, orElse: () => {'ground_name': 'Venue'})['ground_name'];
+
+      await ownerCon.createManualBooking(
+        venueId    : widget.venueId,
+        venueName  : venueName,
+        groundId   : selectedGroundId!,
+        groundName : widget.initialGroundName!,
+        teamName   : teamName.text.trim(),
+        phoneNumber: phNum.text.trim(),
+        bookingDate: selectedDateTime,
+        startTime  : TimeOfDay.fromDateTime(selectedDateTime),
+        endTime    : TimeOfDay.fromDateTime(endTime),
+        totalPrice : finalPrice,
+        bookingType: selectedBookingType
+      );
     }
   }
 }

@@ -31,7 +31,6 @@ class OwnerController extends GetxController {
     }
 
     try {
-      // 1. Insert into futsal_venues
       final venueResponse = await supabase
           .from('futsal_venues')
           .insert(futsalVenues)
@@ -40,7 +39,6 @@ class OwnerController extends GetxController {
       final int venueId = venueResponse['id'];
       write('venueId', venueResponse['id']);
 
-      // 2. Attach the created venue_id to each ground object
       final List<Map<String, dynamic>> groundsData = futsalGround.map((ground) {
         return {
           ...ground,
@@ -48,7 +46,6 @@ class OwnerController extends GetxController {
         };
       }).toList();
 
-      // 3. Insert all pitches into futsal_grounds
       await supabase.from('futsal_grounds').insert(groundsData);
       showToast(message: "Venue and pitches saved successfully!", isSuccess: true);
     } catch (e) {
@@ -62,7 +59,6 @@ class OwnerController extends GetxController {
     required List<Map<String, dynamic>> futsalGround,
     List<dynamic> deletedPitchIds = const [],
   }) async {
-    final supabase = Supabase.instance.client;
     final userId = read('userId');
 
     if (userId == null) {
@@ -71,13 +67,11 @@ class OwnerController extends GetxController {
     }
 
     try {
-      // 1. Update existing futsal_venues row by venueId
       await supabase
           .from('futsal_venues')
           .update(futsalVenues)
           .eq('id', venueId);
 
-      // 2. Delete pitches that were removed in the UI
       if (deletedPitchIds.isNotEmpty) {
         await supabase
             .from('futsal_grounds')
@@ -85,7 +79,6 @@ class OwnerController extends GetxController {
             .inFilter('id', deletedPitchIds);
       }
 
-      // 3. Attach venue_id to grounds payload
       final List<Map<String, dynamic>> groundsData = futsalGround.map((ground) {
         return {
           ...ground,
@@ -93,7 +86,6 @@ class OwnerController extends GetxController {
         };
       }).toList();
 
-      // 4. Upsert pitches (Updates existing grounds with matching 'id', inserts new ones)
       await supabase.from('futsal_grounds').upsert(groundsData);
 
       showToast(message: "Venue and pitches updated successfully!", isSuccess: true);
@@ -109,9 +101,6 @@ class OwnerController extends GetxController {
     isLoadingData.value = true;
 
     try {
-      final supabase = Supabase.instance.client;
-
-      // 1. Get Venue by owner_id
       final venueRes = await supabase
           .from('futsal_venues')
           .select('*')
@@ -122,7 +111,6 @@ class OwnerController extends GetxController {
 
       final int venueId = venueRes['id'];
 
-      // 2. Fetch Pitches by venue_id
       final groundsRes = await supabase
           .from('futsal_grounds')
           .select('*')
@@ -148,18 +136,15 @@ class OwnerController extends GetxController {
     try {
       isLoadingData.value = true;
 
-      // 1. Clear previous operating hours for this venue to prevent duplicate records
       await supabase
           .from('operating_hours')
           .delete()
           .eq('venue_id', venueId);
 
-      // 2. Insert new operating hours schedule
       await supabase
           .from('operating_hours')
           .insert(operatingHours);
 
-      // 3. Update global settings in futsal_venues table
       await supabase
           .from('futsal_venues')
           .update(venueSettings)
@@ -173,19 +158,16 @@ class OwnerController extends GetxController {
     }
   }
 
-  /// Optional: Fetch existing hours for a venue when opening the screen
   Future<Map<String, dynamic>?> fetchOperatingRules(int venueId) async {
     try {
       isLoadingData.value = true;
 
-      // Fetch venue settings (slot duration, buffer, peak hours)
       final venueRes = await supabase
           .from('futsal_venues')
           .select('slot_duration_mins, buffer_time_mins, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
           .eq('id', venueId)
           .maybeSingle();
 
-      // Fetch weekly operating hours
       final hoursRes = await supabase
           .from('operating_hours')
           .select('*')
@@ -204,7 +186,6 @@ class OwnerController extends GetxController {
     }
   }
 
-  // Fetch Pending Bookings
   Future<void> fetchPendingBookings(int venueId) async {
     isLoadingPending.value = true;
     try {
@@ -227,19 +208,15 @@ class OwnerController extends GetxController {
     }
   }
 
-  // Helper method to update DB and UI
   Future<void> updateBookingStatus(String bookingId, String newStatus, {String? groundId, String? dateStr}) async {
     try {
-      // 1. Update Supabase
       await supabase
           .from('bookings')
           .update({'status': newStatus})
           .eq('id', bookingId);
 
-      // 2. Remove the booking from the local UI list immediately so it disappears from the queue
       pendingBookings.removeWhere((booking) => booking['id'] == bookingId);
 
-      // 3. If groundId and date are provided, refresh the timeline automatically
       if (groundId != null && dateStr != null) {
         fetchGroundTimelineBookings(groundId: groundId, dateStr: dateStr);
       }
@@ -255,13 +232,12 @@ class OwnerController extends GetxController {
     }
   }
 
-  // Fetch grounds belonging to this venue
   Future<void> fetchVenueGrounds(int venueId) async {
     isLoadingGrounds.value = true;
     try {
       final response = await supabase
           .from('futsal_grounds')
-          .select('id, ground_name, ground_type, format')
+          .select('*')
           .eq('venue_id', venueId);
 
       venueGrounds.assignAll(List<Map<String, dynamic>>.from(response));
@@ -272,17 +248,16 @@ class OwnerController extends GetxController {
     }
   }
 
-  // Fetch bookings for a specific ground and date to populate the timeline
   Future<void> fetchGroundTimelineBookings({
     required String groundId,
-    required String dateStr, // Format: 'yyyy-MM-dd'
+    required String dateStr,
   }) async {
     isLoadingTimeline.value = true;
     try {
       final response = await supabase
           .from('bookings')
           .select('*, users(full_name, phone_number)')
-          .eq('ground_id', groundId) // Strictly targets the selected pitch UUID
+          .eq('ground_id', groundId)
           .eq('booking_date', dateStr)
           .eq('is_deleted', false);
 
@@ -294,4 +269,52 @@ class OwnerController extends GetxController {
     }
   }
 
+  Future<void> createManualBooking({
+    required int venueId,
+    required String groundId,
+    required String groundName,
+    required String teamName,
+    required String phoneNumber,
+    required String venueName,
+    required String bookingType,
+    required DateTime bookingDate,
+    required TimeOfDay startTime,
+    required TimeOfDay endTime,
+    required double totalPrice,
+  }) async {
+    try {
+      isLoadingData.value = true;
+
+      final dateFormatted = DateFormat('yyyy-MM-dd').format(bookingDate);
+      final startTimeFormatted = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}:00';
+      final endTimeFormatted = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}:00';
+
+      final Map<String, dynamic> bookingData = {
+        'venue_id'    : venueId,
+        'venue_name'  : venueName,
+        'ground_id'   : groundId,
+        'ground_name' : groundName,
+        'booking_date': dateFormatted,
+        'start_time'  : startTimeFormatted,
+        'end_time'    : endTimeFormatted,
+        'status'      : 'booked',
+        'booking_type': bookingType,
+        'team_name'   : teamName,
+        'phone_number': phoneNumber,
+        'total_price' : totalPrice,
+        'user_id'     : read('userId')
+      };
+
+      await supabase.from('bookings').insert(bookingData);
+      //refresh time line
+      fetchGroundTimelineBookings(groundId: groundId, dateStr: dateFormatted);
+
+      Get.back();
+      showToast(message: 'Slot reserved successfully for $teamName', isSuccess: true);
+    } catch (e) {
+      showToast(message: 'Failed to create manual booking: $e', isSuccess: false);
+    } finally {
+      isLoadingData.value = false;
+    }
+  }
 }

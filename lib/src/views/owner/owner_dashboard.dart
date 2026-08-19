@@ -22,11 +22,8 @@ class OwnerDashboard extends StatefulWidget {
 class _OwnerDashboardState extends State<OwnerDashboard> {
   final OwnerController ownerCon = Get.put(OwnerController());
 
-  // Track selected ground ID and name dynamically
   String? selectedGroundId;
   String selectedGroundName = '';
-  
-  // Track selected date for timeline filtering
   DateTime selectedDate = DateTime.now();
 
   @override
@@ -34,8 +31,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       ownerCon.fetchPendingBookings(widget.venueId);
-      
-      // Fetch grounds and set default selection to the first ground
       await ownerCon.fetchVenueGrounds(widget.venueId);
       if (ownerCon.venueGrounds.isNotEmpty) {
         setState(() {
@@ -173,7 +168,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     final String userName = data['users']?['full_name'] ?? 'Unknown User';
     final String profilePic = data['users']?['profile_pic'] ?? '';
     final String phone = data['users']?['phone_number'] ?? 'N/A';
-    final String groundName = data['ground_name'] ?? 'N/A';
     final String date = data['booking_date'] ?? '';
     final String startTime = data['start_time']?.substring(0, 5) ?? '';
     final String endTime = data['end_time']?.substring(0, 5) ?? '';
@@ -210,7 +204,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                   children: [
                     Text(userName, style: semiBoldStyle(whiteTextColor, 20.sp).copyWith(height: 1.0), maxLines: 1, overflow: TextOverflow.ellipsis),
                     SizedBox(height: 4.h),
-                    Text(groundName, style: semiBoldStyle(whiteTextColor, 14.sp)),
+                    Text(phone, style: semiBoldStyle(whiteTextColor, 14.sp)),
                   ],
                 ),
               ),
@@ -272,7 +266,15 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                 Expanded(
                   child: CustomUsualButton(
                     text: 'REJECT',
-                    onPressed: () => ownerCon.updateBookingStatus(data['id'].toString(), 'rejected'),
+                    onPressed: () {
+                      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+                      ownerCon.updateBookingStatus(
+                        data['id'].toString(), 
+                        'rejected', 
+                        groundId: selectedGroundId, 
+                        dateStr: dateStr,
+                      );
+                    },
                     bgColor: Colors.transparent,
                     fontSize: 14.sp,
                     fontColor: whiteTextColor,
@@ -296,7 +298,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Timeline', style: semiBoldStyle(whiteTextColor, 20.sp)),
-            // Dynamic ground selector buttons header
             Obx(() {
               if (ownerCon.isLoadingGrounds.value) {
                 return const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2));
@@ -311,12 +312,10 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                     padding: EdgeInsets.only(left: 8.w),
                     child: InkWell(
                       onTap: () {
-                        // 1. Update active selection state immediately
                         setState(() {
                           selectedGroundId = groundId;
                           selectedGroundName = groundName;
                         });
-                        // 2. Fetch bookings explicitly for this newly selected pitch ID
                         _loadTimeline();
                       },
                       child: _buildHeaderBadge(groundName.toUpperCase(), isSelected: isSelected),
@@ -342,14 +341,9 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               ));
             }
 
-            // Check if selected date is today
             bool isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
             int currentHour = DateTime.now().hour;
-
-            // Generate full hourly slots (6 AM to 9 PM -> hours 6 through 21)
             List<int> allHours = List.generate(16, (index) => index + 6);
-
-            // Filter: Show current hour and later if today, otherwise show all hours for future dates
             List<int> filteredHours = isToday
                 ? allHours.where((hour) => hour >= currentHour).toList()
                 : allHours;
@@ -370,7 +364,6 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
               children: filteredHours.map((hour) {
                 final String timeFormatted = '${hour.toString().padLeft(2, '0')}:00';
                 
-                // Match this hour slot against the fetched bookings for the current active ground
                 Map<String, dynamic>? matchingBooking;
                 for (var b in ownerCon.groundBookings) {
                   final String startStr = b['start_time'] ?? '';
@@ -385,21 +378,63 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
                 if (matchingBooking != null) {
                   final String dbStatus = matchingBooking['status'] ?? 'booked';
+                  final String displayName = matchingBooking['team_name'] ?? 
+                                             matchingBooking['users']?['full_name'] ?? 
+                                             'Reserved';
+
                   if (dbStatus == 'booked' || dbStatus == 'confirmed') {
                     status = 'Booked';
-                    subtitle = matchingBooking['users']?['full_name'] ?? 'Reserved';
+                    subtitle = displayName;
                   } else if (dbStatus == 'completed') {
                     status = 'Completed';
-                    subtitle = matchingBooking['users']?['full_name'];
+                    subtitle = displayName;
                   } else if (dbStatus == 'in_progress') {
                     status = 'IN PROGRESS';
-                    subtitle = matchingBooking['users']?['full_name'];
+                    subtitle = displayName;
                   }
                 }
 
                 return Padding(
                   padding: EdgeInsets.only(bottom: 8.h),
-                  child: timeLineTile(time: timeFormatted, status: status, subtitle: subtitle),
+                  child: timeLineTile(
+                    time: timeFormatted, 
+                    status: status, 
+                    subtitle: subtitle,
+                    onTapAvailable: () async {
+                      // Fetch venue settings to pass price calculation parameters
+                      final venueRes = await ownerCon.supabase
+                          .from('futsal_venues')
+                          .select('base_price, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
+                          .eq('id', widget.venueId)
+                          .maybeSingle();
+
+                      final currentGround = ownerCon.venueGrounds.firstWhere(
+                        (g) => g['id'].toString() == selectedGroundId,
+                        orElse: () => {},
+                      );
+
+                      double basePrice = double.tryParse(venueRes?['base_price']?.toString() ?? '1500.0') ?? 1500.0;
+                      double peakRate = double.tryParse(venueRes?['peak_rate']?.toString() ?? '0.0') ?? 0.0;
+                      bool isPeakEnabled = venueRes?['is_peak_enabled'] ?? false;
+                      String? peakStart = venueRes?['peak_start_time'];
+                      String? peakEnd = venueRes?['peak_end_time'];
+                      double groundModifier = double.tryParse(currentGround['price_modifier']?.toString() ?? '0.0') ?? 0.0;
+
+                      Get.to(() => OwnerMaunualSlotEntry(
+                        venueId: widget.venueId,
+                        venueGrounds: ownerCon.venueGrounds,
+                        initialGroundId: selectedGroundId,
+                        initialGroundName: selectedGroundName,
+                        initialTimeSlot: timeFormatted,
+                        basePrice: basePrice,
+                        peakRate: peakRate,
+                        isPeakEnabled: isPeakEnabled,
+                        peakStartTime: peakStart,
+                        peakEndTime: peakEnd,
+                        groundModifier: groundModifier,
+                      ));
+                    },
+                  ),
                 );
               }).toList(),
             );
@@ -432,6 +467,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
     required String time,
     required String status,
     String? subtitle,
+    required VoidCallback onTapAvailable,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +498,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
             ),
             child: status == 'AVAILABLE'
                 ? InkWell(
-                    onTap: () => Get.to(() => const OwnerMaunualSlotEntry()),
+                    onTap: onTapAvailable,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
