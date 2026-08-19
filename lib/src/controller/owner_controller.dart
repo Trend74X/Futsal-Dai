@@ -13,6 +13,14 @@ class OwnerController extends GetxController {
   RxList<Map<String, dynamic>> pendingBookings = <Map<String, dynamic>>[].obs;
   RxBool isLoadingPending = false.obs;
 
+  // Observable list for owner's grounds/pitches
+  RxList<Map<String, dynamic>> venueGrounds = <Map<String, dynamic>>[].obs;
+  RxBool isLoadingGrounds = false.obs;
+
+  // Observable list for timeline bookings of the selected ground & date
+  RxList<Map<String, dynamic>> groundBookings = <Map<String, dynamic>>[].obs;
+  RxBool isLoadingTimeline = false.obs;
+
   Future<void> saveVenueAndPitches({
     required Map<String, dynamic> futsalVenues, 
     required List<Map<String, dynamic>> futsalGround,
@@ -220,7 +228,7 @@ class OwnerController extends GetxController {
   }
 
   // Helper method to update DB and UI
-  Future<void> updateBookingStatus(String bookingId, String newStatus) async {
+  Future<void> updateBookingStatus(String bookingId, String newStatus, {String? groundId, String? dateStr}) async {
     try {
       // 1. Update Supabase
       await supabase
@@ -231,6 +239,11 @@ class OwnerController extends GetxController {
       // 2. Remove the booking from the local UI list immediately so it disappears from the queue
       pendingBookings.removeWhere((booking) => booking['id'] == bookingId);
 
+      // 3. If groundId and date are provided, refresh the timeline automatically
+      if (groundId != null && dateStr != null) {
+        fetchGroundTimelineBookings(groundId: groundId, dateStr: dateStr);
+      }
+
       Get.snackbar(
         'Success', 
         'Booking $newStatus successfully',
@@ -239,6 +252,45 @@ class OwnerController extends GetxController {
       );
     } catch (e) {
       Get.snackbar('Error', 'Failed to update booking: $e');
+    }
+  }
+
+  // Fetch grounds belonging to this venue
+  Future<void> fetchVenueGrounds(int venueId) async {
+    isLoadingGrounds.value = true;
+    try {
+      final response = await supabase
+          .from('futsal_grounds')
+          .select('id, ground_name, ground_type, format')
+          .eq('venue_id', venueId);
+
+      venueGrounds.assignAll(List<Map<String, dynamic>>.from(response));
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to fetch grounds: $e');
+    } finally {
+      isLoadingGrounds.value = false;
+    }
+  }
+
+  // Fetch bookings for a specific ground and date to populate the timeline
+  Future<void> fetchGroundTimelineBookings({
+    required String groundId,
+    required String dateStr, // Format: 'yyyy-MM-dd'
+  }) async {
+    isLoadingTimeline.value = true;
+    try {
+      final response = await supabase
+          .from('bookings')
+          .select('*, users(full_name, phone_number)')
+          .eq('ground_id', groundId) // Strictly targets the selected pitch UUID
+          .eq('booking_date', dateStr)
+          .eq('is_deleted', false);
+
+      groundBookings.assignAll(List<Map<String, dynamic>>.from(response));
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load timeline: $e');
+    } finally {
+      isLoadingTimeline.value = false;
     }
   }
 
