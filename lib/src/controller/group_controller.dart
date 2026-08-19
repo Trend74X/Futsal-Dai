@@ -39,7 +39,7 @@ class GroupController extends GetxController {
 
     try {
       final response = await supabase
-          .from('Users')
+          .from('users')
           .select('id, full_name, username, profile_pic')
           .eq('role', 'player')
           .or('full_name.ilike.%$query%,username.ilike.%$query%')
@@ -160,7 +160,7 @@ class GroupController extends GetxController {
               user_id,
               status,
               role,
-              Users (
+              users (
                 id,
                 full_name,
                 username,
@@ -237,7 +237,7 @@ class GroupController extends GetxController {
             user_id,
             status,
             role,
-            Users (
+            users (
               id,
               full_name,
               username,

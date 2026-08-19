@@ -171,9 +171,9 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   }
 
   Widget pendingQueCard(Map<String, dynamic> data) {
-    final String userName = data['Users']?['full_name'] ?? 'Unknown User';
-    final String profilePic = data['Users']?['profile_pic'] ?? '';
-    final String phone = data['Users']?['phone_number'] ?? 'N/A';
+    final String userName = data['users']?['full_name'] ?? 'Unknown User';
+    final String profilePic = data['users']?['profile_pic'] ?? '';
+    final String phone = data['users']?['phone_number'] ?? 'N/A';
     final String date = data['booking_date'] ?? '';
     final String startTime = data['start_time']?.substring(0, 5) ?? ''; // '19:00:00' -> '19:00'
     final String endTime = data['end_time']?.substring(0, 5) ?? '';

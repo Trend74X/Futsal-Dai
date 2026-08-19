@@ -203,7 +203,7 @@ class OwnerController extends GetxController {
       final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final response = await supabase
           .from('bookings')
-          .select('*, Users(full_name, phone_number, profile_pic)')
+          .select('*, users(full_name, phone_number, profile_pic)')
           .eq('venue_id', venueId)
           .eq('status', 'pending')
           .eq('is_deleted', false)

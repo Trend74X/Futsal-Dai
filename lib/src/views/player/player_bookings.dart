@@ -34,9 +34,25 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await playerCon.getBookingDatas();
       
+      final now = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+      final currentTimeStr = DateFormat('HH:mm:ss').format(now);
+
       List<BookingModel> filterAndSort(String status, {bool ascending = false}) {
         final list = playerCon.myMatches
-            .where((match) => match.status == status)
+            .where((match) {
+              if (match.status != status) return false;
+              
+              // Only include future matches for pending status (or apply generally if needed)
+              if (status == 'pending') {
+                final matchDateOnly = match.bookingDate.split('T')[0];
+                if (matchDateOnly.compareTo(todayStr) > 0) return true;
+                if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+                return false;
+              }
+              
+              return true;
+            })
             .toList()
           ..sort((a, b) {
             int dateComp = ascending 
@@ -50,14 +66,11 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
       }
 
       // Upcoming matches (Only future dates/times)
-      final now = DateTime.now();
-      final todayStr = DateFormat('yyyy-MM-dd').format(now);
-      final currentTimeStr = DateFormat('HH:mm:ss').format(now);
-
       upcomingMatches = playerCon.myMatches.where((match) {
         if (match.status != 'booked') return false;
-        if (match.bookingDate.compareTo(todayStr) > 0) return true;
-        if (match.bookingDate == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+        final matchDateOnly = match.bookingDate.split('T')[0];
+        if (matchDateOnly.compareTo(todayStr) > 0) return true;
+        if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
         return false;
       }).toList()
         ..sort((a, b) {

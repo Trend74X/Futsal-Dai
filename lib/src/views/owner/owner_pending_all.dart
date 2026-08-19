@@ -44,13 +44,13 @@ class _OwnerPendingAllState extends State<OwnerPendingAll> {
                       itemBuilder:(context, index) {
                         var data = ownerCon.pendingBookings[index];
                         return pendingCardWidget(
-                          name: data['Users']['full_name'],
+                          name: data['users']['full_name'],
                           bookingId: data['id'], 
                           courtName: data['ground_name'],
                           time: getTime(date: data['booking_date'], time: data['start_time']), // 'Today ${data['start_time']}', 
-                          phone: data['Users']['phone_number'], 
+                          phone: data['users']['phone_number'], 
                           // remTime: '08:45',
-                          profilePic: data['Users']['profile_pic']
+                          profilePic: data['users']['profile_pic']
                         );
                       },
                     )

@@ -148,7 +148,7 @@ class AuthController extends GetxController {
   Future storeUser(String userId, Map<String, dynamic> userData, profileUrl) async {
     try {
       String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
-      final List<Map<String, dynamic>> response = await supabase.from('Users').insert({
+      final List<Map<String, dynamic>> response = await supabase.from('users').insert({
         'id': userId,
         'full_name': userData['full_name'],
         'phone_number': userData['phone_number'],
@@ -229,7 +229,7 @@ class AuthController extends GetxController {
 
       // 3. Perform update in 'Users' table matching the current user ID
       final response = await supabase
-          .from('Users')
+          .from('users')
           .update(updatePayload)
           .eq('id', user.id)
           .select();
@@ -250,7 +250,7 @@ class AuthController extends GetxController {
 
   Future getUserById(String userId) async {
     try {
-      final data = await supabase.from('Users').select().eq('id', userId).maybeSingle();
+      final data = await supabase.from('users').select().eq('id', userId).maybeSingle();
       if (data != null) {
         profile = UserModel.fromJson(data);
         if(profile!.role == 'player') {
