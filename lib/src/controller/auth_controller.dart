@@ -38,7 +38,7 @@ class AuthController extends GetxController {
         return false;
       }
     } catch (e) {
-      showToast(message: 'Login Error', isSuccess: false, isNotDissmiable: true);
+      showToast(message: 'Sign Up Error', isSuccess: false, isNotDissmiable: true);
       return false;
     }
   }
@@ -256,7 +256,7 @@ class AuthController extends GetxController {
         if(profile!.role == 'player') {
           Get.offAll(() => PlayerBottomsheet());
         } else {
-          getVenueId();
+          await getVenueId();
           Get.offAll(() => OwnerBottomsheet());
         }
       }
