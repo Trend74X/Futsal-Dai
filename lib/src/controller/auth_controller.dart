@@ -93,7 +93,27 @@ class AuthController extends GetxController {
 
   Future<void> signOutUser(BuildContext context) async {
     try {
+      final user = supabase.auth.currentUser;
+      
+      // 1. Clear FCM token from database and Firebase instance if user exists
+      if (user != null) {
+        try {
+          // Clear FCM column in Supabase database
+          await supabase
+              .from('users')
+              .update({'fcm': null})
+              .eq('id', user.id);
+
+          // Delete the local device FCM registration token
+          await NotificationHelper.messaging.deleteToken();
+        } catch (e) {
+          log('Error clearing FCM token during logout: $e');
+        }
+      }
+
+      // 2. Sign out from Supabase auth session
       await supabase.auth.signOut();
+      
       if (!context.mounted) return;
       Get.offAll(() => LogInPage());
     } on AuthException catch (error) {
