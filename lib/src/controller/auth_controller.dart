@@ -79,6 +79,8 @@ class AuthController extends GetxController {
       if (response.session != null) {
         write('userId', response.user!.id);
         getUserById(response.user!.id);
+        String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
+        await supabase.from('users').update({'fcm': fcm}).eq('id', response.user!.id);
       } else {
         showToast(message: 'Login failed: Session is null', isSuccess: false, isNotDissmiable: false);
         log('Login failed: Session is null');
