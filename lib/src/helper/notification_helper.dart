@@ -84,7 +84,7 @@ class NotificationHelper {
   /// Configure local notification plugin, channel, and timezone
   static Future<void> setupNotification() async {
     // Define platform-specific initialization settings
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings('ic_launcher');
 
     // iOS initialization with all permissions requested
     const ios = DarwinInitializationSettings(
@@ -112,8 +112,8 @@ class NotificationHelper {
 
     /// High priority channel ensures heads-up notifications on Android
     const channel = AndroidNotificationChannel(
-      'PETRAS',
-      'PETRAS Notifications',
+      'FutsalDai',
+      'FutsalDai Notifications',
       importance: Importance.max,
       playSound: true
     );
@@ -180,9 +180,10 @@ class NotificationHelper {
     return const NotificationDetails(
       // Android channel configuration
       android: AndroidNotificationDetails(
-        'PETRAS',
-        'PETRAS',
+        'FutsalDai',
+        'FutsalDai',
         importance: Importance.high,
+        priority: Priority.high,
         icon: "ic_launcher",
         playSound: true
       ),
