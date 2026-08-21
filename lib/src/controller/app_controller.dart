@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -96,7 +97,7 @@ class AppController extends GetxController {
       url,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z',
+        'Authorization': 'Bearer $supabaseBearerToken',
       },
       body: jsonEncode({
         "tokens": fcmTokens, // Pass up to 25 tokens here

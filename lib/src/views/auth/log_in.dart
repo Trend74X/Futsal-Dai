@@ -149,12 +149,16 @@ class _LogInPageState extends State<LogInPage> {
                 ]
               ),
               SizedBox(height: 24.h),
-              CustomUsualButton(
-                text: 'LOGIN',
-                fontSize: 16.sp,
-                fontWeight: .bold,
-                onPressed: () => authCon.signIn(emailCon.text.trim(), passwordCon.text.trim()),
-                height: 56.h,
+              Obx(() =>
+                CustomUsualButton(
+                  text: 'LOGIN',
+                  fontSize: 16.sp,
+                  isLoading: authCon.isLoggingIn.isTrue,
+                  isDisabled: authCon.isLoggingIn.isTrue,
+                  fontWeight: .bold,
+                  onPressed: () => authCon.signIn(emailCon.text.trim(), passwordCon.text.trim()),
+                  height: 56.h,
+                ),
               ),
               SizedBox(height: 24.h),
               // Text(

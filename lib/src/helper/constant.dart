@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/model/day_schedule_model.dart';
 
+const String supabaseUrl = 'https://gilwmzglondlmruasdwj.supabase.co';
+const String supabasePublishablekey = 'sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z';
+const String supabaseBearerToken = 'sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z';
+
+
 List amenities = [
   {
     'label' : 'Parking',
@@ -37,96 +42,6 @@ List amenities = [
     'icon': Icons.roller_skating,
     'isSelected': false,
   }
-];
-
-
-List slots = [
-  {
-    "slot": "06:00 - 07:00",
-    "status": "available",
-    "price": 1200,
-    "is_peak_hour": false,
-    "booked_by": ""
-  },
-  {
-    "slot": "07:00 - 08:00",
-    "status": "booked",
-    "price": 1200,
-    "is_peak_hour": false,
-    "booked_by": "Ashok & Vai ko Team"
-  },
-  {
-    "slot": "08:00 - 09:00",
-    "status": "pending",
-    "price": 1200,
-    "is_peak_hour": false,
-    "booked_by": ""
-  },
-  {
-    "slot": "09:00 - 10:00",
-    "status": "available",
-    "price": 1200,
-    "is_peak_hour": false,
-    "booked_by": ""
-  },
-  {
-    "slot": "10:00 - 11:00",
-    "status": "available",
-    "price": 1200,
-    "is_peak_hour": false,
-    "booked_by": ""
-  },
-  {
-    "slot": "04:00 - 05:00",
-    "status": "available",
-    "price": 1500,
-    "is_peak_hour": false,
-    "booked_by": ""
-  },
-  {
-    "slot": "05:00 - 06:00",
-    "status": "booked",
-    "price": 1500,
-    "is_peak_hour": false,
-    "booked_by": "Miracle Team"
-  },
-  {
-    "slot": "06:00 - 07:00",
-    "status": "available",
-    "price": 1500,
-    "is_peak_hour": true,
-    "booked_by": ""
-  },
-  {
-    "slot": "07:00 - 08:00",
-    "status": "pending",
-    "price": 1500,
-    "is_peak_hour": true,
-    "booked_by": ""
-  },
-  {
-    "slot": "08:00 - 09:00",
-    "status": "available",
-    "price": 1500,
-    "is_peak_hour": true,
-    "booked_by": ""
-  }
-];
-
-
-List pastMatches = [
-  {
-    "label": "Prismatic Futsal & Recreation Center",
-    "date": "Dec 10, 2025",
-    "amount": "1200",
-    "status": "completed"
-  },
-  {
-    "label": "X-Arena Pro",
-    "date": "Dec 10, 2025",
-    "amount": "0",
-    "status": "cancelled (refunded)"
-  },
 ];
 
 
@@ -185,101 +100,6 @@ List transactions = [
   }
 ];
 
-
-List favoritesStalls = [
-  {
-    "name": "Prismatic Futsal & Recreation Center",
-    "location": "Sanepa, Lalitpur, Nepal",
-    "price": "1500",
-    "isFav": true
-  },
-  {
-    "name": "X-Arena Pro",
-    "location": "Downtown District, Sector 7",
-    "price": "45",
-    "isFav": true
-  },
-  {
-    "name": "Neon Roof Pitch",
-    "location": "Skyline Plaza, East Side",
-    "price": "60",
-    "isFav": true
-  },
-  {
-    "name": "Underground Futsal",
-    "location": "The Vault, Old Industrial Park",
-    "price": "35",
-    "isFav": true
-  }
-];
-
-List squadStatusList = [
-  {
-    "name": "Ashok Shakya",
-    "status": "N/A",
-    "matches_played": 28
-  },
-  {
-    "name": "Anish Shakya",
-    "status": "OUT",
-    "matches_played": 57
-  },
-  {
-    "name": "Amrit Shakya",
-    "status": "IN",
-    "matches_played": 56
-  },
-  {
-    "name": "Prajesh Shakya",
-    "status": "IN",
-    "matches_played": 40
-  },
-  {
-    "name": "Mandip Napit",
-    "status": "IN",
-    "matches_played": 35
-  },
-  {
-    "name": "Sajit Shakya",
-    "status": "IN",
-    "matches_played": 53
-  },
-  {
-    "name": "Alice",
-    "status": "IN",
-    "matches_played": 41
-  },
-  {
-    "name": "Prajwol",
-    "status": "OUT",
-    "matches_played": 28
-  },
-  {
-    "name": "Pratik Thapa",
-    "status": "N/A",
-    "matches_played": 51
-  },
-  {
-    "name": "Aman Rai",
-    "status": "N/A",
-    "matches_played": 49
-  },
-  {
-    "name": "Suzan",
-    "status": "IN",
-    "matches_played": 13
-  },
-  {
-    "name": "Shreyas",
-    "status": "IN",
-    "matches_played": 13
-  },
-  {
-    "name": "Pradip",
-    "status": "IN",
-    "matches_played": 1
-  }
-];
 
   List<DaySchedule> individualDays = [
     DaySchedule(dayOfWeek: 0, label: 'Sunday'),

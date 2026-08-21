@@ -32,83 +32,86 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await playerCon.getBookingDatas();
-      
-      final now = DateTime.now();
-      final todayStr = DateFormat('yyyy-MM-dd').format(now);
-      final currentTimeStr = DateFormat('HH:mm:ss').format(now);
+      getBookingsList();
+    });
+  }
 
-      List<BookingModel> filterAndSort(String status, {bool ascending = false}) {
-        final list = playerCon.myMatches
-            .where((match) {
-              if (match.status != status) return false;
-              
-              // Only include future matches for pending status (or apply generally if needed)
-              if (status == 'pending') {
-                final matchDateOnly = match.bookingDate.split('T')[0];
-                if (matchDateOnly.compareTo(todayStr) > 0) return true;
-                if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
-                return false;
-              }
-              
-              return true;
-            })
-            .toList()
-          ..sort((a, b) {
-            int dateComp = ascending 
-                ? a.bookingDate.compareTo(b.bookingDate) 
-                : b.bookingDate.compareTo(a.bookingDate);
-            return dateComp != 0 
-                ? dateComp 
-                : (ascending ? a.startTime.compareTo(b.startTime) : b.startTime.compareTo(a.startTime));
-          });
-        return list.cast<BookingModel>();
-      }
+  Future<void> getBookingsList() async {
+    await playerCon.getBookingDatas();
+    final now = DateTime.now();
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    final currentTimeStr = DateFormat('HH:mm:ss').format(now);
 
-      // Upcoming matches (Only future dates/times)
-      upcomingMatches = playerCon.myMatches.where((match) {
+    List<BookingModel> filterAndSort(String status, {bool ascending = false}) {
+      final list = playerCon.myMatches
+          .where((match) {
+            if (match.status != status) return false;
+            
+            // Only include future matches for pending status (or apply generally if needed)
+            if (status == 'pending') {
+              final matchDateOnly = match.bookingDate.split('T')[0];
+              if (matchDateOnly.compareTo(todayStr) > 0) return true;
+              if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+              return false;
+            }
+            
+            return true;
+          })
+          .toList()
+        ..sort((a, b) {
+          int dateComp = ascending 
+              ? a.bookingDate.compareTo(b.bookingDate) 
+              : b.bookingDate.compareTo(a.bookingDate);
+          return dateComp != 0 
+              ? dateComp 
+              : (ascending ? a.startTime.compareTo(b.startTime) : b.startTime.compareTo(a.startTime));
+        });
+      return list.cast<BookingModel>();
+    }
+
+    // Upcoming matches (Only future dates/times)
+    upcomingMatches = playerCon.myMatches.where((match) {
+      if (match.status != 'booked') return false;
+      final matchDateOnly = match.bookingDate.split('T')[0];
+      if (matchDateOnly.compareTo(todayStr) > 0) return true;
+      if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+      return false;
+    }).toList()
+      ..sort((a, b) {
+        int dateComp = a.bookingDate.compareTo(b.bookingDate);
+        return dateComp != 0 ? dateComp : a.startTime.compareTo(b.startTime);
+      });
+
+    pendingMatches = filterAndSort('pending');
+
+    matchHistory = playerCon.myMatches.where((match) {
         if (match.status != 'booked') return false;
+
+        // Parse bookingDate safely (handling potential time component like '2026-08-10T00:00:00')
         final matchDateOnly = match.bookingDate.split('T')[0];
-        if (matchDateOnly.compareTo(todayStr) > 0) return true;
-        if (matchDateOnly == todayStr && match.startTime.compareTo(currentTimeStr) >= 0) return true;
+        final int dateComparison = matchDateOnly.compareTo(todayStr);
+
+        // 1. Show every past record that is yesterday or before (date strictly less than today)
+        if (dateComparison < 0) {
+          return true;
+        }
+
+        // 2. Show past records of today that started before the current time
+        if (dateComparison == 0) {
+          final matchStartTime = match.startTime.substring(0, 8); // Ensure 'HH:mm:ss' format
+          if (matchStartTime.compareTo(currentTimeStr) < 0) {
+            return true;
+          }
+        }
+
         return false;
       }).toList()
         ..sort((a, b) {
-          int dateComp = a.bookingDate.compareTo(b.bookingDate);
-          return dateComp != 0 ? dateComp : a.startTime.compareTo(b.startTime);
+          int dateComp = b.bookingDate.compareTo(a.bookingDate);
+          return dateComp != 0 ? dateComp : b.startTime.compareTo(a.startTime);
         });
-
-      pendingMatches = filterAndSort('pending');
-
-      matchHistory = playerCon.myMatches.where((match) {
-          if (match.status != 'booked') return false;
-
-          // Parse bookingDate safely (handling potential time component like '2026-08-10T00:00:00')
-          final matchDateOnly = match.bookingDate.split('T')[0];
-          final int dateComparison = matchDateOnly.compareTo(todayStr);
-
-          // 1. Show every past record that is yesterday or before (date strictly less than today)
-          if (dateComparison < 0) {
-            return true;
-          }
-
-          // 2. Show past records of today that started before the current time
-          if (dateComparison == 0) {
-            final matchStartTime = match.startTime.substring(0, 8); // Ensure 'HH:mm:ss' format
-            if (matchStartTime.compareTo(currentTimeStr) < 0) {
-              return true;
-            }
-          }
-
-          return false;
-        }).toList()
-          ..sort((a, b) {
-            int dateComp = b.bookingDate.compareTo(a.bookingDate);
-            return dateComp != 0 ? dateComp : b.startTime.compareTo(a.startTime);
-          });
-      
-      setState(() {});
-    });
+    
+    setState(() {});
   }
 
   /// Calculates remaining time dynamically from the very first upcoming match
@@ -380,64 +383,82 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                               ],
                             ),
                             SizedBox(height: 16.h),
-                            Row(
+                            Column(
                               children: [
-                                InkWell(
-                                  onTap: () => Get.to(() => CustomMapScreen(
-                                    initialLat: data.futsalVenues!.latitude,
-                                    initialLng: data.futsalVenues!.longitude,
-                                    showCurrentLocation: true,
-                                    showDirection: true,
-                                    enableSearch: false,
-                                    isFullScreenView: true,
-                                  )),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      border: .all(color: primaryTextColor),
-                                      borderRadius: .circular(12.r)
-                                    ),
-                                    padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                                    child: Row(
-                                      mainAxisSize: .min,
-                                      children: [
-                                        Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
-                                        SizedBox(width: 8.w),
-                                        Text(
-                                          'Get Directions',
-                                          style: regularStyle(primaryTextColor, 16.sp)
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () => makePhoneCall(data.futsalVenues!.phoneNumber),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: .all(
-                                        color:  primaryTextColor
+                                Row(
+                                  children: [
+                                    InkWell(
+                                      onTap: () => Get.to(() => CustomMapScreen(
+                                        initialLat: data.futsalVenues!.latitude,
+                                        initialLng: data.futsalVenues!.longitude,
+                                        showCurrentLocation: true,
+                                        showDirection: true,
+                                        enableSearch: false,
+                                        isFullScreenView: true,
+                                      )),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: .all(color: primaryTextColor),
+                                          borderRadius: .circular(12.r)
                                         ),
-                                        borderRadius: .circular(12.r)
-                                      ),
-                                      padding: .symmetric(vertical: 12.h, horizontal: 12.w),
-                                      child: Row(
-                                        mainAxisSize: .min,
-                                        children: [
-                                          Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
-                                          SizedBox(width: 8.w),
-                                          Text(
-                                            'Call Owner',
-                                            style: TextStyle(
-                                              color: primaryTextColor,
-                                              fontSize: 16.sp,
+                                        padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                                        child: Row(
+                                          mainAxisSize: .min,
+                                          children: [
+                                            Icon(Icons.map_outlined, size: 18.sp, color: primaryTextColor),
+                                            SizedBox(width: 8.w),
+                                            Text(
+                                              'Get Directions',
+                                              style: regularStyle(primaryTextColor, 16.sp)
                                             )
-                                          )
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                    SizedBox(width: 8.w),
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () => makePhoneCall(data.futsalVenues!.phoneNumber),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            border: .all(
+                                            color:  primaryTextColor
+                                            ),
+                                            borderRadius: .circular(12.r)
+                                          ),
+                                          padding: .symmetric(vertical: 12.h, horizontal: 12.w),
+                                          child: Row(
+                                            mainAxisSize: .min,
+                                            children: [
+                                              Icon(Icons.phone, size: 18.sp, color: primaryTextColor),
+                                              SizedBox(width: 8.w),
+                                              Text(
+                                                'Call Owner',
+                                                style: TextStyle(
+                                                  color: primaryTextColor,
+                                                  fontSize: 16.sp,
+                                                )
+                                              )
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 12.h),
+                                CustomUsualButton(
+                                  text: 'Cancel Booking', 
+                                  onPressed: () {
+                                    playerCon.updateBookingStatus(data.id, 'cancelled_player');
+                                    getBookingsList();
+                                  },
+                                  fontColor: Color(0xFFFFB4AB),
+                                  fontWeight: .w600,
+                                  fontSize: 16.sp,
+                                  borderColor: Color(0xFFFFB4AB),
+                                  bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.01),
+                                  height: 52.h,
                                 ),
                               ],
                             ),
@@ -576,15 +597,37 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                         )
                       ),
                       SizedBox(height: 16.h),
-                      CustomUsualButton(
-                        text: 'Call Owner Directly', 
-                        onPressed: () => makePhoneCall(data.futsalVenues!.phoneNumber),
-                        fontColor: Color(0xFFF59E0B),
-                        fontWeight: .w600,
-                        fontSize: 18.sp,
-                        borderColor: Color(0xFFF59E0B),
-                        bgColor: Color(0xFFF59E0B).withValues(alpha: 0.01),
-                        height: 52.h,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomUsualButton(
+                              text: 'Call Owner', 
+                              onPressed: () => makePhoneCall(data.futsalVenues!.phoneNumber),
+                              fontColor: Color(0xFFF59E0B),
+                              fontWeight: .w600,
+                              fontSize: 16.sp,
+                              borderColor: Color(0xFFF59E0B),
+                              bgColor: Color(0xFFF59E0B).withValues(alpha: 0.01),
+                              height: 52.h,
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: CustomUsualButton(
+                              text: 'Cancel Booking', 
+                              onPressed: () {
+                                playerCon.updateBookingStatus(data.id, 'cancelled_player');
+                                getBookingsList();
+                              },
+                              fontColor: Color(0xFFFFB4AB),
+                              fontWeight: .w600,
+                              fontSize: 16.sp,
+                              borderColor: Color(0xFFFFB4AB),
+                              bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.01),
+                              height: 52.h,
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: 8.h),
                     ],

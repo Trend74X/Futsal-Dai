@@ -337,6 +337,24 @@ class PlayerController extends GetxController {
     }
   }
 
+  Future<void> updateBookingStatus(String bookingId, String newStatus, {String? groundId, String? dateStr}) async {
+    try {
+      await supabase
+          .from('bookings')
+          .update({'status': newStatus})
+          .eq('id', bookingId);
+
+      Get.snackbar(
+        'Success', 
+        'Booking $newStatus successfully',
+        backgroundColor: newStatus == 'booked' ? const Color(0xFF3C4B35) : const Color(0xFF93000A),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update booking: $e');
+    }
+  }
+
   TimeOfDay _parseTime(String time) {
     final parts = time.split(':');
     return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));

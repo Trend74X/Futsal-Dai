@@ -399,7 +399,7 @@ class _FutsalDetailState extends State<FutsalDetail> {
               
               return InkWell(
                 onTap: () {
-                  if (data['status'] == 'available' || data['status'] == 'rejected') {
+                  if (data['status'] == 'available' || data['status'] == 'rejected' || data['status'] == 'cancelled_player') {
                     setState(() {
                       if (selectedIndex == index) {
                         selectedIndex = null;
@@ -434,13 +434,13 @@ class _FutsalDetailState extends State<FutsalDetail> {
                         ),
                       ),
                       Text(
-                        data['status'] == 'available' || data['status'] == 'rejected'
+                        data['status'] == 'available' || data['status'] == 'rejected' || data['status'] == 'cancelled_player'
                           ? "Rs. ${data['price'].toInt()}"
                           : "${data['status'][0].toUpperCase()}${data['status'].substring(1)}",
                         style: TextStyle(
                           color: isSelected 
                                   ? Colors.black 
-                                  : data['status'] == 'available' || data['status'] == 'rejected'
+                                  : data['status'] == 'available' || data['status'] == 'rejected' || data['status'] == 'cancelled_player'
                                     ? primaryColor 
                                     : data['status'] == 'pending'
                                       ? Colors.brown

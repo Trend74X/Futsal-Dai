@@ -152,7 +152,7 @@ class _PlayerBookingConfirmState extends State<PlayerBookingConfirm> {
                 child: SizedBox(
                   height: 20,
                   width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: primaryColor),
                 ),
               ),
             );

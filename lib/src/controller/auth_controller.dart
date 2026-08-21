@@ -17,6 +17,8 @@ class AuthController extends GetxController {
 
   final supabase = Supabase.instance.client;
 
+  RxBool isLoggingIn = false.obs;
+
   UserModel? profile;
 
   Future<bool> signUp(Map<String, dynamic> userData) async {
@@ -71,6 +73,7 @@ class AuthController extends GetxController {
 
   Future<void> signIn(String email, String password) async {
     try {
+      isLoggingIn(true);
       final AuthResponse response = await supabase.auth.signInWithPassword(
         email: email,
         password: password,
@@ -90,6 +93,8 @@ class AuthController extends GetxController {
       log('Login failed (AuthException): ${error.message}');
     } catch (error) {
       log('Login failed (Unexpected Error): $error');
+    } finally {
+      isLoggingIn(false);
     }
   }
 

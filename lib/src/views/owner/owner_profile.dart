@@ -5,6 +5,7 @@ import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/owner/owner_operating_hours.dart';
 import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
+import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 
@@ -309,7 +310,13 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
 
   Widget logOutBtn() {
     return InkWell(
-      onTap: () => _authCon.signOutUser(context),
+      onTap: () => customAlertDialog(
+              title: 'Log Out',
+              content: 'Are you sure you want to log out?',
+              confirmText: 'Log Out',
+              cancelText: 'Cancel',
+              confirmAction: () => _authCon.signOutUser(context)
+            ),
       child: Container(
         decoration: BoxDecoration(
           color: Color(0xFFFFB4AB).withValues(alpha: 0.05),

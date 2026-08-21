@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/splash.dart';
+import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/notification_helper.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -30,8 +31,8 @@ void main() async {
     ),
   );
   await Supabase.initialize(
-    url: 'https://gilwmzglondlmruasdwj.supabase.co',
-    publishableKey: 'sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z',
+    url: supabaseUrl,
+    publishableKey: supabasePublishablekey
   );
   runApp(const MainApp());
 }
