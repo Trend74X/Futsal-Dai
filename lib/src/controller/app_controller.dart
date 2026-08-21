@@ -84,4 +84,42 @@ class AppController extends GetxController {
     }
   }
 
+  Future<void> sendNotifications({
+    required List<String> fcmTokens,
+    required String title,
+    required String body,
+    dynamic data
+  }) async {
+    final url = Uri.parse('https://gilwmzglondlmruasdwj.supabase.co/functions/v1/send-push');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer sb_publishable_Rvcts_U8z98jD8lOqWXXNw_wY2e316Z',
+      },
+      body: jsonEncode({
+        "tokens": fcmTokens, // Pass up to 25 tokens here
+        "title": title,
+        "body": body,
+        "data": data ?? {}
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      log('Batch notifications triggered successfully!');
+    } else {
+      log('Failed: ${response.body}');
+    }
+  }
+
+  // appCon.sendNotifications(
+  //   fcmTokens: [
+  //     'c1KhAm3tRlyOsS7RSkvaHV:APA91bHcYy-VFPnApKk9dcJ3Up63WPZJpPZD_VgNaLe0Bi9azk9VexVyVRls8ZrgmvgixIk8DW4vx7FxnBgONqPNOmyuBDX2mr9cfNJIVGitJFZ_3WvyGng',
+  //   ], 
+  //   title: 'Futsal Dai', 
+  //   body: 'Test Notification from supabase',
+  //   data: {"type": "calender"}
+  // );
+
 }
