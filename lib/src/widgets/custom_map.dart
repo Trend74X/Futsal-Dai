@@ -48,6 +48,7 @@ class CustomMapScreen extends StatefulWidget {
   final MapSearchMode searchMode; // Search mode flag
   final Function(LatLng selectedLocation)? onLocationSelected;
   final List<MapVenueItem> venues; // Multiple venues list
+  final bool returnAddressOnLocation;
 
   const CustomMapScreen({
     super.key,
@@ -61,6 +62,7 @@ class CustomMapScreen extends StatefulWidget {
     this.searchMode = MapSearchMode.placeOnly, // Default to normal map search
     this.onLocationSelected,
     this.venues = const [],
+    this.returnAddressOnLocation = false
   });
 
   @override
@@ -167,11 +169,16 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
 
       setState(() {
         currentLocation = userLatLng;
+        selectedLocation = userLatLng;
       });
 
       mapController.move(userLatLng, 15.0);
 
       startLocationUpdates();
+
+      if (widget.returnAddressOnLocation && widget.onLocationSelected != null) {
+        widget.onLocationSelected!(userLatLng);
+      }
     } catch (e) {
       _showSnackBar('Error getting location: $e');
     } finally {

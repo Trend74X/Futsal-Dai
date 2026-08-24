@@ -3,9 +3,9 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/common/edit_profile.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/player/favorites.dart';
-import 'package:futsal_dai/src/views/player/player_edit_profile.dart';
 import 'package:futsal_dai/src/views/player/player_group_list.dart';
 import 'package:futsal_dai/src/views/player/player_transactions.dart';
 import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
@@ -202,7 +202,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
         child: Column(
           mainAxisAlignment: .center,
           children: [
-            historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () => Get.to(() => PlayerEditProfile())),
+            historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () => Get.to(() => EditProfile())),
             Divider(color: gray01),
             historyTile(icon: Icons.diversity_3, label: 'Teams / Player Groups', onTap: () => Get.to(() => PlayerGroupList())),
             Divider(color: gray01),

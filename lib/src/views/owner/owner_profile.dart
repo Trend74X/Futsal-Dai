@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/common/edit_profile.dart';
 import 'package:futsal_dai/src/views/owner/owner_operating_hours.dart';
 import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
 import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
@@ -42,6 +43,13 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                     SizedBox(height: 24.h),
                     textLabel(label: 'VENUE & OPERATIONAL SETUP'),
                     SizedBox(height: 16.h),
+                    tileCard(
+                      icon: Icons.person_outline, 
+                      title: 'Profile', 
+                      subTitle: 'Manage personal account details & contact info',
+                      onTap: () => Get.to(() => EditProfile())
+                    ),
+                    SizedBox(height: 12.h),
                     tileCard(
                       icon: Icons.sports_soccer, 
                       title: 'Manage Venue & Pitches',  

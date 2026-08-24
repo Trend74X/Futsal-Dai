@@ -215,7 +215,6 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
           }).toList();
         } else if (isToday) {
           filteredHours = allHours.where((hour) {
-            final String timeFormatted = '${hour.toString().padLeft(2, '0')}:00';
             Map<String, dynamic>? matchingBooking;
             for (var b in ownerCon.groundBookings) {
               final String startStr = b['start_time'] ?? '';
@@ -268,9 +267,9 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
               final String bookingType = matchingBooking['booking_type'] ?? '';
 
               if (dbStatus == 'booked' || dbStatus == 'confirmed') {
-                status = bookingType == 'by_phone_call' ? 'Offline' : 'Booked';
+                status = 'Booked'; // Always treat confirmed/booked records as 'Booked'
                 
-                // Update subtitle based on booking type for offline/manual bookings
+                // Set subtitle based on booking type or team name
                 if (bookingType == 'by_phone_call') {
                   subtitle = 'Phone Call';
                 } else if (bookingType == 'manual_walk_in') {

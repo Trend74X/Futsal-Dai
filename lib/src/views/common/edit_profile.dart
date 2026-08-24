@@ -20,16 +20,16 @@ import 'package:latlong2/latlong.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
 
-class PlayerEditProfile extends StatefulWidget {
-  const PlayerEditProfile({super.key});
+class EditProfile extends StatefulWidget {
+  const EditProfile({super.key});
 
   @override
-  State<PlayerEditProfile> createState() => _PlayerEditProfileState();
+  State<EditProfile> createState() => _EditProfileState();
 }
 
-class _PlayerEditProfileState extends State<PlayerEditProfile> {
+class _EditProfileState extends State<EditProfile> {
+  final AppController appCon   = Get.put(AppController());
   final AuthController authCon = Get.find();
-  final AppController appCon = Get.find();
 
   final Geocoding geocoding    = Geocoding();
   final formKey                = GlobalKey<FormState>();
@@ -198,15 +198,14 @@ class _PlayerEditProfileState extends State<PlayerEditProfile> {
                   showCurrentLocation: true,
                   showDirection: false,
                   isSelectionMode: true,
+                  returnAddressOnLocation: true,
                   onLocationSelected: (LatLng location) async {
                     log("PARENT RECEIVED: ${location.latitude}, ${location.longitude}");
-                    setState(() {
-                      latitude = location.latitude;
-                      longitude = location.longitude;
-                      addressCon.text = 'Fetching address...';
-                    });
-
+                    latitude = location.latitude;
+                    longitude = location.longitude;
+                    addressCon.text = 'Fetching address...';
                     addressCon.text = await appCon.getAddressFromLatLng(location.latitude, location.longitude);
+                    setState(() { });
                   },
                 )
               ),
