@@ -195,11 +195,41 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
         }
 
         bool isToday = DateUtils.isSameDay(selectedDateTime, DateTime.now());
+        bool isPastDate = selectedDateTime.isBefore(DateTime.now()) && !isToday;
         int currentHour = DateTime.now().hour;
         List<int> allHours = List.generate(16, (index) => index + 6);
-        List<int> filteredHours = isToday
-            ? allHours.where((hour) => hour >= currentHour).toList()
-            : allHours;
+        
+        List<int> filteredHours = [];
+        if (isPastDate) {
+          filteredHours = allHours.where((hour) {
+            Map<String, dynamic>? matchingBooking;
+            for (var b in ownerCon.groundBookings) {
+              final String startStr = b['start_time'] ?? '';
+              if (startStr.startsWith(hour.toString().padLeft(2, '0'))) {
+                matchingBooking = b;
+                break;
+              }
+            }
+            // Keep ONLY if there's an actual booking for past dates
+            return matchingBooking != null;
+          }).toList();
+        } else if (isToday) {
+          filteredHours = allHours.where((hour) {
+            final String timeFormatted = '${hour.toString().padLeft(2, '0')}:00';
+            Map<String, dynamic>? matchingBooking;
+            for (var b in ownerCon.groundBookings) {
+              final String startStr = b['start_time'] ?? '';
+              if (startStr.startsWith(hour.toString().padLeft(2, '0'))) {
+                matchingBooking = b;
+                break;
+              }
+            }
+            // Keep if it's current/future hour OR if there's an actual booking in the past hour today
+            return hour >= currentHour || matchingBooking != null;
+          }).toList();
+        } else {
+          filteredHours = allHours;
+        }
 
         if (filteredHours.isEmpty) {
           return Center(
@@ -239,7 +269,15 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
 
               if (dbStatus == 'booked' || dbStatus == 'confirmed') {
                 status = bookingType == 'by_phone_call' ? 'Offline' : 'Booked';
-                subtitle = teamName;
+                
+                // Update subtitle based on booking type for offline/manual bookings
+                if (bookingType == 'by_phone_call') {
+                  subtitle = 'Phone Call';
+                } else if (bookingType == 'manual_walk_in') {
+                  subtitle = 'Manual Walk-In';
+                } else {
+                  subtitle = teamName;
+                }
               } else if (dbStatus == 'completed') {
                 status = 'Completed';
                 subtitle = teamName;
@@ -364,7 +402,7 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
               borderRadius: BorderRadius.circular(8.r),
               border: Border.all(color: subtitleTextColor.withValues(alpha: 0.5)),
             ),
-            child: status == 'AVAILABLE' || status == 'EMPTY'
+            child: status == 'AVAILABLE'
                 ? InkWell(
                     onTap: onTapAvailable,
                     child: Row(
@@ -397,9 +435,9 @@ class _OwnerSchedulePageState extends State<OwnerSchedulePage> {
                           subtitle == null
                               ? const SizedBox()
                               : Text(
-                                  status == 'Offline' ? 'Pay on Arrival' : subtitle,
-                                  style: boldStyle(subtitleTextColor, 10.sp),
-                                ),
+                                subtitle,
+                                style: boldStyle(subtitleTextColor, 10.sp),
+                              ),
                         ],
                       ),
                     ],

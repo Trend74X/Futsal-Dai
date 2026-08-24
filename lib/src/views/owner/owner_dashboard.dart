@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/owner_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/views/owner/owner_pending_all.dart';
 import 'package:futsal_dai/src/views/owner/owner_slot_entry.dart';
+import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
+import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 class OwnerDashboard extends StatefulWidget {
-  final int venueId;
-
-  const OwnerDashboard({super.key, required this.venueId});
+  const OwnerDashboard({super.key});
 
   @override
   State<OwnerDashboard> createState() => _OwnerDashboardState();
@@ -31,32 +32,42 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Fetch venue details to get the venue name
-      try {
-        final venueRes = await ownerCon.supabase
-            .from('futsal_venues')
-            .select('name')
-            .eq('id', widget.venueId)
-            .maybeSingle();
 
-        if (venueRes != null) {
-          setState(() {
-            venueName = venueRes['name'] ?? 'Venue';
-          });
+      if(read('venueId') != 0) {
+        // Fetch venue details to get the venue name
+        try {
+          final venueRes = await ownerCon.supabase
+              .from('futsal_venues')
+              .select('name')
+              .eq('id', read('venueId'))
+              .maybeSingle();
+
+          if (venueRes != null) {
+            setState(() {
+              venueName = venueRes['name'] ?? 'Venue';
+            });
+          }
+        } catch (e) {
+          debugPrint('Error fetching venue name: $e');
         }
-      } catch (e) {
-        debugPrint('Error fetching venue name: $e');
-      }
 
-      // Existing initializations
-      ownerCon.fetchPendingBookings(widget.venueId);
-      await ownerCon.fetchVenueGrounds(widget.venueId);
-      if (ownerCon.venueGrounds.isNotEmpty) {
-        setState(() {
-          selectedGroundId = ownerCon.venueGrounds[0]['id'].toString();
-          selectedGroundName = ownerCon.venueGrounds[0]['ground_name'] ?? 'Ground';
-        });
-        _loadTimeline();
+        // Existing initializations
+        ownerCon.fetchPendingBookings(read('venueId'));
+        await ownerCon.fetchVenueGrounds(read('venueId'));
+        if (ownerCon.venueGrounds.isNotEmpty) {
+          setState(() {
+            selectedGroundId = ownerCon.venueGrounds[0]['id'].toString();
+            selectedGroundName = ownerCon.venueGrounds[0]['ground_name'] ?? 'Ground';
+          });
+          _loadTimeline();
+        }
+      } else {
+        customAlertDialog(
+          title: 'Futsal Dai', 
+          content: 'Venues are not set yet. Please add venues before proceeding', 
+          confirmText: 'Add Venues', 
+          confirmAction: () => Get.to(() => OwnerVenueDetails())
+        );
       }
     });
   }
@@ -431,39 +442,48 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
                     status: status, 
                     subtitle: subtitle,
                     onTapAvailable: () async {
-                      // Fetch venue settings to pass price calculation parameters
-                      final venueRes = await ownerCon.supabase
-                          .from('futsal_venues')
-                          .select('base_price, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
-                          .eq('id', widget.venueId)
-                          .maybeSingle();
+                      if(read('venueId') != 0) {
+                        // Fetch venue settings to pass price calculation parameters
+                        final venueRes = await ownerCon.supabase
+                            .from('futsal_venues')
+                            .select('base_price, is_peak_enabled, peak_start_time, peak_end_time, peak_rate')
+                            .eq('id', read('venueId'))
+                            .maybeSingle();
 
-                      final currentGround = ownerCon.venueGrounds.firstWhere(
-                        (g) => g['id'].toString() == selectedGroundId,
-                        orElse: () => {},
-                      );
+                        final currentGround = ownerCon.venueGrounds.firstWhere(
+                          (g) => g['id'].toString() == selectedGroundId,
+                          orElse: () => {},
+                        );
 
-                      double basePrice = double.tryParse(venueRes?['base_price']?.toString() ?? '1500.0') ?? 1500.0;
-                      double peakRate = double.tryParse(venueRes?['peak_rate']?.toString() ?? '0.0') ?? 0.0;
-                      bool isPeakEnabled = venueRes?['is_peak_enabled'] ?? false;
-                      String? peakStart = venueRes?['peak_start_time'];
-                      String? peakEnd = venueRes?['peak_end_time'];
-                      double groundModifier = double.tryParse(currentGround['price_modifier']?.toString() ?? '0.0') ?? 0.0;
+                        double basePrice = double.tryParse(venueRes?['base_price']?.toString() ?? '1500.0') ?? 1500.0;
+                        double peakRate = double.tryParse(venueRes?['peak_rate']?.toString() ?? '0.0') ?? 0.0;
+                        bool isPeakEnabled = venueRes?['is_peak_enabled'] ?? false;
+                        String? peakStart = venueRes?['peak_start_time'];
+                        String? peakEnd = venueRes?['peak_end_time'];
+                        double groundModifier = double.tryParse(currentGround['price_modifier']?.toString() ?? '0.0') ?? 0.0;
 
-                      Get.to(() => OwnerMaunualSlotEntry(
-                        venueId: widget.venueId,
-                        venueName: venueName,
-                        venueGrounds: ownerCon.venueGrounds,
-                        initialGroundId: selectedGroundId,
-                        initialGroundName: selectedGroundName,
-                        initialTimeSlot: timeFormatted,
-                        basePrice: basePrice,
-                        peakRate: peakRate,
-                        isPeakEnabled: isPeakEnabled,
-                        peakStartTime: peakStart,
-                        peakEndTime: peakEnd,
-                        groundModifier: groundModifier,
-                      ));
+                        Get.to(() => OwnerMaunualSlotEntry(
+                          venueId: read('venueId'),
+                          venueName: venueName,
+                          venueGrounds: ownerCon.venueGrounds,
+                          initialGroundId: selectedGroundId,
+                          initialGroundName: selectedGroundName,
+                          initialTimeSlot: timeFormatted,
+                          basePrice: basePrice,
+                          peakRate: peakRate,
+                          isPeakEnabled: isPeakEnabled,
+                          peakStartTime: peakStart,
+                          peakEndTime: peakEnd,
+                          groundModifier: groundModifier,
+                        ));
+                      } else {
+                        customAlertDialog(
+                          title: 'Futsal Dai', 
+                          content: 'Venues are not set yet. Please add venues before proceeding', 
+                          confirmText: 'Add Venues', 
+                          confirmAction: () => Get.to(() => OwnerVenueDetails())
+                        );
+                      }
                     },
                   ),
                 );
