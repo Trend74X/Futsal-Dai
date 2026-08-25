@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/helper/styles.dart';
+import 'package:futsal_dai/src/views/player/player_local_detail.dart';
+import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:get/get.dart';
+
+class PlayerLocalList extends StatefulWidget {
+  const PlayerLocalList({super.key});
+
+  @override
+  State<PlayerLocalList> createState() => _PlayerLocalListState();
+}
+
+class _PlayerLocalListState extends State<PlayerLocalList> {
+  final searchCon    = TextEditingController();
+  final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later'];
+  String selectedFilter = 'All';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SizedBox.expand(
+        child: Container(
+          decoration: bgImg(),
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: .all(16.sp),
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  children: [
+                    searchBarField(),
+                    SizedBox(height: 8.h),
+                    filterWidgets(),
+                    SizedBox(height: 16.h),
+                    mercenaryListWidget()
+                  ]
+                )
+              )
+            )
+          )
+        )
+      )
+    );
+  }
+
+  Widget searchBarField() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 1,
+          child: IconButton(
+            onPressed: () => Get.back(),
+            icon: Icon(Icons.arrow_back_ios_new, color: subtitleTextColor),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          flex: 7,
+          child: CustomTextFormField(
+            headingText: "",
+            headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
+            textInputAction: TextInputAction.search,
+            keyboardType: TextInputType.text,
+            controller: searchCon,
+            maxLines: 1,
+            hintText: 'Search By Name',
+            hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
+            onChanged: (value) => setState(() { }),
+            onFieldSubmitted: (value) {
+              
+            },
+            prefixIcon: Icon(Icons.search, color: disableButton),
+            suffixIcon: IconButton(
+              onPressed: () {
+                searchCon.clear();
+                // _con.loadNearbyVenues(searchQuery: '', selectedAmenities: getSelectedAmenities());
+                setState(() { });
+              }, 
+              icon: Visibility(
+                visible: searchCon.text != '',
+                child: Icon(Icons.close, color: disableButton)
+              )
+            ),
+            height: 56.h,
+          ),
+        )
+      ],
+    );
+  }
+
+  Widget filterWidgets() {
+    return SizedBox(
+      height: 35.h,
+      child: ListView.separated(
+        shrinkWrap: true,
+        itemCount: filterItems.length,
+        physics: NeverScrollableScrollPhysics(),
+        scrollDirection: .horizontal,
+        separatorBuilder: (context, index) => SizedBox(width: 8.w),
+        itemBuilder:(context, index) {
+          return filterTileWidget(filterItems[index]);
+        },
+      ),
+    );
+  }
+
+  Widget filterTileWidget(dynamic data) {
+    return InkWell(
+      onTap: () => setState(() => selectedFilter = data),
+      child: Container(
+        decoration: BoxDecoration(
+          color: selectedFilter == data ? primaryColor : lightFilledBgColor,
+          borderRadius: .circular(12.r)
+        ),
+        padding: .symmetric(vertical: 4.h, horizontal: 12.w),
+        child: Center(
+          child: Text(
+            data,
+            style: boldStyle(selectedFilter == data ? black : whiteTextColor, 14.sp),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget mercenaryListWidget() {
+    return ListView.separated(
+      shrinkWrap: true,
+      itemCount: 4,
+      physics: NeverScrollableScrollPhysics(),
+      separatorBuilder: (context, index) => SizedBox(height: 8.h),
+      itemBuilder:(context, index) {
+        return postTileWidget();
+      },
+    );
+  }
+
+  Widget postTileWidget() {
+    return InkWell(
+      onTap: () => Get.to(() => PlayerLocalDetail()),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: .circular(24.r),
+          color: filledBlueColor
+        ),
+        child: Column(
+          children: [
+            Stack(
+              children: [
+                SizedBox(
+                  height: 192.h,
+                  width: .infinity,
+                  child: ClipRRect(
+                    borderRadius: .circular(12.r),
+                    child: SizedBox(
+                      height: 64.h,
+                      width: 64.w,
+                      child: Image.asset(
+                        'assets/images/court.png',
+                        fit: .cover,
+                      )
+                    )
+                  )
+                ),
+                SizedBox(
+                  height: 192.h,
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 8.h, left: 8.w, bottom: 8.h),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: primaryColor,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 8.w),
+                          child: Text(
+                            '2 Slots Open',
+                            style: boldStyle(black, 12.sp),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'Stadium Arena',
+                          style: semiBoldStyle(whiteTextColor, 20.sp)
+                        ),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time, color: subtitleTextColor, size: 13.sp),
+                            SizedBox(width: 4.w),
+                            Text(
+                              '20:00 PM - 11:00 PM',
+                              style: regularStyle(subtitleTextColor, 14.sp),
+                            ),
+                            Text(
+                              ' • Today',
+                              style: regularStyle(subtitleTextColor, 14.sp),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsets.all(8.h),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 40.h,
+                        width: 40.w,
+                        decoration: BoxDecoration(
+                          color: lightFilledBgColor,
+                          shape: .circle
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Column(
+                        crossAxisAlignment: .start,
+                        mainAxisSize: .min,
+                        children: [
+                          Text(
+                            'Saturday Striker',
+                            style: semiBoldStyle(whiteTextColor, 16.sp).copyWith(height: 1.2)
+                          ),
+                          Text(
+                            'Host: Ashok Shakya',
+                            style: boldStyle(disableButton, 12.sp)
+                          )
+                        ],
+                      )
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  Container(
+                    width: Get.width * 0.85,
+                    decoration: BoxDecoration(
+                      border: .all(color: primaryColor, width: 1.5.w),
+                      borderRadius: .circular(12.r)                    
+                    ),
+                    padding: .symmetric(vertical: 4.h),
+                    child: Center(
+                      child: Text(
+                        'REQUEST TO JOIN',
+                        style: semiBoldStyle(primaryColor, 16.sp)
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            )
+          ],
+        )
+      ),
+    );
+  }
+
+}

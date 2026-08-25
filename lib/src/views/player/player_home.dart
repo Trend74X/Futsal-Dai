@@ -4,6 +4,7 @@ import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
+import 'package:futsal_dai/src/views/player/player_local_list.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
@@ -474,57 +475,60 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
   }
   
   Widget findLocalTeam() {
-    return Container(
-      decoration: BoxDecoration(
-        color: containerBgColor,
-        border: Border.all(
-          color: Color(0xFF3C4B35),
-          width: 1.w
+    return InkWell(
+      onTap: () => Get.to(() => PlayerLocalList()),
+      child: Container(
+        decoration: BoxDecoration(
+          color: containerBgColor,
+          border: Border.all(
+            color: Color(0xFF3C4B35),
+            width: 1.w
+          ),
+          borderRadius: BorderRadius.circular(24.r)
         ),
-        borderRadius: BorderRadius.circular(24.r)
-      ),
-      child: Column(
-        crossAxisAlignment: .start,
-        children: [
-          ClipRRect(
-            borderRadius: .only(
-              topLeft: .circular(24.r),
-              topRight: .circular(24.r)
-            ),
-            child: SizedBox(
-              height: 130.h,
-              width: double.infinity,
-              child: Image.asset(
-                'assets/images/court.png',
-                fit: .fill,
+        child: Column(
+          crossAxisAlignment: .start,
+          children: [
+            ClipRRect(
+              borderRadius: .only(
+                topLeft: .circular(24.r),
+                topRight: .circular(24.r)
+              ),
+              child: SizedBox(
+                height: 130.h,
+                width: double.infinity,
+                child: Image.asset(
+                  'assets/images/court.png',
+                  fit: .fill,
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.sp, horizontal: 16.sp),
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(
-                  "Find a Team",
-                  style: TextStyle(
-                    fontWeight: .w600,
-                    fontSize: 20.sp,
-                    color: whiteTextColor
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.sp, horizontal: 16.sp),
+              child: Column(
+                crossAxisAlignment: .start,
+                children: [
+                  Text(
+                    "Find a Team",
+                    style: TextStyle(
+                      fontWeight: .w600,
+                      fontSize: 20.sp,
+                      color: whiteTextColor
+                    ),
                   ),
-                ),
-                Text(
-                  "Join local squads looking for an extra player.",
-                  style: TextStyle(
-                    fontWeight: .normal,
-                    fontSize: 14.sp,
-                    color: whiteTextColor
+                  Text(
+                    "Join local squads looking for an extra player.",
+                    style: TextStyle(
+                      fontWeight: .normal,
+                      fontSize: 14.sp,
+                      color: whiteTextColor
+                    ),
                   ),
-                ),
-              ],
-            ),
-          )
-        ],
+                ],
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
