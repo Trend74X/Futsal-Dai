@@ -28,6 +28,7 @@ class GroupController extends GetxController {
   var matchAttendanceMap = <String, dynamic>{}.obs;
 
   //recruitment
+  String selectedFilter = 'All';
   List recruitmentPost = [];
 
   // Search users function
@@ -414,6 +415,31 @@ class GroupController extends GetxController {
     }
   }
 
+  List get filteredRecruitmentPosts {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    return recruitmentPost.where((post) {
+      final bookingDateStr = post['booking_date'];
+      if (bookingDateStr == null) return false;
+      
+      final bookingDate = DateTime.parse(bookingDateStr);
+      final bookingDay = DateTime(bookingDate.year, bookingDate.month, bookingDate.day);
+
+      if (selectedFilter == 'All') {
+        return true;
+      } else if (selectedFilter == 'Tonight' || selectedFilter == 'Today') {
+        return bookingDay.isAtSameMomentAs(today);
+      } else if (selectedFilter == 'Tomorrow') {
+        return bookingDay.isAtSameMomentAs(tomorrow);
+      } else if (selectedFilter == 'Later') {
+        return bookingDay.isAfter(tomorrow);
+      }
+      return true;
+    }).toList();
+  }
+
   Future<void> requestToJoinMatch(String postId) async {
     try {
       // Get the current logged-in player's ID (adjust based on how you store user session)
@@ -444,6 +470,29 @@ class GroupController extends GetxController {
       } else {
         Get.snackbar('Error', 'Failed to send request: $e');
       }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchMatchJoinRequests(String postId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('match_requests')
+          .select('''
+            id,
+            status,
+            created_at,
+            player:player_id (
+              id,
+              full_name,
+              profile_pic
+            )
+          ''')
+          .eq('post_id', postId);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load requests: $e');
+      return [];
     }
   }
 

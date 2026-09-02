@@ -18,7 +18,6 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
 
   final searchCon    = TextEditingController();
   final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later'];
-  String selectedFilter = 'All';
 
   @override
   void initState() {
@@ -118,17 +117,17 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
 
   Widget filterTileWidget(dynamic data) {
     return InkWell(
-      onTap: () => setState(() => selectedFilter = data),
+      onTap: () => setState(() => controller.selectedFilter = data),
       child: Container(
         decoration: BoxDecoration(
-          color: selectedFilter == data ? primaryColor : lightFilledBgColor,
+          color: controller.selectedFilter == data ? primaryColor : lightFilledBgColor,
           borderRadius: .circular(12.r)
         ),
         padding: .symmetric(vertical: 4.h, horizontal: 12.w),
         child: Center(
           child: Text(
             data,
-            style: boldStyle(selectedFilter == data ? black : whiteTextColor, 14.sp),
+            style: boldStyle(controller.selectedFilter == data ? black : whiteTextColor, 14.sp),
           ),
         ),
       ),
@@ -138,11 +137,11 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
   Widget mercenaryListWidget() {
     return ListView.separated(
       shrinkWrap: true,
-      itemCount: controller.recruitmentPost.length,
+      itemCount: controller.filteredRecruitmentPosts.length,
       physics: NeverScrollableScrollPhysics(),
       separatorBuilder: (context, index) => SizedBox(height: 8.h),
       itemBuilder:(context, index) {
-        var data = controller.recruitmentPost[index];
+        var data = controller.filteredRecruitmentPosts[index];
         return postTileWidget(data);
       },
     );
@@ -150,7 +149,7 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
 
   Widget postTileWidget(dynamic data) {
     return InkWell(
-      onTap: () => Get.to(() => PlayerLocalDetail()),
+      onTap: () => Get.to(() => PlayerLocalDetail(postId: data['post_id'])),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: .circular(24.r),
