@@ -27,6 +27,9 @@ class GroupController extends GetxController {
   var attendanceDetail = <Map<String, dynamic>>[].obs;
   var matchAttendanceMap = <String, dynamic>{}.obs;
 
+  //recruitment
+  List recruitmentPost = [];
+
   // Search users function
   Future<void> searchUsers(String query) async {
     if (query.trim().isEmpty) {
@@ -356,6 +359,94 @@ class GroupController extends GetxController {
       Get.snackbar('Error', 'Failed to update attendance status', backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
+
+  // recruitment
+  // Inside GroupController
+  Future<void> postToMercenaryBoard({
+    required String bookingId,
+    required String groupId,
+    required int slotsNeeded,
+    required String notes, // Can keep or remove parameter
+  }) async {
+    try {
+      final userId = read('userId'); 
+
+      await Supabase.instance.client
+        .from('match_recruitment_posts')
+        .insert({
+          'match_id': bookingId,
+          'group_id': groupId,
+          'creator_id': userId,
+          'slots_needed': slotsNeeded,
+          'status': 'open',
+        });
+
+      Get.snackbar(
+        'Success',
+        'Successfully posted to Mercenary Board!',
+        colorText: Colors.white,
+        backgroundColor: Colors.green.shade800,
+      );
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to post: $e',
+        colorText: Colors.white,
+        backgroundColor: Colors.red.shade800,
+      );
+    }
+  }
+
+  void fetchRecruitmentPosts() async {
+    try {
+      final String todayDate = DateTime.now().toIso8601String().split('T')[0];
+      final response = await Supabase.instance.client
+          .from('v_mercenary_posts')
+          .select()
+          .eq('status', 'open')
+          .gte('booking_date', todayDate)
+          .order('booking_date', ascending: true)
+          .order('start_time', ascending: true);
+
+      recruitmentPost = List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to load mercenary board: $e');
+    }
+  }
+
+  Future<void> requestToJoinMatch(String postId) async {
+    try {
+      // Get the current logged-in player's ID (adjust based on how you store user session)
+      final playerId = read('userId'); // or Supabase.instance.client.auth.currentUser?.id;
+
+      if (playerId == null) {
+        Get.snackbar('Error', 'You must be logged in to join a match.');
+        return;
+      }
+
+      // Insert the join request into the match_requests table
+      await Supabase.instance.client.from('match_requests').insert({
+        'post_id': postId,
+        'player_id': playerId,
+        'status': 'pending', // Default status when applying
+      });
+
+      Get.snackbar(
+        'Success',
+        'Request sent to the host!',
+        colorText: Colors.white,
+        backgroundColor: Colors.green.shade800,
+      );
+    } catch (e) {
+      // Catch unique constraint violations if the user already applied to this post
+      if (e.toString().contains('duplicate key value')) {
+        Get.snackbar('Notice', 'You have already requested to join this match.');
+      } else {
+        Get.snackbar('Error', 'Failed to send request: $e');
+      }
+    }
+  }
+
 
   @override
   void onClose() {

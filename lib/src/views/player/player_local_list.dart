@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/player_local_detail.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
@@ -13,9 +14,17 @@ class PlayerLocalList extends StatefulWidget {
 }
 
 class _PlayerLocalListState extends State<PlayerLocalList> {
+  final controller = Get.put(GroupController());
+
   final searchCon    = TextEditingController();
   final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later'];
   String selectedFilter = 'All';
+
+  @override
+  void initState() {
+    super.initState();
+    controller.fetchRecruitmentPosts();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,16 +138,17 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
   Widget mercenaryListWidget() {
     return ListView.separated(
       shrinkWrap: true,
-      itemCount: 4,
+      itemCount: controller.recruitmentPost.length,
       physics: NeverScrollableScrollPhysics(),
       separatorBuilder: (context, index) => SizedBox(height: 8.h),
       itemBuilder:(context, index) {
-        return postTileWidget();
+        var data = controller.recruitmentPost[index];
+        return postTileWidget(data);
       },
     );
   }
 
-  Widget postTileWidget() {
+  Widget postTileWidget(dynamic data) {
     return InkWell(
       onTap: () => Get.to(() => PlayerLocalDetail()),
       child: Container(
@@ -179,13 +189,13 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                           ),
                           padding: EdgeInsets.symmetric(vertical: 4.h, horizontal: 8.w),
                           child: Text(
-                            '2 Slots Open',
+                            '${data["slots_needed"]} Slots Open',
                             style: boldStyle(black, 12.sp),
                           ),
                         ),
                         const Spacer(),
                         Text(
-                          'Stadium Arena',
+                          data['venue_name'],
                           style: semiBoldStyle(whiteTextColor, 20.sp)
                         ),
                         Row(
@@ -193,11 +203,11 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                             Icon(Icons.access_time, color: subtitleTextColor, size: 13.sp),
                             SizedBox(width: 4.w),
                             Text(
-                              '20:00 PM - 11:00 PM',
+                              '${data['start_time'].toString().substring(0, 5)} - ${data['end_time'].toString().substring(0, 5)}', // '20:00 PM - 11:00 PM',
                               style: regularStyle(subtitleTextColor, 14.sp),
                             ),
                             Text(
-                              ' • Today',
+                              " • ${formatBookingDate(data['booking_date'])}",
                               style: regularStyle(subtitleTextColor, 14.sp),
                             ),
                           ],
@@ -228,11 +238,11 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                         mainAxisSize: .min,
                         children: [
                           Text(
-                            'Saturday Striker',
+                            data['group_name'],
                             style: semiBoldStyle(whiteTextColor, 16.sp).copyWith(height: 1.2)
                           ),
                           Text(
-                            'Host: Ashok Shakya',
+                            'Host: ${data["host_name"]}',
                             style: boldStyle(disableButton, 12.sp)
                           )
                         ],
@@ -240,17 +250,20 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                     ],
                   ),
                   SizedBox(height: 12.h),
-                  Container(
-                    width: Get.width * 0.85,
-                    decoration: BoxDecoration(
-                      border: .all(color: primaryColor, width: 1.5.w),
-                      borderRadius: .circular(12.r)                    
-                    ),
-                    padding: .symmetric(vertical: 4.h),
-                    child: Center(
-                      child: Text(
-                        'REQUEST TO JOIN',
-                        style: semiBoldStyle(primaryColor, 16.sp)
+                  InkWell(
+                    onTap:() => controller.requestToJoinMatch(data['post_id']),
+                    child: Container(
+                      width: Get.width * 0.85,
+                      decoration: BoxDecoration(
+                        border: .all(color: primaryColor, width: 1.5.w),
+                        borderRadius: .circular(12.r)                    
+                      ),
+                      padding: .symmetric(vertical: 4.h),
+                      child: Center(
+                        child: Text(
+                          'REQUEST TO JOIN',
+                          style: semiBoldStyle(primaryColor, 16.sp)
+                        ),
                       ),
                     ),
                   )
@@ -261,6 +274,30 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
         )
       ),
     );
+  }
+
+  String formatBookingDate(String dateStr) {
+    try {
+      final DateTime bookingDate = DateTime.parse(dateStr);
+      final DateTime now = DateTime.now();
+      
+      // Normalize dates to midnight to compare just the day
+      final DateTime today = DateTime(now.year, now.month, now.day);
+      final DateTime target = DateTime(bookingDate.year, bookingDate.month, bookingDate.day);
+
+      final int difference = target.difference(today).inDays;
+
+      if (difference == 0) {
+        return 'Today';
+      } else if (difference == 1) {
+        return 'Tomorrow';
+      } else {
+        // Returns the date as-is (e.g., "2026-09-05") or you can format it nicely
+        return dateStr; 
+      }
+    } catch (e) {
+      return dateStr;
+    }
   }
 
 }

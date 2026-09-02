@@ -28,7 +28,25 @@ class _MatchAttendanceState extends State<MatchAttendance> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBarWidget(title: 'Match Attendance'),
+      appBar: appBarWidget(
+        title: 'Match Attendance',
+        action: IconButton(
+          onPressed: () {
+            // Calculate inCount or pass a default value if data is still loading
+            int currentInCount = 0;
+            if (controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['group_members'] != null) {
+              final members = List.from(controller.attendanceDetail[0]['group_members']);
+              for (var member in members) {
+                if (controller.matchAttendanceMap[member['user_id']?.toString()] == 'IN') {
+                  currentInCount++;
+                }
+              }
+            }
+            _showRecruitmentDialog(context, currentInCount);
+          },
+          icon: Icon(Icons.person_add_alt_1, color: primaryColor)
+        )
+      ),
       extendBodyBehindAppBar: true,
       body: SizedBox.expand(
         child: Container(
@@ -335,6 +353,150 @@ class _MatchAttendanceState extends State<MatchAttendance> {
           },
         ),
       ],
+    );
+  }
+
+  void _showRecruitmentDialog(BuildContext context, int currentInCount) {
+    // Default the needed slots to a sensible number (e.g., assuming a standard 10-player or 7-player game, or remaining slots)
+    final TextEditingController slotsController = TextEditingController(text: '2');
+    final TextEditingController notesController = TextEditingController(text: 'Need backup players for our match!');
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.r),
+          side: BorderSide(color: primaryColor.withValues(alpha: 0.3)),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.campaign, color: primaryColor, size: 24.sp),
+            SizedBox(width: 8.w),
+            Text(
+              'Recruit Local Players',
+              style: boldStyle(whiteTextColor, 18.sp),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Publish an open post to the Recruitment Board so local players can request to join your match.',
+                style: regularStyle(subtitleTextColor, 13.sp),
+              ),
+              SizedBox(height: 16.h),
+              
+              // Match info snippet container
+              Container(
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: filledBlueColor,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: primaryColor, size: 20.sp),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        'Currently $currentInCount players confirmed IN for this match.',
+                        style: semiBoldStyle(whiteTextColor, 12.sp),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 16.h),
+
+              // How many players input field
+              Text(
+                'Players Needed',
+                style: semiBoldStyle(whiteTextColor, 14.sp),
+              ),
+              SizedBox(height: 6.h),
+              TextField(
+                controller: slotsController,
+                keyboardType: TextInputType.number,
+                style: regularStyle(whiteTextColor, 14.sp),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: filledBlueColor,
+                  hintText: 'Enter number of slots',
+                  hintStyle: regularStyle(subtitleTextColor, 12.sp),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              SizedBox(height: 12.h),
+
+              // Note / Description input field
+              Text(
+                'Additional Notes (Optional)',
+                style: semiBoldStyle(whiteTextColor, 14.sp),
+              ),
+              SizedBox(height: 6.h),
+              TextField(
+                controller: notesController,
+                maxLines: 2,
+                style: regularStyle(whiteTextColor, 14.sp),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: filledBlueColor,
+                  hintText: 'e.g., Need a defender urgently',
+                  hintStyle: regularStyle(subtitleTextColor, 12.sp),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text(
+              'Cancel',
+              style: regularStyle(subtitleTextColor, 14.sp),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: primaryColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+            ),
+            onPressed: () async {
+              final int? slots = int.tryParse(slotsController.text.trim());
+              if (slots == null || slots <= 0) {
+                Get.snackbar('Error', 'Please enter a valid number of players', colorText: Colors.white);
+                return;
+              }
+
+              // Call the controller method with your widget IDs and input values
+              await controller.postToMercenaryBoard(
+                bookingId: widget.bookingId,
+                groupId: widget.groupId,
+                slotsNeeded: slots,
+                notes: notesController.text.trim(),
+              );
+              
+              Get.back(); // Close dialog on success
+            },
+            child: Text(
+              'Post to Board',
+              style: boldStyle(Colors.black, 14.sp),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

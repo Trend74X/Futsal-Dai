@@ -84,7 +84,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
           SizedBox(height: 8.h),
           Text(
             'Stadium Arena',
-            style: semiBoldStyle(whiteTextColor, 20.sp).copyWith(height: 1.2),
+            style: semiBoldStyle(whiteTextColor, 28.sp).copyWith(height: 1.2),
           ),
           SizedBox(height: 8.h),
           Row(
@@ -94,11 +94,11 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               SizedBox(width: 4.w),
               Text(
                 'Fri, Oct 27 · 20:00 - 22:00',
-                style: regularStyle(subtitleTextColor, 14.sp),
+                style: semiBoldStyle(subtitleTextColor, 14.sp),
               )
             ],
           ),
-          SizedBox(height: 2.h),
+          SizedBox(height: 4.h),
           Row(
             crossAxisAlignment: .start,
             children: [
@@ -106,7 +106,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               SizedBox(width: 4.w),
               Text(
                 'Downtown Pitch A',
-                style: regularStyle(subtitleTextColor, 14.sp),
+                style: semiBoldStyle(subtitleTextColor, 14.sp),
               )
             ],
           )
@@ -157,7 +157,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
             ),
             backgroundColor: Colors.white.withValues(alpha: 0.15),
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           Container(
             decoration: BoxDecoration(
               color: Color(0xFF93000A),
