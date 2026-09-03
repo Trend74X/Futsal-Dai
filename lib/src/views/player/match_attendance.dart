@@ -269,7 +269,7 @@ class _MatchAttendanceState extends State<MatchAttendance> {
           physics: const NeverScrollableScrollPhysics(),
           itemBuilder: (context, index) {
             var member = membersList[index];
-            var user = member['Users'] ?? {};
+            var user = member['users'] ?? {};
             var userId = member['user_id']?.toString();
             
             // If user ID is missing from attendance_data map, default status is 'N/A'
