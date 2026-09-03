@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/player_local_detail.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PlayerLocalList extends StatefulWidget {
   const PlayerLocalList({super.key});
@@ -16,13 +18,17 @@ class PlayerLocalList extends StatefulWidget {
 class _PlayerLocalListState extends State<PlayerLocalList> {
   final controller = Get.put(GroupController());
 
-  final searchCon    = TextEditingController();
   final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later'];
 
   @override
   void initState() {
     super.initState();
-    controller.fetchRecruitmentPosts();
+    getRecuitmentDatas();
+  }
+
+  Future<void> getRecuitmentDatas() async {
+    await controller.fetchRecruitmentPosts();
+    setState(() { });
   }
 
   @override
@@ -72,23 +78,27 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
             headingTextStyle: TextStyle(fontSize: 16.sp, color: subtitleTextColor, fontWeight: FontWeight.normal),
             textInputAction: TextInputAction.search,
             keyboardType: TextInputType.text,
-            controller: searchCon,
+            controller: controller.searchController,
             maxLines: 1,
             hintText: 'Search By Name',
             hintStyle: TextStyle(fontSize: 16.sp, color: disableButton, fontWeight: .normal),
-            onChanged: (value) => setState(() { }),
+            onChanged: (value)  {
+              controller.onSearchChanged(value);
+              setState(() { });
+            },
             onFieldSubmitted: (value) {
-              
+              controller.onSearchChanged(value);
+              setState(() { });
             },
             prefixIcon: Icon(Icons.search, color: disableButton),
             suffixIcon: IconButton(
               onPressed: () {
-                searchCon.clear();
-                // _con.loadNearbyVenues(searchQuery: '', selectedAmenities: getSelectedAmenities());
+                controller.searchController.clear();
+                controller.onSearchChanged('');
                 setState(() { });
               }, 
               icon: Visibility(
-                visible: searchCon.text != '',
+                visible: controller.searchController.text != '',
                 child: Icon(Icons.close, color: disableButton)
               )
             ),
@@ -148,8 +158,16 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
   }
 
   Widget postTileWidget(dynamic data) {
+    final playerId = read('userId') ?? Supabase.instance.client.auth.currentUser?.id;
+    final List<dynamic> requesters = data['requester_ids'] ?? [];
+    final bool hasRequested = playerId != null && requesters.contains(playerId);
+
+    final Color borderColor = hasRequested ? Colors.red : primaryColor;
+    final Color textColor = hasRequested ? Colors.red : primaryColor;
+    final String buttonText = hasRequested ? 'CANCEL REQUEST TO JOIN' : 'REQUEST TO JOIN';
+
     return InkWell(
-      onTap: () => Get.to(() => PlayerLocalDetail(postId: data['post_id'])),
+      onTap: () => Get.to(() => PlayerLocalDetail(postId: data['id'])),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: .circular(24.r),
@@ -202,7 +220,7 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                             Icon(Icons.access_time, color: subtitleTextColor, size: 13.sp),
                             SizedBox(width: 4.w),
                             Text(
-                              '${data['start_time'].toString().substring(0, 5)} - ${data['end_time'].toString().substring(0, 5)}', // '20:00 PM - 11:00 PM',
+                              '${data['start_time'].toString().substring(0, 5)} - ${data['end_time'].toString().substring(0, 5)}',
                               style: regularStyle(subtitleTextColor, 14.sp),
                             ),
                             Text(
@@ -250,18 +268,22 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                   ),
                   SizedBox(height: 12.h),
                   InkWell(
-                    onTap:() => controller.requestToJoinMatch(data['post_id']),
+                    onTap: () async {
+                      await controller.toggleJoinRequest(data['id'], hasRequested);
+                      getRecuitmentDatas();
+                    },
                     child: Container(
                       width: Get.width * 0.85,
                       decoration: BoxDecoration(
-                        border: .all(color: primaryColor, width: 1.5.w),
-                        borderRadius: .circular(12.r)                    
+                        border: .all(color: borderColor, width: 1.5.w),
+                        borderRadius: .circular(12.r),
+                        color: hasRequested ? red.withValues(alpha: 0.05) : Colors.transparent,
                       ),
                       padding: .symmetric(vertical: 4.h),
                       child: Center(
                         child: Text(
-                          'REQUEST TO JOIN',
-                          style: semiBoldStyle(primaryColor, 16.sp)
+                          buttonText,
+                          style: semiBoldStyle(textColor, 16.sp)
                         ),
                       ),
                     ),

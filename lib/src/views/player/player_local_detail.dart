@@ -4,7 +4,8 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 
 class PlayerLocalDetail extends StatefulWidget {
-  const PlayerLocalDetail({super.key});
+  final String postId;
+  const PlayerLocalDetail({super.key, required this.postId});
 
   @override
   State<PlayerLocalDetail> createState() => _PlayerLocalDetailState();
