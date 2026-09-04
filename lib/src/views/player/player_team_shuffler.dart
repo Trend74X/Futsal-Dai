@@ -24,6 +24,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
 
   // Local temporary list to handle manual guest players for the shuffle session only
   List<Map<String, dynamic>> manualPlayers = [];
+  List confirmedPlayers = [];
 
   // Holds the generated teams structure: { 0: [player1, player2], 1: [player3, player4] }
   Map<int, List<dynamic>> generatedTeams = {};
@@ -33,12 +34,20 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await controller.getMatchAttendanceData(widget.groupId, widget.bookingId);
+      await loadConfirmedPlayers();
       setState(() {}); // Safe to call here after fetch completes
     });
   }
 
-  // Getter to compute present members safely without triggering setState during build
+  Future<void> loadConfirmedPlayers() async {
+    List players = await controller.fetchMatchJoinRequests(widget.bookingId); 
+    confirmedPlayers = players.where((req) => req['status'] == 'accepted' || req['status'] == 'confirmed').toList();
+    setState(() {});
+  }
+
+  // Getter to combine checked-in members, manual guest players, and confirmed mercenary players
   List get presentMembers {
+    // 1. Group members checked-in as 'IN'
     final membersList = (controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['group_members'] != null)
         ? List.from(controller.attendanceDetail[0]['group_members'])
         : [];
@@ -49,8 +58,22 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       return status == 'IN';
     }).toList();
 
-    // Combine database checked-in members with manual guest players
-    return [...dbInMembers, ...manualPlayers];
+    // 2. Format confirmed mercenary players to match the member structure
+    final formattedConfirmedPlayers = confirmedPlayers.map((req) {
+      var user = req['player'] ?? {};
+      return {
+        'is_mercenary': true,
+        'role': 'Mercenary',
+        'users': {
+          'full_name': user['full_name'],
+          'profile_pic': user['profile_pic'],
+          'username': user['username'],
+        }
+      };
+    }).toList();
+
+    // 3. Combine database checked-in members, manual guest players, and confirmed mercenaries
+    return [...dbInMembers, ...manualPlayers, ...formattedConfirmedPlayers];
   }
 
   // --- DIALOG FOR MANUAL GUEST PLAYER ---
@@ -96,15 +119,16 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                     final name = nameController.text.trim();
                     if (name.isNotEmpty) {
                       setState(() {
+                        // FIXED: Changed 'Users' to 'users' so it matches the reader structure
                         manualPlayers.add({
                           'is_manual': true,
                           'role': 'Guest',
-                          'Users': {
+                          'users': {
                             'full_name': name,
                             'profile_pic': null,
                           }
                         });
-                        membershuffled = false; // Reset shuffle cache if added mid-way
+                        membershuffled = false; 
                       });
                       Get.back();
                     }
@@ -129,22 +153,18 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       return;
     }
 
-    // 1. Create a copy and shuffle randomly
     List shuffledList = List.from(currentPresent)..shuffle();
 
-    // 2. Initialize empty lists for each team
     Map<int, List<dynamic>> tempTeams = {};
     for (int i = 0; i < selectedTeams; i++) {
       tempTeams[i] = [];
     }
 
-    // 3. Round-robin distribution of players into teams
     for (int i = 0; i < shuffledList.length; i++) {
       int teamIndex = i % selectedTeams;
       tempTeams[teamIndex]!.add(shuffledList[i]);
     }
 
-    // 4. Update UI
     setState(() {
       generatedTeams = tempTeams;
       membershuffled = true;
@@ -182,10 +202,10 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                       headerWidget(currentPresent.length),
                       SizedBox(height: 12.h),
                       shuffleWidget(),
-                      SizedBox(height: 16.h),
+                      SizedBox(height: 12.h),
                       membershuffled == false
-                          ? squadStatus(currentPresent)
-                          : shuffledTeamsWidget(),
+                        ? squadStatus(currentPresent) // FIXED: Removed duplicate confirmedSquadWidget call since presentMembers combines them
+                        : shuffledTeamsWidget(),
                     ],
                   );
                 }),
@@ -363,14 +383,14 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Available Players Feed', style: regularStyle(whiteTextColor, 16.sp)),
+        Text('Combined Squad Feed (${currentPresent.length})', style: regularStyle(whiteTextColor, 16.sp)),
         SizedBox(height: 8.h),
         currentPresent.isEmpty
             ? Padding(
                 padding: EdgeInsets.symmetric(vertical: 24.h),
                 child: Center(
                   child: Text(
-                    'No players checked-in (IN) or added yet.',
+                    'No players available to shuffle yet.',
                     style: regularStyle(subtitleTextColor, 14.sp),
                   ),
                 ),
@@ -384,6 +404,11 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                   var member = currentPresent[index];
                   var user = member['users'] ?? {};
                   bool isManual = member['is_manual'] == true;
+                  bool isMercenary = member['is_mercenary'] == true;
+
+                  String roleLabel = member['role'] ?? 'Member';
+                  if (isMercenary) roleLabel = 'Mercenary';
+                  if (isManual) roleLabel = 'Guest';
 
                   return Container(
                     width: double.infinity,
@@ -415,7 +440,7 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
                                 style: regularStyle(whiteTextColor, 16.sp),
                               ),
                               Text(
-                                "Role: ${member['role'] != null && member['role'].toString().isNotEmpty ? member['role'].toString()[0].toUpperCase() + member['role'].toString().substring(1) : 'Member'}",
+                                "Role: $roleLabel",
                                 style: regularStyle(subtitleTextColor, 14.sp),
                               ),
                             ],
@@ -539,5 +564,4 @@ class _PlayerTeamShufflerState extends State<PlayerTeamShuffler> {
       ],
     );
   }
-
 }
