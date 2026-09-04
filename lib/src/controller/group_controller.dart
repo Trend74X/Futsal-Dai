@@ -421,41 +421,77 @@ class GroupController extends GetxController {
     }
   }
 
-  List get filteredRecruitmentPosts {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
+  List<dynamic> get filteredRecruitmentPosts {
+    List<dynamic> posts = recruitmentPost;
+    final playerId = read('userId') ?? Supabase.instance.client.auth.currentUser?.id;
 
-    return recruitmentPost.where((post) {
-      // 1. Date Filtering
-      final bookingDateStr = post['booking_date'];
-      if (bookingDateStr == null) return false;
-      
-      final bookingDate = DateTime.parse(bookingDateStr);
-      final bookingDay = DateTime(bookingDate.year, bookingDate.month, bookingDate.day);
+    // 1. Search Query Filter
+    if (searchController.text.isNotEmpty) {
+      String query = searchController.text.toLowerCase();
+      posts = posts.where((post) {
+        String venue = (post['venue_name'] ?? '').toLowerCase();
+        String group = (post['group_name'] ?? '').toLowerCase();
+        String host = (post['host_name'] ?? '').toLowerCase();
+        return venue.contains(query) || group.contains(query) || host.contains(query);
+      }).toList();
+    }
 
-      bool matchesDate = true;
-      if (selectedFilter == 'All') {
-        matchesDate = true;
-      } else if (selectedFilter == 'Tonight' || selectedFilter == 'Today') {
-        matchesDate = bookingDay.isAtSameMomentAs(today);
-      } else if (selectedFilter == 'Tomorrow') {
-        matchesDate = bookingDay.isAtSameMomentAs(tomorrow);
-      } else if (selectedFilter == 'Later') {
-        matchesDate = bookingDay.isAfter(tomorrow);
+    // 2. Category / Status Filter
+    if (selectedFilter == 'Tonight') {
+      String todayStr = DateTime.now().toIso8601String().split('T')[0];
+      posts = posts.where((post) {
+        bool isToday = post['booking_date'] == todayStr;
+        if (!isToday) return false;
+        
+        // Exclude if user has active/accepted requests
+        if (playerId != null) {
+          List requesters = post['requester_ids'] ?? [];
+          List accepted = post['accepted_ids'] ?? [];
+          if (requesters.contains(playerId) || accepted.contains(playerId)) return false;
+        }
+        return true;
+      }).toList();
+    } else if (selectedFilter == 'Tomorrow') {
+      String tomorrowStr = DateTime.now().add(const Duration(days: 1)).toIso8601String().split('T')[0];
+      posts = posts.where((post) {
+        bool isTomorrow = post['booking_date'] == tomorrowStr;
+        if (!isTomorrow) return false;
+
+        // Exclude if user has active/accepted requests
+        if (playerId != null) {
+          List requesters = post['requester_ids'] ?? [];
+          List accepted = post['accepted_ids'] ?? [];
+          if (requesters.contains(playerId) || accepted.contains(playerId)) return false;
+        }
+        return true;
+      }).toList();
+    } else if (selectedFilter == 'Later') {
+      String tomorrowStr = DateTime.now().add(const Duration(days: 1)).toIso8601String().split('T')[0];
+      posts = posts.where((post) {
+        bool isLater = post['booking_date'] != null && post['booking_date'].compareTo(tomorrowStr) > 0;
+        if (!isLater) return false;
+
+        // Exclude if user has active/accepted requests
+        if (playerId != null) {
+          List requesters = post['requester_ids'] ?? [];
+          List accepted = post['accepted_ids'] ?? [];
+          if (requesters.contains(playerId) || accepted.contains(playerId)) return false;
+        }
+        return true;
+      }).toList();
+    } else if (selectedFilter == 'My Requests') {
+      if (playerId != null) {
+        posts = posts.where((post) {
+          List requesters = post['requester_ids'] ?? [];
+          List accepted = post['accepted_ids'] ?? [];
+          return requesters.contains(playerId) || accepted.contains(playerId);
+        }).toList();
+      } else {
+        posts = [];
       }
+    }
 
-      if (!matchesDate) return false;
-
-      // 2. Search Query Filtering (Venue Name & Group Name)
-      final query = searchQuery.value.toLowerCase().trim();
-      if (query.isEmpty) return true;
-
-      final venueName = (post['venue_name'] ?? '').toString().toLowerCase();
-      final groupName = (post['group_name'] ?? '').toString().toLowerCase();
-
-      return venueName.contains(query) || groupName.contains(query);
-    }).toList();
+    return posts;
   }
 
   Future<void> toggleJoinRequest(String postId, bool hasRequested) async {
@@ -467,11 +503,10 @@ class GroupController extends GetxController {
         return;
       }
 
-      // Find the post index in the master recruitment list
       final postIndex = recruitmentPost.indexWhere((p) => p['post_id'] == postId || p['id'] == postId);
 
       if (hasRequested) {
-        // Cancel the request using explicit .eq() filters
+        // Cancel the request (delete it)
         await Supabase.instance.client
             .from('match_requests')
             .delete()
@@ -480,7 +515,6 @@ class GroupController extends GetxController {
               'player_id': playerId,
             });
 
-        // Update local state: remove player from requesters list
         if (postIndex != -1) {
           List<dynamic> requesters = List.from(recruitmentPost[postIndex]['requester_ids'] ?? []);
           requesters.remove(playerId);
@@ -494,14 +528,13 @@ class GroupController extends GetxController {
           backgroundColor: Colors.orange.shade800,
         );
       } else {
-        // Insert the join request
-        await Supabase.instance.client.from('match_requests').insert({
+        // Use UPSERT instead of INSERT to safely handle previously rejected requests
+        await Supabase.instance.client.from('match_requests').upsert({
           'post_id': postId,
           'player_id': playerId,
           'status': 'pending',
-        });
+        }, onConflict: 'post_id,player_id');
 
-        // Update local state: add player to requesters list
         if (postIndex != -1) {
           List<dynamic> requesters = List.from(recruitmentPost[postIndex]['requester_ids'] ?? []);
           if (!requesters.contains(playerId)) {
@@ -518,7 +551,6 @@ class GroupController extends GetxController {
         );
       }
 
-      // Re-sort the list so items float correctly and redraw the UI
       sortPosts(recruitmentPost);
       update(); 
     } catch (e) {
@@ -563,6 +595,51 @@ class GroupController extends GetxController {
 
   void onSearchChanged(String query) {
     searchQuery.value = query.toLowerCase().trim();
+  }
+
+  Future<void> updateRequestStatus(String requestId, String status, String postId) async {
+    try {
+      // status should be 'accepted' or 'rejected'
+      await supabase
+          .from('match_requests')
+          .update({'status': status})
+          .eq('id', requestId);
+
+      Get.snackbar(
+        'Success',
+        'Request $status successfully',
+        colorText: Colors.white,
+        backgroundColor: status == 'accepted' ? Colors.green.shade800 : Colors.red.shade800,
+      );
+      
+      // Refresh recruitment posts to update slot counters if necessary
+      await fetchRecruitmentPosts();
+      update();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to update request status: $e');
+    }
+  }
+
+  Future<void> stopRecruitment(String postId) async {
+    try {
+      await Supabase.instance.client
+          .from('match_recruitment_posts')
+          .update({'status': 'closed'})
+          .eq('id', postId);
+
+      Get.back(); // Return to previous screen or refresh current view
+      Get.snackbar(
+        'Recruitment Stopped',
+        'This recruitment post has been closed.',
+        colorText: Colors.white,
+        backgroundColor: Colors.red.shade800,
+      );
+
+      // Refresh data lists to reflect the change
+      fetchRecruitmentPosts();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to stop recruitment: $e');
+    }
   }
 
   // Reusable sorting helper

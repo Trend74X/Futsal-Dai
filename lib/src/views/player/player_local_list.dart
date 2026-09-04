@@ -18,7 +18,7 @@ class PlayerLocalList extends StatefulWidget {
 class _PlayerLocalListState extends State<PlayerLocalList> {
   final controller = Get.put(GroupController());
 
-  final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later'];
+  final List<String> filterItems = ['All', 'Tonight', 'Tomorrow', 'Later', 'My Requests'];
 
   @override
   void initState() {
@@ -160,11 +160,27 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
   Widget postTileWidget(dynamic data) {
     final playerId = read('userId') ?? Supabase.instance.client.auth.currentUser?.id;
     final List<dynamic> requesters = data['requester_ids'] ?? [];
+    final List<dynamic> acceptedPlayers = data['accepted_ids'] ?? [];
+    
     final bool hasRequested = playerId != null && requesters.contains(playerId);
+    final bool isAccepted = playerId != null && acceptedPlayers.contains(playerId);
 
-    final Color borderColor = hasRequested ? Colors.red : primaryColor;
-    final Color textColor = hasRequested ? Colors.red : primaryColor;
-    final String buttonText = hasRequested ? 'CANCEL REQUEST TO JOIN' : 'REQUEST TO JOIN';
+    // Determine button text, styling, and interactivity based on status
+    String buttonText = 'REQUEST TO JOIN';
+    Color borderColor = primaryColor;
+    Color textColor = primaryColor;
+    bool isInteractive = true;
+
+    if (hasRequested) {
+      buttonText = 'CANCEL REQUEST TO JOIN';
+      borderColor = Colors.red;
+      textColor = Colors.red;
+    } else if (isAccepted) {
+      buttonText = 'REQUEST ACCEPTED';
+      borderColor = Colors.green;
+      textColor = Colors.green;
+      isInteractive = false; // Non-clickable once accepted
+    }
 
     return InkWell(
       onTap: () => Get.to(() => PlayerLocalDetail(postId: data['id'], details: data)),
@@ -287,16 +303,20 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                   ),
                   SizedBox(height: 12.h),
                   InkWell(
-                    onTap: () async {
+                    onTap: isInteractive ? () async {
                       await controller.toggleJoinRequest(data['id'], hasRequested);
                       getRecuitmentDatas();
-                    },
+                    } : null,
                     child: Container(
                       width: Get.width * 0.85,
                       decoration: BoxDecoration(
                         border: .all(color: borderColor, width: 1.5.w),
                         borderRadius: .circular(12.r),
-                        color: hasRequested ? red.withValues(alpha: 0.05) : Colors.transparent,
+                        color: hasRequested 
+                            ? red.withValues(alpha: 0.05) 
+                            : isAccepted 
+                                ? Colors.green.withValues(alpha: 0.05) 
+                                : Colors.transparent,
                       ),
                       padding: .symmetric(vertical: 4.h),
                       child: Center(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
@@ -32,6 +33,18 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
     pendingRequests = players.where((req) => req['status'] == 'pending').toList();
     confirmedPlayers = players.where((req) => req['status'] == 'accepted' || req['status'] == 'confirmed').toList();
     setState(() { });
+  }
+
+  Future<void> handleRequestAction(String requestId, String status) async {
+    try {
+      // 1. Update status in database
+      await controller.updateRequestStatus(requestId, status, widget.postId);
+      
+      // 2. Re-fetch lists to instantly update pending and confirmed squads
+      await getPlayersList();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to process request: $e');
+    }
   }
 
   @override
@@ -121,7 +134,6 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
                   widget.details['start_time'], 
                   widget.details['end_time']
                 ),
-                // 'Fri, Oct 27 · 20:00 - 22:00',
                 style: semiBoldStyle(subtitleTextColor, 14.sp),
               )
             ],
@@ -173,7 +185,6 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
                     text: (widget.details['slots_needed'] - confirmedPlayers.length).toString(),
                     style: boldStyle(primaryColor, 48.sp),
                   ),
-                  // WidgetSpan(child: SizedBox(width: 8.w)),
                   TextSpan(
                     text: " / ${widget.details['slots_needed']}",
                     style: semiBoldStyle(subtitleTextColor, 20.sp),
@@ -184,7 +195,9 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
           ),
           SizedBox(height: 12.h),
           LinearProgressIndicator(
-            value: 2/5,
+            value: widget.details['slots_needed'] > 0 
+                ? confirmedPlayers.length / widget.details['slots_needed'] 
+                : 0.0,
             minHeight: 8.h,
             valueColor: AlwaysStoppedAnimation<Color>(
               primaryTextColor
@@ -192,24 +205,29 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
             backgroundColor: Colors.white.withValues(alpha: 0.15),
           ),
           SizedBox(height: 16.h),
-          Container(
-            decoration: BoxDecoration(
-              color: Color(0xFF93000A),
-              borderRadius: .circular(8.r)
-            ),
-            padding: .symmetric(vertical: 8.h),
-            child: Row(
-              mainAxisAlignment: .center,
-              children: [
-                Icon(Icons.not_interested_outlined, color: whiteTextColor),
-                SizedBox(width: 8.w),
-                Text(
-                  'Stop Recruitment',
-                  style: boldStyle(whiteTextColor, 12.sp)
-                )
-              ],
-            ),
-          )
+          widget.details['creator_id'] != read('userId')
+            ? SizedBox()
+            : InkWell(
+              onTap: () => controller.stopRecruitment(widget.postId),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF93000A),
+                  borderRadius: .circular(8.r)
+                ),
+                padding: .symmetric(vertical: 8.h),
+                child: Row(
+                  mainAxisAlignment: .center,
+                  children: [
+                    Icon(Icons.not_interested_outlined, color: whiteTextColor),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Stop Recruitment',
+                      style: boldStyle(whiteTextColor, 12.sp)
+                    )
+                  ],
+                ),
+              ),
+            )
         ],
       ),
     );
@@ -257,41 +275,38 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
     return Container(
       decoration: BoxDecoration(
         color: filledBlueColor,
-        borderRadius: .circular(12.r), // Fixed shortcut syntax
+        borderRadius: .circular(12.r),
       ),
-      padding: .symmetric(vertical: 16.h, horizontal: 8.w), // Fixed shortcut syntax
+      padding: .symmetric(vertical: 16.h, horizontal: 8.w),
       child: Row(
         crossAxisAlignment: .center,
         children: [
-          // 1. Avatar container
           Container(
             height: 48.h, 
             width: 48.w,
             decoration: BoxDecoration(
               color: lightFilledBgColor,
-              shape: .circle, // Fixed shortcut syntax
+              shape: .circle,
             ),
             child: ClipRRect(
               borderRadius: .circular(24.r),
               child: DisplayNetworkImage(
-                imageUrl: data['player']['profile_pic'],
+                imageUrl: data['player']['profile_pic'] ?? '',
                 boxFit: .cover,
               ),
             )
           ),
-          SizedBox(width: 8.w), // Slightly increased spacing for better breathing room
-
-          // 2. Name & Handle Text Column
+          SizedBox(width: 8.w),
           Expanded(
             child: Column(
-              crossAxisAlignment: .start, // Fixed shortcut syntax
+              crossAxisAlignment: .start,
               mainAxisSize: .min,
               children: [
                 Text(
                   data['player']['full_name'],
                   style: semiBoldStyle(whiteTextColor, 18.sp).copyWith(height: 1.0),
                 ),
-                SizedBox(height: 2.h), // Added small gap between text lines
+                SizedBox(height: 2.h),
                 Text(
                   '@${data['player']['username']}',
                   style: semiBoldStyle(subtitleTextColor, 12.sp),
@@ -299,35 +314,42 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               ],
             ),
           ),
-
           SizedBox(width: 8.w),
-
-          // 3. Action Buttons pushed to the end
-          Row(
-            mainAxisSize: .min,
-            children: [
-              Container(
-                height: 40.h,
-                width: 40.w, 
-                decoration: BoxDecoration(
-                  color: primaryColor,
-                  shape: .circle,
+          widget.details['creator_id'] != read('userId')
+            ? SizedBox()
+            : Row(
+              mainAxisSize: .min,
+              children: [
+                // ACCEPT BUTTON
+                InkWell(
+                  onTap: () => handleRequestAction(data['id'], 'accepted'),
+                  child: Container(
+                    height: 40.h,
+                    width: 40.w, 
+                    decoration: BoxDecoration(
+                      color: primaryColor,
+                      shape: .circle,
+                    ),
+                    child: Icon(Icons.check, color: black, size: 20.sp),
+                  ),
                 ),
-                child: Icon(Icons.check, color: black, size: 20.sp),
-              ),
-              SizedBox(width: 8.w),
-              Container(
-                height: 40.h,
-                width: 40.w,
-                decoration: BoxDecoration(
-                  color: Color(0xFFFFB4AB).withValues(alpha: 0.05),
-                  shape: .circle,
-                  border: .all(color: Color(0xFFFFB4AB).withValues(alpha: 0.5)),
+                SizedBox(width: 8.w),
+                // REJECT BUTTON
+                InkWell(
+                  onTap: () => handleRequestAction(data['id'], 'rejected'),
+                  child: Container(
+                    height: 40.h,
+                    width: 40.w,
+                    decoration: BoxDecoration(
+                      color: Color(0xFFFFB4AB).withValues(alpha: 0.05),
+                      shape: .circle,
+                      border: .all(color: Color(0xFFFFB4AB).withValues(alpha: 0.5)),
+                    ),
+                    child: Icon(Icons.close, color: Color(0xFFFFB4AB), size: 20.sp),
+                  ),
                 ),
-                child: Icon(Icons.close, color: Color(0xFFFFB4AB), size: 20.sp),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
@@ -335,7 +357,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
 
   Widget confirmedSqudWidget() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // Align title and divider to the left
+      crossAxisAlignment: .start,
       children: [
         Row(
           children: [
@@ -348,12 +370,10 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
           ],
         ),
         Divider(color: gray01),
-        
-        // 👇 FIXED: Added shrinkWrap and physics
         GridView.builder(
           itemCount: widget.details['slots_needed'],
-          shrinkWrap: true, // Makes the grid wrap its content height
-          physics: const NeverScrollableScrollPhysics(), // Disables grid's own scroll; parent handles it
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             crossAxisSpacing: 8.0,
@@ -388,7 +408,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
                       child: ClipRRect(
                         borderRadius: .circular(24.r),
                         child: DisplayNetworkImage(
-                          imageUrl: data['player']['profile_pic'],
+                          imageUrl: data['player']['profile_pic'] ?? '',
                           boxFit: .cover,
                         ),
                       )
@@ -406,7 +426,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
                           ),
                           Text(
                             '@${data['player']['username']}',
-                            style: boldStyle(subtitleTextColor, 12.sp)
+                            style: boldStyle(subtitleTextColor, 12.sp).copyWith(height: 1.0)
                           )
                         ],
                       )
@@ -422,20 +442,13 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
 
   String formatBookingDateTime(String bookingDate, String startTime, String endTime) {
     try {
-      // Parse the date string (e.g., "2026-09-05")
       DateTime date = DateTime.parse(bookingDate);
-      
-      // Format date to "EEE, MMM d" -> Fri, Sep 5
       String formattedDate = DateFormat('EEE, MMM d').format(date);
-      
-      // Trim seconds from time strings ("06:00:00" -> "06:00")
       String formattedStart = startTime.length >= 5 ? startTime.substring(0, 5) : startTime;
       String formattedEnd = endTime.length >= 5 ? endTime.substring(0, 5) : endTime;
-      
       return '$formattedDate · $formattedStart - $formattedEnd';
     } catch (e) {
       return 'Invalid Date/Time';
     }
   }
-
 }

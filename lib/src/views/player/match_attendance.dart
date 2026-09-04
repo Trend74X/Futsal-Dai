@@ -23,6 +23,7 @@ class _MatchAttendanceState extends State<MatchAttendance> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await controller.getMatchAttendanceData(widget.groupId, widget.bookingId);
+      setState(() { });
     });
   }
   
@@ -31,22 +32,24 @@ class _MatchAttendanceState extends State<MatchAttendance> {
     return Scaffold(
       appBar: appBarWidget(
         title: 'Match Attendance',
-        action: IconButton(
-          onPressed: () {
-            // Calculate inCount or pass a default value if data is still loading
-            int currentInCount = 0;
-            if (controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['group_members'] != null) {
-              final members = List.from(controller.attendanceDetail[0]['group_members']);
-              for (var member in members) {
-                if (controller.matchAttendanceMap[member['user_id']?.toString()] == 'IN') {
-                  currentInCount++;
+        action: controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['created_by'] != read('userId')
+          ? null
+          : IconButton(
+            onPressed: () {
+                // Calculate inCount or pass a default value if data is still loading
+                int currentInCount = 0;
+                if (controller.attendanceDetail.isNotEmpty && controller.attendanceDetail[0]['group_members'] != null) {
+                  final members = List.from(controller.attendanceDetail[0]['group_members']);
+                  for (var member in members) {
+                    if (controller.matchAttendanceMap[member['user_id']?.toString()] == 'IN') {
+                      currentInCount++;
+                    }
+                  }
                 }
-              }
-            }
-            _showRecruitmentDialog(context, currentInCount);
-          },
-          icon: Icon(Icons.person_add_alt_1, color: primaryColor)
-        )
+                _showRecruitmentDialog(context, currentInCount);
+              },
+            icon: Icon(Icons.person_add_alt_1, color: primaryColor)
+          )
       ),
       extendBodyBehindAppBar: true,
       body: SizedBox.expand(
