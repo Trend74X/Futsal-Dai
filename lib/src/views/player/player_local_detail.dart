@@ -1,17 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
+import 'package:futsal_dai/src/widgets/display_image.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class PlayerLocalDetail extends StatefulWidget {
   final String postId;
-  const PlayerLocalDetail({super.key, required this.postId});
+  final dynamic details;
+  const PlayerLocalDetail({super.key, required this.postId, required this.details});
 
   @override
   State<PlayerLocalDetail> createState() => _PlayerLocalDetailState();
 }
 
 class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
+  final controller = Get.put(GroupController());
+  List pendingRequests = [];
+  List confirmedPlayers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    getPlayersList();
+  }
+
+  Future<void> getPlayersList() async {
+    List players = await controller.fetchMatchJoinRequests(widget.postId);
+    pendingRequests = players.where((req) => req['status'] == 'pending').toList();
+    confirmedPlayers = players.where((req) => req['status'] == 'accepted' || req['status'] == 'confirmed').toList();
+    setState(() { });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,8 +106,8 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
           ),
           SizedBox(height: 8.h),
           Text(
-            'Stadium Arena',
-            style: semiBoldStyle(whiteTextColor, 28.sp).copyWith(height: 1.2),
+            widget.details['venue_name'],
+            style: semiBoldStyle(whiteTextColor, 28.sp).copyWith(height: 1.0),
           ),
           SizedBox(height: 8.h),
           Row(
@@ -94,22 +116,33 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               Icon(Icons.calendar_today, color: primaryColor, size: 15.sp),
               SizedBox(width: 4.w),
               Text(
-                'Fri, Oct 27 · 20:00 - 22:00',
+                formatBookingDateTime(
+                  widget.details['booking_date'], 
+                  widget.details['start_time'], 
+                  widget.details['end_time']
+                ),
+                // 'Fri, Oct 27 · 20:00 - 22:00',
                 style: semiBoldStyle(subtitleTextColor, 14.sp),
               )
             ],
           ),
           SizedBox(height: 4.h),
-          Row(
-            crossAxisAlignment: .start,
-            children: [
-              Icon(Icons.location_on_outlined, color: primaryColor, size: 15.sp),
-              SizedBox(width: 4.w),
-              Text(
-                'Downtown Pitch A',
-                style: semiBoldStyle(subtitleTextColor, 14.sp),
-              )
-            ],
+          Visibility(
+            visible: widget.details['address'] != null,
+            child: Row(
+              crossAxisAlignment: .start,
+              children: [
+                Icon(Icons.location_on_outlined, color: primaryColor, size: 15.sp),
+                SizedBox(width: 4.w),
+                Expanded(
+                  child: Text(
+                    widget.details['address'] ?? '',
+                    style: semiBoldStyle(subtitleTextColor, 14.sp).copyWith(height: 1.2),
+                    maxLines: 2
+                  ),
+                )
+              ],
+            ),
           )
         ],
       ),
@@ -137,12 +170,12 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               text: TextSpan(
                 children: [
                   TextSpan(
-                    text: "2",
+                    text: (widget.details['slots_needed'] - confirmedPlayers.length).toString(),
                     style: boldStyle(primaryColor, 48.sp),
                   ),
                   // WidgetSpan(child: SizedBox(width: 8.w)),
                   TextSpan(
-                    text: " / 5",
+                    text: " / ${widget.details['slots_needed']}",
                     style: semiBoldStyle(subtitleTextColor, 20.sp),
                   ),
                 ],
@@ -196,20 +229,31 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
           ],
         ),
         Divider(color: gray01),
-        ListView.separated(
-          itemCount: 3,
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          separatorBuilder:(context, index) => SizedBox(height: 8.h), 
-          itemBuilder:(context, index) {
-            return inboundTileWidget();
-          }, 
-        )
+        pendingRequests.isEmpty
+          ? SizedBox(
+            height: 50.h,
+            child: Center(
+              child: Text(
+                'No request at the moment.',
+                style: boldStyle(gray03, 14.sp),
+              )
+            )
+          )
+          : ListView.separated(
+            itemCount: pendingRequests.length,
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            separatorBuilder:(context, index) => SizedBox(height: 8.h), 
+            itemBuilder:(context, index) {
+              var data = pendingRequests[index];
+              return inboundTileWidget(data);
+            }, 
+          )
       ],
     );
   }
 
-  Widget inboundTileWidget() {
+  Widget inboundTileWidget(dynamic data) {
     return Container(
       decoration: BoxDecoration(
         color: filledBlueColor,
@@ -227,6 +271,13 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               color: lightFilledBgColor,
               shape: .circle, // Fixed shortcut syntax
             ),
+            child: ClipRRect(
+              borderRadius: .circular(24.r),
+              child: DisplayNetworkImage(
+                imageUrl: data['player']['profile_pic'],
+                boxFit: .cover,
+              ),
+            )
           ),
           SizedBox(width: 8.w), // Slightly increased spacing for better breathing room
 
@@ -237,12 +288,12 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
               mainAxisSize: .min,
               children: [
                 Text(
-                  'Rohan Shakya',
+                  data['player']['full_name'],
                   style: semiBoldStyle(whiteTextColor, 18.sp).copyWith(height: 1.0),
                 ),
                 SizedBox(height: 2.h), // Added small gap between text lines
                 Text(
-                  '@rohan_shakya',
+                  '@${data['player']['username']}',
                   style: semiBoldStyle(subtitleTextColor, 12.sp),
                 ),
               ],
@@ -300,7 +351,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
         
         // 👇 FIXED: Added shrinkWrap and physics
         GridView.builder(
-          itemCount: 5,
+          itemCount: widget.details['slots_needed'],
           shrinkWrap: true, // Makes the grid wrap its content height
           physics: const NeverScrollableScrollPhysics(), // Disables grid's own scroll; parent handles it
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -310,6 +361,7 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
             childAspectRatio: 2.6,
           ),
           itemBuilder: (context, index) {
+            var data = index < confirmedPlayers.length ? confirmedPlayers[index] : '';
             return Container(
               decoration: BoxDecoration(
                 color: filledBgColor,
@@ -317,40 +369,73 @@ class _PlayerLocalDetailState extends State<PlayerLocalDetail> {
                 border: .all(color: gray01)
               ),
               padding: .symmetric(horizontal: 4.w),
-              child: Row(
-                children: [
-                  Container(
-                    height: 42.h, width: 42.w,
-                    decoration: BoxDecoration(
-                      color: lightFilledBgColor,
-                      shape: .circle
-                    ),
-                  ),
-                  SizedBox(width: 4.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: .start,
-                      mainAxisAlignment: .center,
-                      children: [
-                        Text(
-                          'Ashok Shakya',
-                          style: boldStyle(whiteTextColor, 14.sp).copyWith(height: 1.0),
-                          maxLines: 2,
-                        ),
-                        Text(
-                          '@trend74x',
-                          style: boldStyle(subtitleTextColor, 12.sp)
-                        )
-                      ],
-                    ),
+              child: data == ''
+                ? Center(
+                  child: Text(
+                    'Slot still available.',
+                    style: boldStyle(gray03, 14.sp),
+                    maxLines: 2
                   )
-                ],
-              ),
+                )
+                : Row(
+                  children: [
+                    Container(
+                      height: 42.h, width: 42.w,
+                      decoration: BoxDecoration(
+                        color: lightFilledBgColor,
+                        shape: .circle
+                      ),
+                      child: ClipRRect(
+                        borderRadius: .circular(24.r),
+                        child: DisplayNetworkImage(
+                          imageUrl: data['player']['profile_pic'],
+                          boxFit: .cover,
+                        ),
+                      )
+                    ),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: .start,
+                        mainAxisAlignment: .center,
+                        children: [
+                          Text(
+                            data['player']['full_name'],
+                            style: boldStyle(whiteTextColor, 14.sp).copyWith(height: 1.0),
+                            maxLines: 2,
+                          ),
+                          Text(
+                            '@${data['player']['username']}',
+                            style: boldStyle(subtitleTextColor, 12.sp)
+                          )
+                        ],
+                      )
+                    )
+                  ],
+                ),
             );
           }, 
         ),
       ],
     );
+  }
+
+  String formatBookingDateTime(String bookingDate, String startTime, String endTime) {
+    try {
+      // Parse the date string (e.g., "2026-09-05")
+      DateTime date = DateTime.parse(bookingDate);
+      
+      // Format date to "EEE, MMM d" -> Fri, Sep 5
+      String formattedDate = DateFormat('EEE, MMM d').format(date);
+      
+      // Trim seconds from time strings ("06:00:00" -> "06:00")
+      String formattedStart = startTime.length >= 5 ? startTime.substring(0, 5) : startTime;
+      String formattedEnd = endTime.length >= 5 ? endTime.substring(0, 5) : endTime;
+      
+      return '$formattedDate · $formattedStart - $formattedEnd';
+    } catch (e) {
+      return 'Invalid Date/Time';
+    }
   }
 
 }

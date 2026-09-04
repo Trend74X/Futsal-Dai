@@ -5,7 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:futsal_dai/splash.dart';
+import 'package:futsal_dai/src/views/splash.dart';
 import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/notification_helper.dart';
 import 'package:get/get.dart';

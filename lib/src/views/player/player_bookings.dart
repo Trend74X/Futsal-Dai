@@ -295,7 +295,7 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
           String date = DateFormat('EEE, MMM d, yyyy').format(DateTime.parse(data.bookingDate));
           String time = "${data.startTime.substring(0, 5)} - ${data.endTime.substring(0, 5)}";
           return InkWell(
-            onTap: () => Get.to(() => MatchAttendance(bookingId: data.id, groupId: data.groupId)),
+            onTap: () => Get.to(() => MatchAttendance(bookingId: data.id, groupId: data.groupId, address: data.futsalVenues.address)),
             child: Container(
               margin: .all(4.sp),
               decoration: BoxDecoration(

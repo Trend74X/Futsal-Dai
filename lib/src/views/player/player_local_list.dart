@@ -167,7 +167,7 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
     final String buttonText = hasRequested ? 'CANCEL REQUEST TO JOIN' : 'REQUEST TO JOIN';
 
     return InkWell(
-      onTap: () => Get.to(() => PlayerLocalDetail(postId: data['id'])),
+      onTap: () => Get.to(() => PlayerLocalDetail(postId: data['id'], details: data)),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: .circular(24.r),
@@ -213,7 +213,26 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                         const Spacer(),
                         Text(
                           data['venue_name'],
-                          style: semiBoldStyle(whiteTextColor, 20.sp)
+                          style: semiBoldStyle(whiteTextColor, 20.sp).copyWith(height: 1.0),
+                          maxLines: 2
+                        ),
+                        SizedBox(height: 4.h),
+                        Visibility(
+                          visible: data['address'] != null,
+                          child: Row(
+                            crossAxisAlignment: .start,
+                            children: [
+                              Icon(Icons.location_on_outlined, color: primaryColor, size: 15.sp),
+                              SizedBox(width: 4.w),
+                              Expanded(
+                                child: Text(
+                                  data['address'] ?? '',
+                                  style: semiBoldStyle(subtitleTextColor, 14.sp),
+                                  maxLines: 2,
+                                ),
+                              )
+                            ],
+                          ),
                         ),
                         Row(
                           children: [

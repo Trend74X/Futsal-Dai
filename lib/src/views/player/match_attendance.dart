@@ -4,11 +4,12 @@ import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
+import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:get/get.dart';
 
 class MatchAttendance extends StatefulWidget {
-  final String bookingId, groupId;
-  const MatchAttendance({super.key, required this.bookingId, required this.groupId});
+  final String bookingId, groupId, address;
+  const MatchAttendance({super.key, required this.bookingId, required this.groupId, required this.address});
 
   @override
   State<MatchAttendance> createState() => _MatchAttendanceState();
@@ -417,20 +418,12 @@ class _MatchAttendanceState extends State<MatchAttendance> {
                 style: semiBoldStyle(whiteTextColor, 14.sp),
               ),
               SizedBox(height: 6.h),
-              TextField(
+              CustomTextFormField(
                 controller: slotsController,
+                headingText: '',
+                hintText: 'Enter number of available slots',
                 keyboardType: TextInputType.number,
-                style: regularStyle(whiteTextColor, 14.sp),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: filledBlueColor,
-                  hintText: 'Enter number of slots',
-                  hintStyle: regularStyle(subtitleTextColor, 12.sp),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
+                textStyle: regularStyle(whiteTextColor, 14.sp),
               ),
               SizedBox(height: 12.h),
 
@@ -440,21 +433,14 @@ class _MatchAttendanceState extends State<MatchAttendance> {
                 style: semiBoldStyle(whiteTextColor, 14.sp),
               ),
               SizedBox(height: 6.h),
-              TextField(
+              CustomTextFormField(
                 controller: notesController,
                 maxLines: 2,
-                style: regularStyle(whiteTextColor, 14.sp),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: filledBlueColor,
-                  hintText: 'e.g., Need a defender urgently',
-                  hintStyle: regularStyle(subtitleTextColor, 12.sp),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
+                headingText: '',
+                hintText: 'e.g., Need a defender urgently',
+                keyboardType: TextInputType.number,
+                textStyle: regularStyle(whiteTextColor, 14.sp),
+              )
             ],
           ),
         ),
@@ -486,6 +472,7 @@ class _MatchAttendanceState extends State<MatchAttendance> {
                 groupId: widget.groupId,
                 slotsNeeded: slots,
                 notes: notesController.text.trim(),
+                address: widget.address
               );
               
               Get.back(); // Close dialog on success

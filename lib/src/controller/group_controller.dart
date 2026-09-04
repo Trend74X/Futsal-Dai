@@ -368,18 +368,20 @@ class GroupController extends GetxController {
     required String bookingId,
     required String groupId,
     required int slotsNeeded,
-    required String notes, // Can keep or remove parameter
+    required String address,
+    required String notes
   }) async {
     try {
       final userId = read('userId'); 
       await supabase
         .from('match_recruitment_posts')
         .insert({
-          'match_id': bookingId,
-          'group_id': groupId,
-          'creator_id': userId,
+          'match_id'    : bookingId,
+          'group_id'    : groupId,
+          'creator_id'  : userId,
           'slots_needed': slotsNeeded,
-          'status': 'open',
+          'address'     : address,
+          'status'      : 'open',
         });
 
       Get.snackbar(
@@ -526,25 +528,37 @@ class GroupController extends GetxController {
 
   Future<List<Map<String, dynamic>>> fetchMatchJoinRequests(String postId) async {
     try {
-      final response = await Supabase.instance.client
+      // 1. Fetch match requests
+      final requestsResponse = await supabase
           .from('match_requests')
-          .select('''
-            id,
-            status,
-            created_at,
-            player:player_id (
-              id,
-              full_name,
-              profile_pic
-            )
-          ''')
+          .select('id, status, created_at, player_id')
           .eq('post_id', postId);
 
-      return List<Map<String, dynamic>>.from(response);
+      List<Map<String, dynamic>> requests = List<Map<String, dynamic>>.from(requestsResponse);
+
+      if (requests.isEmpty) return [];
+
+      // 2. Extract unique player IDs
+      final playerIds = requests.map((r) => r['player_id']).toSet().toList();
+
+      // 3. Fetch user profiles for these players
+      final usersResponse = await supabase
+          .from('users') // Change to 'profiles' if your table is named profiles
+          .select('id, full_name, profile_pic, username')
+          .inFilter('id', playerIds);
+
+      final usersMap = {for (var u in usersResponse) u['id']: u};
+
+      // 4. Merge user details into the request objects
+      for (var req in requests) {
+        req['player'] = usersMap[req['player_id']];
+      }
+
+      return requests;
     } catch (e) {
       Get.snackbar('Error', 'Failed to load requests: $e');
       return [];
-    }
+    } 
   }
 
   void onSearchChanged(String query) {
