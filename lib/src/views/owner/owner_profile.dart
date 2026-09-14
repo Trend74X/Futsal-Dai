@@ -4,6 +4,7 @@ import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/edit_profile.dart';
+import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/owner/owner_operating_hours.dart';
 import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
 import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
@@ -93,7 +94,7 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                       icon: Icons.support_agent, 
                       title: 'Help & Owner Support',  
                       subTitle: 'Get help with your venue portal',
-                      onTap: () {}
+                      onTap: () => Get.to(() => RulesWebViewScreen())
                     ),
                     SizedBox(height: 32.h),
                     logOutBtn(),
