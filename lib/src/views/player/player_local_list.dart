@@ -115,7 +115,7 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
       child: ListView.separated(
         shrinkWrap: true,
         itemCount: filterItems.length,
-        physics: NeverScrollableScrollPhysics(),
+        physics: AlwaysScrollableScrollPhysics(),
         scrollDirection: .horizontal,
         separatorBuilder: (context, index) => SizedBox(width: 8.w),
         itemBuilder:(context, index) {
@@ -302,27 +302,30 @@ class _PlayerLocalListState extends State<PlayerLocalList> {
                     ],
                   ),
                   SizedBox(height: 12.h),
-                  InkWell(
-                    onTap: isInteractive ? () async {
-                      await controller.toggleJoinRequest(data['id'], hasRequested);
-                      getRecuitmentDatas();
-                    } : null,
-                    child: Container(
-                      width: Get.width * 0.85,
-                      decoration: BoxDecoration(
-                        border: .all(color: borderColor, width: 1.5.w),
-                        borderRadius: .circular(12.r),
-                        color: hasRequested 
-                            ? red.withValues(alpha: 0.05) 
-                            : isAccepted 
-                                ? Colors.green.withValues(alpha: 0.05) 
-                                : Colors.transparent,
-                      ),
-                      padding: .symmetric(vertical: 4.h),
-                      child: Center(
-                        child: Text(
-                          buttonText,
-                          style: semiBoldStyle(textColor, 16.sp)
+                  Visibility(
+                    visible: data['creator_id'] != read('userId'),
+                    child: InkWell(
+                      onTap: isInteractive ? () async {
+                        await controller.toggleJoinRequest(data['id'], hasRequested);
+                        getRecuitmentDatas();
+                      } : null,
+                      child: Container(
+                        width: Get.width * 0.85,
+                        decoration: BoxDecoration(
+                          border: .all(color: borderColor, width: 1.5.w),
+                          borderRadius: .circular(12.r),
+                          color: hasRequested 
+                              ? red.withValues(alpha: 0.05) 
+                              : isAccepted 
+                                  ? Colors.green.withValues(alpha: 0.05) 
+                                  : Colors.transparent,
+                        ),
+                        padding: .symmetric(vertical: 4.h),
+                        child: Center(
+                          child: Text(
+                            buttonText,
+                            style: semiBoldStyle(textColor, 16.sp)
+                          ),
                         ),
                       ),
                     ),

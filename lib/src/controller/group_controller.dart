@@ -413,6 +413,8 @@ class GroupController extends GetxController {
           'address'     : address,
           'status'      : 'open',
         });
+      
+      Get.back();   // pop dialog
 
       Get.snackbar(
         'Success',
@@ -518,7 +520,8 @@ class GroupController extends GetxController {
         posts = posts.where((post) {
           List requesters = post['requester_ids'] ?? [];
           List accepted = post['accepted_ids'] ?? [];
-          return requesters.contains(playerId) || accepted.contains(playerId);
+          bool isMyPost = post['creator_id'] == playerId;
+          return isMyPost || requesters.contains(playerId) || accepted.contains(playerId);
         }).toList();
       } else {
         posts = [];

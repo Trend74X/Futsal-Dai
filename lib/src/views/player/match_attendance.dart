@@ -477,8 +477,6 @@ class _MatchAttendanceState extends State<MatchAttendance> {
                 notes: notesController.text.trim(),
                 address: widget.address
               );
-              
-              Get.back(); // Close dialog on success
             },
             child: Text(
               'Post to Board',
