@@ -75,7 +75,8 @@ class PlayerController extends GetxController {
     String? previousSelectedGroundId = selectedGroundId.value;
 
     try {
-      final dayOfWeek = selectedDate.weekday; 
+      // Convert Dart's weekday (Mon=1..Sun=7) to the DB convention (Sun=0..Sat=6)
+      final dayOfWeek = selectedDate.weekday % 7; 
       final dateString = DateFormat('yyyy-MM-dd').format(selectedDate);
 
       // Run queries concurrently
@@ -251,25 +252,39 @@ class PlayerController extends GetxController {
         throw Exception('User is not logged in.');
       }
 
+      // Fetch group admin ID if a groupId is provided
+      String? groupAdminId;
+      if (groupId != null && groupId.isNotEmpty) {
+        final groupData = await Supabase.instance.client
+            .from('groups')
+            .select('created_by') // Adjust column name if your groups table uses 'admin_id' instead
+            .eq('id', groupId)
+            .maybeSingle();
+            
+        groupAdminId = groupData?['created_by'];
+      }
+
       // Pre-format the dates for both the check and the payload
       final formattedDate = DateFormat('yyyy-MM-dd').format(bookingDate);
       final formattedStartTime = DateFormat('HH:mm:ss').format(startTime);
       final formattedEndTime = DateFormat('HH:mm:ss').format(endTime);
 
       final payload = {
-        'is_deleted'  : false,
-        'venue_id'    : venueId,
-        'ground_id'   : groundId,
-        'venue_name'  : venueName,
-        'user_id'     : userId,
-        'group_id'    : groupId,
-        'booking_date': formattedDate,
-        'start_time'  : formattedStartTime,
-        'end_time'    : formattedEndTime,
-        'total_price' : totalPrice,
-        'ground_name' : groundName,
-        'status'      : 'pending',
-        'booking_type': 'app_booking'
+        'is_deleted'     : false,
+        'venue_id'       : venueId,
+        'ground_id'      : groundId,
+        'venue_name'     : venueName,
+        'user_id'        : userId,
+        'created_by'     : userId,
+        'group_id'       : groupId,
+        'group_admin_id' : groupAdminId,
+        'booking_date'   : formattedDate,
+        'start_time'     : formattedStartTime,
+        'end_time'       : formattedEndTime,
+        'total_price'    : totalPrice,
+        'ground_name'    : groundName,
+        'status'         : 'pending',
+        'booking_type'   : 'app_booking'
       };
 
       // 1. Check if a booking already exists for this exact slot
