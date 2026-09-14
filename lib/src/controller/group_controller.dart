@@ -75,6 +75,7 @@ class GroupController extends GetxController {
   // Create Group and Save Members to Supabase
   Future<void> createGroup() async {
     if (!formKey.currentState!.validate()) return;
+    if (isLoading.value) return;
 
     final groupName = groupNameCon.text.trim();
     final description = descriptionCon.text.trim();
@@ -83,6 +84,17 @@ class GroupController extends GetxController {
     isLoading.value = true;
 
     try {
+      // 0. Prevent duplicate group names (case-insensitive)
+      await fetchMyGroups();
+      // isLoadning.value = true; // re-assert loading (fetchMyGroups resets it)
+      final nameExists = groupsList.any(
+        (g) => g.name.toLowerCase() == groupName.toLowerCase(),
+      );
+      if (nameExists) {
+        showToast(message: 'A group with this name already exists', isSuccess: false);
+        return;
+      }
+
       // 1. Insert into `groups` table
       final groupData = await supabase
           .from('groups')
@@ -119,8 +131,8 @@ class GroupController extends GetxController {
 
       // 3. Bulk insert into `group_members` table
       await supabase.from('group_members').insert(membersToInsert);
-      showToast(message: 'Group created successfully!', isSuccess: true);
       Get.back(); // Go back to previous screen
+      showToast(message: 'Group created successfully!', isSuccess: true);
     } catch (e) {
       debugPrint('Error creating group: $e');
       showToast(message: 'Failed to create group: $e', isSuccess: false);
@@ -135,11 +147,12 @@ class GroupController extends GetxController {
       final currentUserId = supabase.auth.currentUser?.id;
       if (currentUserId == null) return;
 
-      // 1. First, find all group IDs where the current user is involved (either as accepted or pending)
+      // 1. First, find all group IDs where the current user is an accepted member
       final myMemberships = await supabase
           .from('group_members')
           .select('group_id')
-          .eq('user_id', currentUserId);
+          .eq('user_id', currentUserId)
+          .eq('status', 'active');
 
       // Extract the group IDs into a list of strings
       final List<String> groupIds = (myMemberships as List)

@@ -65,7 +65,10 @@ class _PlayerGroupListState extends State<PlayerGroupList> {
 
   Widget newGroupButton() {
     return InkWell(
-      onTap: () => Get.to(() => PlayerCreateGroup()),
+      onTap: () async {
+        await Get.to(() => PlayerCreateGroup());
+        _con.fetchMyGroups();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: primaryColor,
