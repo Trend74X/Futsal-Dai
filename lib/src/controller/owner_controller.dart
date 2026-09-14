@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -48,7 +49,9 @@ class OwnerController extends GetxController {
 
       await supabase.from('futsal_grounds').insert(groundsData);
       showToast(message: "Venue and pitches saved successfully!", isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: "Failed to save data: $e", isSuccess: false);
     }
   }
@@ -111,7 +114,9 @@ class OwnerController extends GetxController {
       }
 
       showToast(message: "Venue and pitches updated successfully!", isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: "Failed to update data: $e", isSuccess: false);
     }
   }
@@ -138,11 +143,13 @@ class OwnerController extends GetxController {
           .select('*')
           .eq('venue_id', venueId);
 
+      logSuccess();
       return {
         'venue': venueRes,
         'grounds': groundsRes as List<dynamic>,
       };
     } catch (e) {
+      logError();
       showToast(message: "Failed to fetch data: $e", isSuccess: false);
       return null;
     } finally {
@@ -173,7 +180,9 @@ class OwnerController extends GetxController {
           .eq('id', venueId);
 
       showToast(message: 'Operating rules saved successfully!', isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: 'Failed to save settings: ${e.toString()}', isSuccess: false);
     } finally {
       isLoadingData.value = false;
@@ -196,11 +205,13 @@ class OwnerController extends GetxController {
           .eq('venue_id', venueId)
           .order('day_of_week', ascending: true);
 
+      logSuccess();
       return {
         'venue': venueRes,
         'hours': hoursRes,
       };
     } catch (e) {
+      logError();
       debugPrint('Error fetching operating rules: $e');
       return null;
     } finally {
@@ -214,7 +225,7 @@ class OwnerController extends GetxController {
       final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final response = await supabase
           .from('bookings')
-          .select('*, users(full_name, phone_number, profile_pic)')
+          .select('*, created_by(full_name, phone_number, profile_pic)')
           .eq('venue_id', venueId)
           .eq('status', 'pending')
           .eq('is_deleted', false)
@@ -223,7 +234,9 @@ class OwnerController extends GetxController {
           .order('start_time', ascending: true);
 
       pendingBookings.assignAll(List<Map<String, dynamic>>.from(response));
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to fetch pending bookings: $e');
     } finally {
       isLoadingPending.value = false;
@@ -249,7 +262,9 @@ class OwnerController extends GetxController {
         backgroundColor: newStatus == 'booked' ? const Color(0xFF3C4B35) : const Color(0xFF93000A),
         colorText: Colors.white,
       );
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to update booking: $e');
     }
   }
@@ -263,7 +278,9 @@ class OwnerController extends GetxController {
           .eq('venue_id', venueId);
 
       venueGrounds.assignAll(List<Map<String, dynamic>>.from(response));
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to fetch grounds: $e');
     } finally {
       isLoadingGrounds.value = false;
@@ -278,13 +295,15 @@ class OwnerController extends GetxController {
     try {
       final response = await supabase
           .from('bookings')
-          .select('*, users(full_name, phone_number)')
+          .select('*, created_by(full_name, phone_number)')
           .eq('ground_id', groundId)
           .eq('booking_date', dateStr)
           .eq('is_deleted', false);
 
       groundBookings.assignAll(List<Map<String, dynamic>>.from(response));
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to load timeline: $e');
     } finally {
       isLoadingTimeline.value = false;
@@ -333,7 +352,9 @@ class OwnerController extends GetxController {
 
       Get.back();
       showToast(message: 'Slot reserved successfully for $teamName', isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: 'Failed to create manual booking: $e', isSuccess: false);
     } finally {
       isLoadingData.value = false;

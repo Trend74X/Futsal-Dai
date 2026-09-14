@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 
 import 'package:futsal_dai/src/helper/constant.dart';
+import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -31,8 +32,10 @@ class AppController extends GetxController {
       final info = await PackageInfo.fromPlatform();
       _packageInfo.value = info;
       appVersion.value = 'App Version ${info.version} (Build ${info.buildNumber})';
+      logSuccess();
     } catch (e) {
       appVersion.value = 'App Version unavailable';
+      logError();
     }
   }
 
@@ -48,9 +51,11 @@ class AppController extends GetxController {
           .map((item) => AmenityModel.fromJson(item))
           .toList();
       isLoadingAmenities(false);
+      logSuccess();
     } catch (e) {
       isLoadingAmenities(false);
       log('Error fetching amenities: $e');
+      logError();
     }
   }
 
@@ -73,6 +78,7 @@ class AppController extends GetxController {
                   .replaceAll(', ,', ',');
           log('address :');
           log(streetAddress);
+          logSuccess();
           return streetAddress;
         }
       } else {
@@ -81,6 +87,7 @@ class AppController extends GetxController {
       return '';
     } catch (e) {
       log("Error fetching address: $e");
+      logError();
       return '';
     }
   }

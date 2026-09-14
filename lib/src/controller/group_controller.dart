@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/model/group_model.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
@@ -51,7 +52,9 @@ class GroupController extends GetxController {
           .limit(8);
 
       searchResults.assignAll(List<Map<String, dynamic>>.from(response));
+      logSuccess();
     } catch (e) {
+      logError();
       debugPrint('Error searching users: $e');
     } finally {
       isSearching.value = false;
@@ -133,7 +136,9 @@ class GroupController extends GetxController {
       await supabase.from('group_members').insert(membersToInsert);
       Get.back(); // Go back to previous screen
       showToast(message: 'Group created successfully!', isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       debugPrint('Error creating group: $e');
       showToast(message: 'Failed to create group: $e', isSuccess: false);
     } finally {
@@ -193,7 +198,9 @@ class GroupController extends GetxController {
       groupsList.assignAll(
         (response as List).map((groupJson) => GroupModel.fromJson(groupJson)).toList(),
       );
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to load groups: $e');
     } finally {
       isLoading.value = false;
@@ -211,7 +218,9 @@ class GroupController extends GetxController {
       });
 
       showToast(message: 'Invitation sent successfully!', isSuccess: true);
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: 'Failed to add member: $e', isSuccess: false);
     }
   }
@@ -234,8 +243,10 @@ class GroupController extends GetxController {
             .eq('user_id', userId);
         showToast(message: 'Group left successfully!', isSuccess: true);
       }
+      logSuccess();
 
     } catch (e) {
+      logError();
       showToast(message: 'Failed to updated member: $e', isSuccess: false);
     }
   }
@@ -282,7 +293,9 @@ class GroupController extends GetxController {
 
       // Assign to your observable list
       attendanceDetail.assignAll(groupsList);
+      logSuccess();
     } catch (e) {
+      logError();
       log('Error fetching favorite venues list: $e');
       showToast(message: 'Could not load favorites.', isSuccess: false);
     } finally {
@@ -344,8 +357,10 @@ class GroupController extends GetxController {
       } else {
         matchAttendanceMap.clear();
       }
+      logSuccess();
 
     } catch (e) {
+      logError();
       log('Error fetching match attendance data: $e');
     } finally {
       isLoading.value = false;
@@ -368,8 +383,10 @@ class GroupController extends GetxController {
         'p_user_id': userId,
         'p_status': status,
       });
+      logSuccess();
       
     } catch (e) {
+      logError();
       log('Error updating attendance: $e');
       Get.snackbar('Error', 'Failed to update attendance status', backgroundColor: Colors.red, colorText: Colors.white);
     }
@@ -403,7 +420,9 @@ class GroupController extends GetxController {
         colorText: Colors.white,
         backgroundColor: Colors.green.shade800,
       );
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar(
         'Error',
         'Failed to post: $e',
@@ -429,7 +448,9 @@ class GroupController extends GetxController {
       sortPosts(posts);
       recruitmentPost = posts;
       update();
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to load mercenary board: $e');
     }
   }
@@ -566,7 +587,9 @@ class GroupController extends GetxController {
 
       sortPosts(recruitmentPost);
       update(); 
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to update request: $e');
     }
   }
@@ -601,6 +624,7 @@ class GroupController extends GetxController {
 
       return requests;
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to load requests: $e');
       return [];
     } 
@@ -628,7 +652,9 @@ class GroupController extends GetxController {
       // Refresh recruitment posts to update slot counters if necessary
       await fetchRecruitmentPosts();
       update();
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to update request status: $e');
     }
   }
@@ -650,7 +676,9 @@ class GroupController extends GetxController {
 
       // Refresh data lists to reflect the change
       fetchRecruitmentPosts();
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to stop recruitment: $e');
     }
   }

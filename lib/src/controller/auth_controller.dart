@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/helper/notification_helper.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
@@ -35,11 +36,13 @@ class AuthController extends GetxController {
         }
 
         await storeUser(userId, userData, profileUrl);
+        logSuccess();
         return true;
       } else {
         return false;
       }
     } catch (e) {
+      logError();
       showToast(message: 'Sign Up Error', isSuccess: false, isNotDissmiable: true);
       return false;
     }
@@ -64,8 +67,10 @@ class AuthController extends GetxController {
 
       // Retrieve and return the public CDN URL
       final String publicUrl = supabase.storage.from('profile_pic').getPublicUrl(filePath);
+      logSuccess();
       return publicUrl;
     } catch (e) {
+      logError();
       log('Image Upload Failed: $e');
       return null; // Return null if upload fails so account creation still completes
     }
@@ -84,14 +89,17 @@ class AuthController extends GetxController {
         getUserById(response.user!.id);
         String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
         await supabase.from('users').update({'fcm': fcm}).eq('id', response.user!.id);
+        logSuccess();
       } else {
         showToast(message: 'Login failed: Session is null', isSuccess: false, isNotDissmiable: false);
         log('Login failed: Session is null');
       }
     } on AuthException catch (error) {
+      logError();
       showToast(message: error.message, isSuccess: false, isNotDissmiable: false);
       log('Login failed (AuthException): ${error.message}');
     } catch (error) {
+      logError();
       log('Login failed (Unexpected Error): $error');
     } finally {
       isLoggingIn(false);
@@ -113,7 +121,9 @@ class AuthController extends GetxController {
 
           // Delete the local device FCM registration token
           await NotificationHelper.messaging.deleteToken();
+          logSuccess();
         } catch (e) {
+          logError();
           log('Error clearing FCM token during logout: $e');
         }
       }
@@ -123,10 +133,13 @@ class AuthController extends GetxController {
       
       if (!context.mounted) return;
       Get.offAll(() => LogInPage());
+      logSuccess();
     } on AuthException catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: error.message, isSuccess: false);
     } catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: 'An unexpected error occurred while logging out.', isSuccess: false);
     }
@@ -138,10 +151,13 @@ class AuthController extends GetxController {
       if (!context.mounted) return;
       Get.to(() => VerifyPasswordPage(email: email));
       showToast(message: 'Password reset link sent to your email!', isSuccess: true);
+      logSuccess();
     } on AuthException catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: error.message, isSuccess: false);
     } catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: 'An unexpected error occurred while changing password.', isSuccess: false);
     }
@@ -162,11 +178,14 @@ class AuthController extends GetxController {
         if (!context.mounted) return;
         showToast(message: 'Password updated successfully!', isSuccess: true);
         Get.offAll(() => LogInPage());
+        logSuccess();
       }
     } on AuthException catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: error.message, isSuccess: false);
     } catch (error) {
+      logError();
       if (!context.mounted) return;
       showToast(message: 'An unexpected error occurred while changing password.', isSuccess: false);
     }
@@ -186,7 +205,9 @@ class AuthController extends GetxController {
         'fcm': fcm
       }).select();
       if (response.isNotEmpty)  log('Success! Inserted user: ${response.first}');
+      logSuccess();
     } catch (e) {
+      logError();
       showToast(message: e.toString(), isSuccess: false);
       rethrow;
     }
@@ -264,11 +285,13 @@ class AuthController extends GetxController {
       if (response.isNotEmpty) {
         log('User profile updated successfully.');
         await getUserById(user.id);
+        logSuccess();
         return true;
       }
 
       return false;
     } catch (e) {
+      logError();
       log('Update User Error: $e');
       showToast(message:"Failed to update profile: $e", isSuccess: false);
       return false;
@@ -286,7 +309,9 @@ class AuthController extends GetxController {
           getVenueId();
         }
       }
+      logSuccess();
     } catch (e) {
+      logError();
       log(e.toString());
     }
   }
@@ -300,7 +325,9 @@ class AuthController extends GetxController {
         write('venueId', 0);
       }
       Get.offAll(() => OwnerBottomsheet());
+      logSuccess();
     } catch (e) {
+      logError();
       log(e.toString());
     }
   }

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/model/booking_model.dart';
 import 'package:futsal_dai/src/model/futsal_venue_model.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
@@ -61,8 +62,10 @@ class PlayerController extends GetxController {
         .map((item) => FutsalVenueModel.fromJson(item as Map<String, dynamic>))
         .toList();
       isLoadingNearByData(false);
+      logSuccess();
     } catch (e) {
       isLoadingNearByData(false);
+      logError();
       log('Error fetching nearby venues: $e');
     }
   }
@@ -121,8 +124,9 @@ class PlayerController extends GetxController {
         selectedGroundId.value = null;
         availableSlots.clear();
       }
-
+      logSuccess();
     } catch (e) {
+      logError();
       log('Error fetching daily data: $e');
     } finally {
       isLoadingDetails.value = false;
@@ -274,7 +278,7 @@ class PlayerController extends GetxController {
         'venue_id'       : venueId,
         'ground_id'      : groundId,
         'venue_name'     : venueName,
-        'user_id'        : userId,
+        // 'user_id'        : userId,
         'created_by'     : userId,
         'group_id'       : groupId,
         'group_admin_id' : groupAdminId,
@@ -339,8 +343,10 @@ class PlayerController extends GetxController {
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
+      logSuccess();
       
     } catch (e) {
+      logError();
       Get.snackbar(
         'Error', 
         'Failed to request booking: $e', 
@@ -365,7 +371,9 @@ class PlayerController extends GetxController {
         backgroundColor: newStatus == 'booked' ? const Color(0xFF3C4B35) : const Color(0xFF93000A),
         colorText: Colors.white,
       );
+      logSuccess();
     } catch (e) {
+      logError();
       Get.snackbar('Error', 'Failed to update booking: $e');
     }
   }
@@ -385,8 +393,10 @@ class PlayerController extends GetxController {
           .eq('user_id', read('userId'))
           .eq('venue_id', venueId)
           .maybeSingle();
+      logSuccess();
       return response != null;
     } catch (e) {
+      logError();
       log('Error checking favorite status: $e');
       return false;
     }
@@ -407,8 +417,10 @@ class PlayerController extends GetxController {
             .eq('user_id', read('userId'))
             .eq('venue_id', venueId);
       }
+      logSuccess();
       return true;
     } catch (e) {
+      logError();
       isFav = !isFav;
       Get.snackbar('Error', 'Failed to update favorite status.');
       return false;
@@ -430,7 +442,9 @@ class PlayerController extends GetxController {
           return FutsalVenueModel.fromJson(venueData);
         }).toList(),
       );
+      logSuccess();
     } catch (e) {
+      logError();
       log('Error fetching favorite venues list: $e');
       Get.snackbar('Error', 'Could not load favorites.');
     } finally {
@@ -480,7 +494,9 @@ class PlayerController extends GetxController {
           .order('start_time', ascending: true);
 
       myMatches.assignAll((response as List).map((item) => BookingModel.fromJson(item)).toList());
+      logSuccess();
     } catch (e) {
+      logError();
       log('Error fetching bookings list: $e');
       showToast(message: 'Could not load matches.', isSuccess: false);
     } finally {
