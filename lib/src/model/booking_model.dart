@@ -5,7 +5,8 @@ class BookingModel {
   final String? updatedAt;
   final bool isDeleted;
   final int venueId;
-  final String userId;
+  final String groupAdminId;
+  final String createdBy;
   final String bookingDate;
   final String startTime;
   final String endTime;
@@ -25,7 +26,8 @@ class BookingModel {
     this.updatedAt,
     required this.isDeleted,
     required this.venueId,
-    required this.userId,
+    required this.groupAdminId,
+    required this.createdBy,
     required this.bookingDate,
     required this.startTime,
     required this.endTime,
@@ -47,7 +49,8 @@ class BookingModel {
       updatedAt: json['updated_at'],
       isDeleted: json['is_deleted'] ?? false,
       venueId: json['venue_id'] ?? 0,
-      userId: json['user_id'] ?? '',
+      groupAdminId: json['group_admin_id'] ?? '',
+      createdBy: json['created_by'] ?? '',
       bookingDate: json['booking_date'] ?? '',
       startTime: json['start_time'] ?? '',
       endTime: json['end_time'] ?? '',
@@ -72,7 +75,8 @@ class BookingModel {
       'updated_at': updatedAt,
       'is_deleted': isDeleted,
       'venue_id': venueId,
-      'user_id': userId,
+      'group_admin_id': groupAdminId,
+      'created_by': createdBy,
       'booking_date': bookingDate,
       'start_time': startTime,
       'end_time': endTime,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/group_controller.dart';
 import 'package:futsal_dai/src/controller/player_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/url_launcher_helper.dart';
 import 'package:futsal_dai/src/model/booking_model.dart';
@@ -447,18 +448,21 @@ class _PlayerBookingPageState extends State<PlayerBookingPage> {
                                   ],
                                 ),
                                 SizedBox(height: 12.h),
-                                CustomUsualButton(
-                                  text: 'Cancel Booking', 
-                                  onPressed: () {
-                                    playerCon.updateBookingStatus(data.id, 'cancelled_player');
-                                    getBookingsList();
-                                  },
-                                  fontColor: Color(0xFFFFB4AB),
-                                  fontWeight: .w600,
-                                  fontSize: 16.sp,
-                                  borderColor: Color(0xFFFFB4AB),
-                                  bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.01),
-                                  height: 52.h,
+                                Visibility(
+                                  visible: data.createdBy == read('userId') || data.groupAdminId == read('userId'),
+                                  child: CustomUsualButton(
+                                    text: 'Cancel Booking', 
+                                    onPressed: () {
+                                      playerCon.updateBookingStatus(data.id, 'cancelled_player');
+                                      getBookingsList();
+                                    },
+                                    fontColor: Color(0xFFFFB4AB),
+                                    fontWeight: .w600,
+                                    fontSize: 16.sp,
+                                    borderColor: Color(0xFFFFB4AB),
+                                    bgColor: Color(0xFFFFB4AB).withValues(alpha: 0.01),
+                                    height: 52.h,
+                                  ),
                                 ),
                               ],
                             ),
