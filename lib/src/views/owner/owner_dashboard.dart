@@ -113,46 +113,70 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   Widget todayCardsWidget() {
     return Obx(() {
       final bool isLoading = ownerCon.isLoadingTodayStats.value;
-      return Row(
-        children: [
-          cardsToday(
-            icon: 'assets/icons/ball.png',
-            title: isLoading ? '--' : ownerCon.todayBookingsCount.value.toString(),
-            subtitle: 'BOOKINGS TODAY',
-            color: primaryColor,
-          ),
-          SizedBox(width: 16.w),
-          cardsToday(
-            icon: 'assets/icons/money.png',
-            title: isLoading ? '--' : _formatMoney(ownerCon.todayRevenue.value),
-            subtitle: 'REVENUE TODAY',
-            color: const Color(0xFFFFB95F),
-          ),
-        ],
+      return IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: cardsToday(
+                icon: 'assets/icons/ball.png',
+                title: isLoading ? '--' : ownerCon.todayBookingsCount.value.toString(),
+                subtitle: 'BOOKINGS TODAY',
+                color: primaryColor,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: cardsToday(
+                icon: 'assets/icons/money.png',
+                title: isLoading ? '--' : _formatMoney(ownerCon.todayRevenue.value),
+                subtitle: 'REVENUE TODAY',
+                color: const Color(0xFFFFB95F),
+              ),
+            ),
+          ],
+        ),
       );
     });
   }
 
   String _formatMoney(double value) {
-    if (value >= 1000) {
-      return '${(value / 1000).toStringAsFixed(1)}k';
+    String formatted = value.toStringAsFixed(1);
+    if (formatted.endsWith('.0')) {
+      return formatted.substring(0, formatted.length - 2);
     }
-    return value.toStringAsFixed(0);
+    return formatted;
   }
 
-  Widget cardsToday({required String icon, required String title, required String subtitle, required Color color}) {
-    return Expanded(
-      child: Container(
-        decoration: BoxDecoration(color: filledBgColor),
-        padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.asset(icon, height: 20.h, width: 20.w),
-            Text(title, style: boldStyle(color, 48.sp)),
-            Text(subtitle, style: boldStyle(subtitleTextColor, 12.sp)),
-          ],
-        ),
+  Widget cardsToday({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      decoration: BoxDecoration(color: filledBgColor),
+      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 16.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(icon, height: 18.h, width: 18.h),
+          SizedBox(height: 6.h),
+          SizedBox(
+            height: 60.h,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(title, style: boldStyle(color, 40.sp)),
+            ),
+          ),
+          SizedBox(height: 4.h),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(subtitle, style: boldStyle(subtitleTextColor, 11.sp)),
+          ),
+        ],
       ),
     );
   }
