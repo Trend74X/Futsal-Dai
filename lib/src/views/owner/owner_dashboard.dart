@@ -53,6 +53,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
         // Existing initializations
         ownerCon.fetchPendingBookings(read('venueId'));
+        ownerCon.fetchTodayStats(read('venueId'));
         await ownerCon.fetchVenueGrounds(read('venueId'));
         if (ownerCon.venueGrounds.isNotEmpty) {
           setState(() {
@@ -110,13 +111,33 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
   }
 
   Widget todayCardsWidget() {
-    return Row(
-      children: [
-        cardsToday(icon: 'assets/icons/ball.png', title: '24', subtitle: 'BOOKINGS TODAY', color: primaryColor),
-        SizedBox(width: 16.w),
-        cardsToday(icon: 'assets/icons/money.png', title: '12.4k', subtitle: 'REVENUE TODAY', color: const Color(0xFFFFB95F)),
-      ],
-    );
+    return Obx(() {
+      final bool isLoading = ownerCon.isLoadingTodayStats.value;
+      return Row(
+        children: [
+          cardsToday(
+            icon: 'assets/icons/ball.png',
+            title: isLoading ? '--' : ownerCon.todayBookingsCount.value.toString(),
+            subtitle: 'BOOKINGS TODAY',
+            color: primaryColor,
+          ),
+          SizedBox(width: 16.w),
+          cardsToday(
+            icon: 'assets/icons/money.png',
+            title: isLoading ? '--' : _formatMoney(ownerCon.todayRevenue.value),
+            subtitle: 'REVENUE TODAY',
+            color: const Color(0xFFFFB95F),
+          ),
+        ],
+      );
+    });
+  }
+
+  String _formatMoney(double value) {
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return value.toStringAsFixed(0);
   }
 
   Widget cardsToday({required String icon, required String title, required String subtitle, required Color color}) {

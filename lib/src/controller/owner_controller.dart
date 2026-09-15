@@ -22,6 +22,44 @@ class OwnerController extends GetxController {
   RxList<Map<String, dynamic>> groundBookings = <Map<String, dynamic>>[].obs;
   RxBool isLoadingTimeline = false.obs;
 
+  // Today's dashboard stats
+  RxInt todayBookingsCount = 0.obs;
+  RxDouble todayRevenue = 0.0.obs;
+  RxBool isLoadingTodayStats = false.obs;
+
+  Future<void> fetchTodayStats(int venueId) async {
+    isLoadingTodayStats.value = true;
+    try {
+      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+      final response = await supabase
+          .from('bookings')
+          .select('status, total_price')
+          .eq('venue_id', venueId)
+          .eq('booking_date', todayStr)
+          .eq('is_deleted', false);
+
+      final bookings = List<Map<String, dynamic>>.from(response);
+
+      // Count only accepted bookings (excludes pending/cancelled/rejected)
+      const acceptedStatuses = {'booked', 'confirmed', 'in_progress', 'completed'};
+      final accepted = bookings.where((b) => acceptedStatuses.contains(b['status'])).toList();
+      todayBookingsCount.value = accepted.length;
+
+      // Revenue from the accepted bookings
+      todayRevenue.value = accepted.fold(
+        0.0,
+        (sum, b) => sum + (double.tryParse(b['total_price']?.toString() ?? '0') ?? 0),
+      );
+
+      logSuccess();
+    } catch (e) {
+      logError();
+      showToast(message: "Failed to load today's stats: $e", isSuccess: false);
+    } finally {
+      isLoadingTodayStats.value = false;
+    }
+  }
+
   Future<void> saveVenueAndPitches({
     required Map<String, dynamic> futsalVenues, 
     required List<Map<String, dynamic>> futsalGround,

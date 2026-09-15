@@ -3,7 +3,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/owner/owner_dashboard.dart';
 import 'package:futsal_dai/src/views/owner/owner_profile.dart';
-import 'package:futsal_dai/src/views/owner/owner_reports.dart';
 import 'package:futsal_dai/src/views/owner/owner_schedule.dart';
 
 class OwnerBottomsheet extends StatefulWidget {
@@ -20,7 +19,7 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
   final List<Widget> _screens = [
     OwnerDashboard(),
     OwnerSchedulePage(),
-    OwnerReports(),
+    // OwnerReports(),
     OwnerProfilePage()
   ];
 
@@ -76,17 +75,17 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
               ),
               label: '',
             ),
-            NavigationDestination(
-              icon: _buildCustomTab(
-                isSelected: _currentIndex == 2,
-                iconPath: 'assets/icons/reports.svg',
-                label: 'Reports',
-                activeColor: Color(0xFF1B4D14),
-                inactiveColor: subtitleTextColor,
-                indicatorColor: Color(0xFF79FF5B),
-              ),
-              label: '',
-            ),
+            // NavigationDestination(
+            //   icon: _buildCustomTab(
+            //     isSelected: _currentIndex == 2,
+            //     iconPath: 'assets/icons/reports.svg',
+            //     label: 'Reports',
+            //     activeColor: Color(0xFF1B4D14),
+            //     inactiveColor: subtitleTextColor,
+            //     indicatorColor: Color(0xFF79FF5B),
+            //   ),
+            //   label: '',
+            // ),
             NavigationDestination(
               icon: _buildCustomTab(
                 isSelected: _currentIndex == 3,
