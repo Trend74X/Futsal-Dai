@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
+import 'package:futsal_dai/src/controller/owner_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/edit_profile.dart';
@@ -8,8 +9,11 @@ import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/owner/owner_operating_hours.dart';
 import 'package:futsal_dai/src/views/owner/owner_vienue_details.dart';
 import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
+import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 
 class OwnerProfilePage extends StatefulWidget {
   const OwnerProfilePage({super.key});
@@ -20,9 +24,20 @@ class OwnerProfilePage extends StatefulWidget {
 
 class _OwnerProfilePageState extends State<OwnerProfilePage> {
   final AuthController _authCon = Get.put(AuthController());
+  final OwnerController _ownerCon = Get.put(OwnerController());
 
-  bool isFacilityOpen = false;
   bool isNotificationOn = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (read('venueId') != 0) {
+        _ownerCon.fetchClosedDates(read('venueId'));
+        _ownerCon.fetchTodayOperatingHours(read('venueId'));
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,63 +197,258 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
   }
 
   Widget openingStatus() {
+    final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
     return Container(
       decoration: BoxDecoration(
         color: filledBgColor,
         borderRadius: .circular(12.r)
       ),
       padding: .symmetric(vertical: 16.h, horizontal: 12.w),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            height: 12.h,
-            width: 12.w,
-            decoration: BoxDecoration(
-              shape: .circle,
-              color: isFacilityOpen == true ? primaryColor : pinkDark,
-              border: .all(color: isFacilityOpen == true ? transparent : pinkDark)
+          Obx(() {
+            final bool isClosedToday = _ownerCon.closedDates.contains(todayStr);
+            return Row(
+              children: [
+                Container(
+                  height: 12.h,
+                  width: 12.w,
+                  decoration: BoxDecoration(
+                    shape: .circle,
+                    color: isClosedToday ? pinkDark : primaryColor,
+                    border: .all(color: isClosedToday ? pinkDark : primaryColor)
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: .center,
+                    crossAxisAlignment: .start,
+                    children: [
+                      Text(
+                        'Facility Status',
+                        style: regularStyle(subtitleTextColor, 14.sp),
+                      ),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: isClosedToday ? "Closed Today" : "Open Today",
+                              style: semiBoldStyle(isClosedToday ? pinkDark : whiteTextColor, 20.sp),
+                            ),
+                            WidgetSpan(child: SizedBox(width: 8.w)),
+                            TextSpan(
+                              text: _buildOperatingHoursLabel(),
+                              style: semiBoldStyle(subtitleTextColor, 14.sp),
+                            ),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Switch(
+                  value: isClosedToday,
+                  activeThumbColor: pinkDark,
+                  activeTrackColor: pinkDark.withValues(alpha: 0.2),
+                  inactiveThumbColor: primaryColor,
+                  inactiveTrackColor: primaryColor.withValues(alpha: 0.2),
+                  onChanged: (value) {
+                    if (read('venueId') == 0) return;
+                    if (value) {
+                      _ownerCon.addClosedDate(read('venueId'), todayStr);
+                    } else {
+                      _ownerCon.removeClosedDate(read('venueId'), todayStr);
+                    }
+                  }
+                )
+              ],
+            );
+          }),
+          SizedBox(height: 12.h),
+          InkWell(
+            onTap: () => _pickClosureDate(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: lightFilledBgColor,
+                borderRadius: .circular(10.r),
+              ),
+              padding: .symmetric(vertical: 10.h, horizontal: 12.w),
+              child: Row(
+                mainAxisAlignment: .center,
+                children: [
+                  Icon(Icons.event_busy_outlined, color: primaryColor, size: 16.sp),
+                  SizedBox(width: 6.w),
+                  Text(
+                    'Close on Specific Date',
+                    style: boldStyle(primaryColor, 14.sp),
+                  ),
+                ],
+              ),
             ),
           ),
-          SizedBox(width: 8.w),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: .center,
-              crossAxisAlignment: .start,
+          Obx(() {
+            final now = DateTime.now();
+            final startOfToday = DateTime(now.year, now.month, now.day);
+            final others = _ownerCon.closedDates
+                .where((d) {
+                  if (d == todayStr) return false;
+                  final date = DateTime.tryParse(d);
+                  return date != null && !date.isBefore(startOfToday);
+                })
+                .toList()
+              ..sort();
+            if (others.isEmpty) return const SizedBox();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Facility Status',
-                  style: regularStyle(subtitleTextColor, 14.sp),
-                ),
-                RichText(
-                  text: TextSpan(
+                SizedBox(height: 12.h),
+                Text('Closed Dates', style: boldStyle(subtitleTextColor, 12.sp)),
+                SizedBox(height: 8.h),
+                ...others.map((date) => Container(
+                  margin: EdgeInsets.only(bottom: 8.h),
+                  decoration: BoxDecoration(
+                    color: pinkDark.withValues(alpha: 0.08),
+                    borderRadius: .circular(8.r),
+                    border: .all(color: pinkDark.withValues(alpha: 0.4)),
+                  ),
+                  padding: .symmetric(horizontal: 12.w, vertical: 8.h),
+                  child: Row(
                     children: [
-                      TextSpan(
-                        text: "Open Today",
-                        style: semiBoldStyle(whiteTextColor, 20.sp),
+                      Icon(Icons.block, color: pinkDark, size: 16.sp),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          _formatClosedDate(date),
+                          style: boldStyle(whiteTextColor, 14.sp),
+                        ),
                       ),
-                      WidgetSpan(child: SizedBox(width: 8.w)),
-                      TextSpan(
-                        text: "(6:00 AM - 11:00 PM)",
-                        style: semiBoldStyle(subtitleTextColor, 14.sp),
+                      InkWell(
+                        onTap: () {
+                          if (read('venueId') == 0) return;
+                          _ownerCon.removeClosedDate(read('venueId'), date);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: pinkDark.withValues(alpha: 0.15),
+                            borderRadius: .circular(6.r),
+                          ),
+                          padding: .symmetric(horizontal: 10.w, vertical: 6.h),
+                          child: Text(
+                            'CANCEL CLOSE',
+                            style: boldStyle(pinkDark, 10.sp),
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                )
+                )),
               ],
-            ),
-          ),
-          SizedBox(width: 8.w),
-          Switch(
-            value: isFacilityOpen,
-            activeThumbColor: primaryColor,
-            activeTrackColor: primaryColor.withValues(alpha: 0.2),
-            inactiveThumbColor: subtitleTextColor,
-            inactiveTrackColor: lightFilledBgColor,
-            onChanged: (value) => setState(() => isFacilityOpen = value )
-          )
+            );
+          }),
         ],
       ),
     );
+  }
+
+  String _buildOperatingHoursLabel() {
+    final hours = _ownerCon.todayOperatingHours.value;
+    if (hours == null) return "";
+    if (hours['is_closed'] == true) return "Closed All Day";
+    return "${_formatTime(hours['open_time'])} - ${_formatTime(hours['close_time'])}";
+  }
+
+  String _formatTime(dynamic timeStr) {
+    final parts = '${timeStr ?? ''}'.split(':');
+    if (parts.length < 2) return '';
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    final date = DateTime(2000, 1, 1, hour, minute);
+    return DateFormat('h:mm a').format(date);
+  }
+
+  void _pickClosureDate() {
+    final DateTime today = DateTime.now();
+    DateTime selectedDate = today;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final String selectedStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+            final bool alreadyClosed = _ownerCon.closedDates.contains(selectedStr);
+            return AlertDialog(
+              backgroundColor: filledBgColor,
+              title: Center(
+                child: Text('Select Date to Close', style: boldStyle(whiteTextColor, 16.sp)),
+              ),
+              content: SizedBox(
+                width: 320.w,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: ColorScheme.dark(
+                          primary: primaryColor,
+                          onPrimary: black,
+                          surface: filledBgColor,
+                          onSurface: whiteTextColor,
+                        ),
+                      ),
+                      child: CalendarDatePicker(
+                        initialDate: selectedDate,
+                        firstDate: today,
+                        lastDate: today.add(const Duration(days: 365)),
+                        onDateChanged: (DateTime newDate) {
+                          setModalState(() => selectedDate = newDate);
+                        },
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    const Divider(color: gray01),
+                    SizedBox(height: 12.h),
+                    CustomUsualButton(
+                      text: alreadyClosed ? 'CANCEL CLOSE' : 'CLOSE THIS DATE',
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        final venueId = read('venueId');
+                        if (venueId == 0) return;
+                        if (alreadyClosed) {
+                          _ownerCon.removeClosedDate(venueId, selectedStr);
+                        } else {
+                          _ownerCon.addClosedDate(venueId, selectedStr);
+                          showToast(message: 'Bookings disabled for ${_formatClosedDate(selectedStr)}', isSuccess: true);
+                        }
+                      },
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14.sp,
+                      height: 48.h,
+                    ),
+                    SizedBox(height: 8.h),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text('Cancel', style: boldStyle(subtitleTextColor, 14.sp)),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _formatClosedDate(String dateStr) {
+    try {
+      final DateTime date = DateTime.parse(dateStr);
+      return DateFormat('EEE, MMM d, yyyy').format(date);
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   Widget textLabel({required String label}) {

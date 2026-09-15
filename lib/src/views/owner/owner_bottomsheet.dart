@@ -88,7 +88,7 @@ class _OwnerBottomsheetState extends State<OwnerBottomsheet> {
             // ),
             NavigationDestination(
               icon: _buildCustomTab(
-                isSelected: _currentIndex == 3,
+                isSelected: _currentIndex == 2,
                 iconPath: 'assets/icons/profile.svg',
                 label: 'Profile',
                 activeColor: Color(0xFF1B4D14),

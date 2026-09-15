@@ -27,6 +27,79 @@ class OwnerController extends GetxController {
   RxDouble todayRevenue = 0.0.obs;
   RxBool isLoadingTodayStats = false.obs;
 
+  // Per-date closures (dates on which booking is disabled)
+  RxList<String> closedDates = <String>[].obs;
+
+  // Today's operating hours row
+  Rx<Map<String, dynamic>?> todayOperatingHours = Rx<Map<String, dynamic>?>(null);
+
+  Future<void> fetchTodayOperatingHours(int venueId) async {
+    try {
+      final dayOfWeek = DateTime.now().weekday % 7; // DB convention: Sun=0
+      final response = await supabase
+          .from('operating_hours')
+          .select('*')
+          .eq('venue_id', venueId)
+          .eq('day_of_week', dayOfWeek)
+          .maybeSingle();
+      todayOperatingHours.value = response;
+      logSuccess();
+    } catch (e) {
+      logError();
+    }
+  }
+
+  Future<void> fetchClosedDates(int venueId) async {
+    isLoadingData.value = true;
+    try {
+      final response = await supabase
+          .from('futsal_venues')
+          .select('closed_dates')
+          .eq('id', venueId)
+          .maybeSingle();
+
+      final list = (response?['closed_dates'] as List<dynamic>?) ?? [];
+      closedDates.assignAll(list.map((e) => e.toString()));
+      logSuccess();
+    } catch (e) {
+      logError();
+      showToast(message: "Failed to load closure dates: $e", isSuccess: false);
+    } finally {
+      isLoadingData.value = false;
+    }
+  }
+
+  Future<void> addClosedDate(int venueId, String dateStr) async {
+    try {
+      if (closedDates.contains(dateStr)) return;
+      final updated = [...closedDates, dateStr];
+      await supabase
+          .from('futsal_venues')
+          .update({'closed_dates': updated})
+          .eq('id', venueId);
+      closedDates.assignAll(updated);
+      logSuccess();
+    } catch (e) {
+      logError();
+      showToast(message: "Failed to close this date: $e", isSuccess: false);
+    }
+  }
+
+  Future<void> removeClosedDate(int venueId, String dateStr) async {
+    try {
+      final updated = closedDates.where((d) => d != dateStr).toList();
+      await supabase
+          .from('futsal_venues')
+          .update({'closed_dates': updated})
+          .eq('id', venueId);
+      closedDates.assignAll(updated);
+      logSuccess();
+    } catch (e) {
+      logError();
+      showToast(message: "Failed to reopen this date: $e", isSuccess: false);
+    }
+  }
+
   Future<void> fetchTodayStats(int venueId) async {
     isLoadingTodayStats.value = true;
     try {

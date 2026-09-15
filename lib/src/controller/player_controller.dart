@@ -102,12 +102,25 @@ class PlayerController extends GetxController {
             .select()
             .eq('venue_id', venueId)
             .eq('booking_date', dateString)
-            .eq('is_deleted', false)
+            .eq('is_deleted', false),
+
+        supabase
+            .from('futsal_venues')
+            .select('closed_dates')
+            .eq('id', venueId)
+            .maybeSingle()
       ]);
 
       todayHours.value = responses[0] as Map<String, dynamic>?;
       grounds.assignAll(responses[1] as List<dynamic>);
       dailyBookings.assignAll(responses[2] as List<dynamic>);
+
+      // If the venue is closed for this specific date, no slots are available
+      final closedDates = ((responses[3] as Map<String, dynamic>?)?['closed_dates'] as List<dynamic>?) ?? [];
+      if (closedDates.map((e) => e.toString()).contains(dateString)) {
+        todayHours.value = {'is_closed': true};
+        availableSlots.clear();
+      }
       
       // Intelligent Ground Selection
       if (grounds.isNotEmpty) {
