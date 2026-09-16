@@ -20,13 +20,36 @@ class PlayerSeeAllFutsal extends StatefulWidget {
 }
 
 class _PlayerSeeAllFutsalState extends State<PlayerSeeAllFutsal> {
-  final PlayerController _con = Get.put(PlayerController());
-  final searchCon    = TextEditingController();
+  final PlayerController _con              = Get.put(PlayerController());
+  final searchCon                          = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _con.loadAllVenues();
+
+    // Listen to scroll position for pagination trigger with safety guards
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+          _scrollController.position.maxScrollExtent > 0 && // Prevent trigger if content fits on screen
+          !_con.isLoadingMore.value &&
+          _con.hasMoreVenues) {
+        
+        _con.loadAllVenues(
+          isMore: true,
+          searchQuery: searchCon.text,
+          selectedAmenities: getSelectedAmenities(), 
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    searchCon.dispose();
+    super.dispose();
   }
 
   @override
@@ -39,32 +62,45 @@ class _PlayerSeeAllFutsalState extends State<PlayerSeeAllFutsal> {
           decoration: bgImg(),
           child: SafeArea(
             child: Padding(
-              padding: .symmetric(horizontal: 16.sp, vertical: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.h),
               child: SingleChildScrollView(
-                child: Obx(()=>
-                  _con.isLoadingFavs.isTrue
-                    ? Center(child: CircularProgressIndicator(color: primaryColor))
+                controller: _scrollController, // Attach controller here
+                child: Obx(() => _con.isLoadingAllVenues.isTrue && _con.allVenues.isEmpty
+                    ? SizedBox(
+                        height: Get.height * 0.6,
+                        child: Center(
+                            child: CircularProgressIndicator(color: primaryColor)),
+                      )
                     : Column(
-                      crossAxisAlignment: .start,
-                      children: [
-                        searchBarField(),
-                        SizedBox(height: 16.h),
-                        amenitiesWidget(),
-                        SizedBox(height: 24.h),
-                        if (_con.allVenues.isEmpty) 
-                          SizedBox(
-                            height: Get.width,
-                            child: Center(
-                              child: Text(
-                                'No venues to show right now.',
-                                style: semiBoldStyle(Colors.grey, 14.sp),
-                              )
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          searchBarField(),
+                          SizedBox(height: 16.h),
+                          amenitiesWidget(),
+                          SizedBox(height: 24.h),
+                          if (_con.allVenues.isEmpty)
+                            SizedBox(
+                              height: Get.width,
+                              child: Center(
+                                child: Text(
+                                  'No venues to show right now.',
+                                  style: semiBoldStyle(Colors.grey, 14.sp),
+                                ),
+                              ),
                             ),
-                          ),
-                        savedCourtsWidget()
-                      ],
-                    ),
-                )
+                          savedCourtsWidget(),
+                          // Loading indicator at the bottom when fetching more
+                          if (_con.isLoadingMore.isTrue)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.h),
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                    color: primaryColor),
+                              ),
+                            ),
+                          SizedBox(height: 24.h),
+                        ],
+                      )),
               ),
             ),
           ),

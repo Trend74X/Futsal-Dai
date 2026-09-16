@@ -13,21 +13,21 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class PlayerController extends GetxController {
-  final supabase = Supabase.instance.client; 
-  RxBool isBooking = false.obs;
+  final  supabase          = Supabase.instance.client;
+  RxBool isBooking         = false.obs;
   RxBool isLoadingBookings = false.obs;
   
   RxBool isLoadingNearByData = false.obs;
-  RxList nearbyVenues = [].obs;
+  RxList nearbyVenues        = [].obs;
 
-  RxList allVenues = [].obs; 
+  RxList allVenues          = [].obs;
   RxBool isLoadingAllVenues = false.obs;
 
   // --- VENUE DETAILS VARIABLES ---
-  RxBool isLoadingDetails = false.obs;
-  Rx<Map<String, dynamic>?> todayHours = Rx<Map<String, dynamic>?>(null);
-  RxList<dynamic> grounds = <dynamic>[].obs;
-  RxList<dynamic> dailyBookings = <dynamic>[].obs;
+  RxBool          isLoadingDetails       = false.obs;
+  Rx<Map<String  , dynamic>?> todayHours = Rx<Map<String, dynamic>?>(null);
+  RxList<dynamic> grounds                = <dynamic>[].obs;
+  RxList<dynamic> dailyBookings          = <dynamic>[].obs;
   
   // The dynamically generated slots will be stored here for the UI to consume
   RxList<Map<String, dynamic>> availableSlots = <Map<String, dynamic>>[].obs;
@@ -37,11 +37,17 @@ class PlayerController extends GetxController {
 
   // --- FAVORITES LIST LOGIC ---
   RxList<FutsalVenueModel> favoriteVenuesList = <FutsalVenueModel>[].obs;
-  RxBool isLoadingFavs = false.obs;
+  RxBool                   isLoadingFavs      = false.obs;
 
   // --- Bookings ---
   List myMatches = [];
   dynamic venueDetail;
+
+  // see all futsal paginations
+  var   page          = 0;
+  final int pageSize  = 30;
+  var   hasMoreVenues = true;
+  var   isLoadingMore = false.obs;
 
   Future<void> loadNearbyVenues({
     String searchQuery = '',
@@ -99,14 +105,27 @@ class PlayerController extends GetxController {
   }
 
   Future<void> loadAllVenues({
+    bool isMore = false,
     String searchQuery = '',
     List<String> selectedAmenities = const [],
   }) async {
     try {
-      isLoadingAllVenues(true);
+      if (isMore) {
+        if (isLoadingMore.value || !hasMoreVenues) return;
+        isLoadingMore.value = true;
+      } else {
+        page = 0;
+        hasMoreVenues = true;
+        isLoadingAllVenues(true);
+      }
+
+      final from = page * pageSize;
+      final to = from + pageSize - 1;
+
+      // 1. Start with the table and apply filters FIRST
       var query = supabase
           .from('futsal_venues')
-          .select()
+          .select() // Moving select down, or filtering before transform
           .eq('is_deleted', false);
 
       if (searchQuery.isNotEmpty) {
@@ -117,16 +136,36 @@ class PlayerController extends GetxController {
         query = query.overlaps('amenities', selectedAmenities);
       }
 
-      final response = await query;
-      allVenues.value = (response as List)
+      // 2. Apply range() and execute query at the very end
+      final response = await query.range(from, to);
+      
+      final List newVenues = response as List;
+
+      if (newVenues.length < pageSize) {
+        hasMoreVenues = false;
+      }
+
+      final mappedVenues = newVenues
           .map((item) => FutsalVenueModel.fromJson(item as Map<String, dynamic>))
           .toList();
-      isLoadingAllVenues(false);
+
+      if (isMore) {
+        allVenues.addAll(mappedVenues);
+      } else {
+        allVenues.value = mappedVenues;
+      }
+
+      if (newVenues.isNotEmpty) {
+        page++;
+      }
+
       logSuccess();
     } catch (e) {
-      isLoadingAllVenues(false);
-      logError();
       log('Error fetching all venues: $e');
+      logError();
+    } finally {
+      isLoadingAllVenues(false);
+      isLoadingMore.value = false;
     }
   }
 
