@@ -48,6 +48,7 @@ class CustomMapScreen extends StatefulWidget {
   final MapSearchMode searchMode; // Search mode flag
   final Function(LatLng selectedLocation)? onLocationSelected;
   final List<MapVenueItem> venues; // Multiple venues list
+  final Future<List<MapVenueItem>> Function(String query)? onSearchVenues;
   final bool returnAddressOnLocation;
 
   const CustomMapScreen({
@@ -62,6 +63,7 @@ class CustomMapScreen extends StatefulWidget {
     this.searchMode = MapSearchMode.placeOnly, // Default to normal map search
     this.onLocationSelected,
     this.venues = const [],
+    this.onSearchVenues,
     this.returnAddressOnLocation = false
   });
 
@@ -80,6 +82,11 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
   bool isLoadingLocation = false;
   bool isLoadingSearch = false;
 
+  // Search suggestion dropdown state
+  Timer? _suggestionDebounce;
+  List<Map<String, dynamic>> searchSuggestions = [];
+  bool showSuggestions = false;
+
   // For route
   List<LatLng> routePoints = [];
   bool isLoadingRoute = false;
@@ -97,7 +104,8 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
 
   @override
   void dispose() {
-    positionStream?.cancel(); 
+    positionStream?.cancel();
+    _suggestionDebounce?.cancel();
     searchController.dispose(); 
     super.dispose();
   }
@@ -186,45 +194,86 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
     }
   }
 
-  Future<void> searchPlace(String query) async {
-    if (query.trim().isEmpty) return;
+  void _onSearchChanged(String value) {
+    _suggestionDebounce?.cancel();
+
+    if (value.trim().isEmpty) {
+      setState(() {
+        searchSuggestions.clear();
+        showSuggestions = false;
+      });
+      return;
+    }
+
+    _suggestionDebounce = Timer(const Duration(milliseconds: 400), _loadSuggestions);
+  }
+
+  void _openSuggestions() {
+    _suggestionDebounce?.cancel();
+    _loadSuggestions();
+  }
+
+  Future<void> _loadSuggestions() async {
+    final rawQuery = searchController.text.trim();
+    final query = rawQuery.toLowerCase();
+
+    if (query.isEmpty) {
+      setState(() {
+        searchSuggestions.clear();
+        showSuggestions = false;
+        isLoadingSearch = false;
+      });
+      return;
+    }
 
     setState(() => isLoadingSearch = true);
-    FocusScope.of(context).unfocus();
 
-    try {
-      String trimmedQuery = query.trim().toLowerCase();
-      bool foundMatch = false;
+    List<Map<String, dynamic>> suggestions = [];
 
-      // 1. Search locally by futsal name if mode is futsalOnly or both
-      if (widget.searchMode == MapSearchMode.futsalOnly || widget.searchMode == MapSearchMode.both) {
-        final matchedVenue = widget.venues.firstWhereOrNull(
-          (venue) => venue.name.toLowerCase().contains(trimmedQuery),
-        );
-
-        if (matchedVenue != null) {
-          final newLocation = LatLng(matchedVenue.lat, matchedVenue.lng);
-          setState(() {
-            selectedLocation = newLocation;
-            activePopupVenue = matchedVenue; // Open preview card automatically
-            routePoints.clear();
-          });
-
-          mapController.move(newLocation, 16.0);
-          foundMatch = true;
+    // 1. Local futsal venue matches
+    if (widget.searchMode == MapSearchMode.futsalOnly || widget.searchMode == MapSearchMode.both) {
+      // Use server-side search (loadAllVenues) when the host screen provides a callback
+      if (widget.onSearchVenues != null) {
+        try {
+          final matches = await widget.onSearchVenues!(rawQuery);
+          suggestions.addAll(matches.map((v) => {
+            'type': 'venue',
+            'title': v.name,
+            'subtitle': v.address,
+            'venue': v,
+            'lat': v.lat,
+            'lng': v.lng,
+          }));
+        } catch (_) {
+          // Ignore server-side search errors silently, fall back to local list below
+          final matches = widget.venues.where((v) => v.name.toLowerCase().contains(query)).toList();
+          suggestions.addAll(matches.map((v) => {
+            'type': 'venue',
+            'title': v.name,
+            'subtitle': v.address,
+            'venue': v,
+            'lat': v.lat,
+            'lng': v.lng,
+          }));
         }
+      } else {
+        final matches = widget.venues.where((v) => v.name.toLowerCase().contains(query)).toList();
+        suggestions.addAll(matches.map((v) => {
+          'type': 'venue',
+          'title': v.name,
+          'subtitle': v.address,
+          'venue': v,
+          'lat': v.lat,
+          'lng': v.lng,
+        }));
       }
+    }
 
-      // If local match found and mode is strictly futsalOnly, stop here
-      if (foundMatch && widget.searchMode == MapSearchMode.futsalOnly) {
-        setState(() => isLoadingSearch = false);
-        return;
-      }
-
-      // 2. Search online via Nominatim if no local match found, or if mode is placeOnly / both
-      if (!foundMatch && (widget.searchMode == MapSearchMode.placeOnly || widget.searchMode == MapSearchMode.both)) {
+    // 2. Online place matches via Nominatim
+    if (widget.searchMode == MapSearchMode.placeOnly || widget.searchMode == MapSearchMode.both) {
+      try {
         final url = Uri.parse(
-            'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=1');
+            'https://nominatim.openstreetmap.org/search?q=${Uri.encodeQueryComponent(rawQuery)}&format=json&limit=5');
 
         final response = await http.get(url, headers: {
           'User-Agent': 'com.trend74x.futsaldai',
@@ -232,37 +281,55 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
 
         if (response.statusCode == 200) {
           final List data = jsonDecode(response.body);
-
-          if (data.isNotEmpty) {
-            final double lat = double.parse(data[0]['lat']);
-            final double lon = double.parse(data[0]['lon']);
-            final newLocation = LatLng(lat, lon);
-
-            setState(() {
-              selectedLocation = newLocation;
-              routePoints.clear(); 
-              activePopupVenue = null; 
+          for (final item in data) {
+            suggestions.add({
+              'type': 'place',
+              'title': item['display_name']?.toString() ?? 'Unknown location',
+              'subtitle': '',
+              'venue': null,
+              'lat': double.parse(item['lat'].toString()),
+              'lng': double.parse(item['lon'].toString()),
             });
-
-            mapController.move(newLocation, 15.0);
-
-            if (widget.onLocationSelected != null) {
-              widget.onLocationSelected!(newLocation);
-            }
-          } else {
-            _showSnackBar('Location not found. Try a different name.');
           }
-        } else {
-          _showSnackBar('Failed to search location.');
         }
-      } else if (!foundMatch && widget.searchMode == MapSearchMode.futsalOnly) {
-        _showSnackBar('Futsal venue not found.');
+      } catch (_) {
+        // Ignore online suggestion errors silently
       }
+    }
 
-    } catch (e) {
-      _showSnackBar('Error: $e');
-    } finally {
-      setState(() => isLoadingSearch = false);
+    if (!mounted) return;
+
+    setState(() {
+      searchSuggestions = suggestions;
+      showSuggestions = suggestions.isNotEmpty;
+      isLoadingSearch = false;
+    });
+  }
+
+  void _onSuggestionSelected(Map<String, dynamic> suggestion) {
+    FocusScope.of(context).unfocus();
+    _suggestionDebounce?.cancel();
+
+    final venue = suggestion['venue'] as MapVenueItem?;
+    final newLocation = LatLng(
+      suggestion['lat'] as double,
+      suggestion['lng'] as double,
+    );
+
+    // Show result at the bottom and follow the regular flow only on selection
+    setState(() {
+      selectedLocation = newLocation;
+      routePoints.clear();
+      activePopupVenue = venue; // venue → preview card at bottom, place → null
+      searchSuggestions.clear();
+      showSuggestions = false;
+    });
+
+    mapController.move(newLocation, 16.0);
+
+    // For place selections (selection mode), report the picked location
+    if (venue == null && widget.onLocationSelected != null) {
+      widget.onLocationSelected!(newLocation);
     }
   }
 
@@ -374,6 +441,7 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                     selectedLocation = point; 
                     routePoints.clear();
                     activePopupVenue = null;      
+                    showSuggestions = false;
                   });
       
                   if (widget.onLocationSelected != null) {
@@ -411,6 +479,7 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
                           setState(() {
                             activePopupVenue = venue;
                             selectedLocation = LatLng(venue.lat, venue.lng);
+                            showSuggestions = false;
                           });
                           mapController.move(LatLng(venue.lat, venue.lng), mapController.camera.zoom);
                         },
@@ -491,34 +560,110 @@ class _CustomMapScreenState extends State<CustomMapScreen> {
               top: widget.isFullScreenView ? 60.h : 16.h,
               left: widget.isFullScreenView ? 70.w : 16.w,
               right: 20.w,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8.r),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black12, blurRadius: 6, spreadRadius: 1),
-                  ],
-                ),
-                child: CustomTextFormField(
-                  controller: searchController,
-                  headingText: '',
-                  textInputAction: TextInputAction.search,
-                  hintText: widget.searchMode == MapSearchMode.futsalOnly 
-                      ? 'Search Futsal Name...' 
-                      : widget.searchMode == MapSearchMode.both 
-                          ? 'Search Futsal or Place...' 
-                          : 'Search Location...',
-                  onFieldSubmitted: searchPlace,
-                  suffixIcon: isLoadingSearch
-                    ? Transform.scale(
-                      scale: 0.5,
-                      child: const CircularProgressIndicator(strokeWidth: 3),
-                    )
-                    : IconButton(
-                      icon: const Icon(Icons.search, color: primaryColor),
-                      onPressed: () => searchPlace(searchController.text),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8.r),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black12, blurRadius: 6, spreadRadius: 1),
+                      ],
                     ),
-                ),
+                    child: CustomTextFormField(
+                      controller: searchController,
+                      headingText: '',
+                      textInputAction: TextInputAction.search,
+                      hintText: widget.searchMode == MapSearchMode.futsalOnly 
+                          ? 'Search Futsal Name...' 
+                          : widget.searchMode == MapSearchMode.both 
+                              ? 'Search Futsal or Place...' 
+                              : 'Search Location...',
+                      onChanged: _onSearchChanged,
+                      onFieldSubmitted: (_) => _openSuggestions(),
+                      suffixIcon: isLoadingSearch
+                        ? Transform.scale(
+                          scale: 0.5,
+                          child: const CircularProgressIndicator(strokeWidth: 3),
+                        )
+                        : IconButton(
+                          icon: const Icon(Icons.search, color: primaryColor),
+                          onPressed: _openSuggestions,
+                        ),
+                    ),
+                  ),
+                  // --- Suggested results dropdown below the search field ---
+                  if (showSuggestions)
+                    Container(
+                      margin: EdgeInsets.only(top: 6.h),
+                      constraints: BoxConstraints(maxHeight: 280.h),
+                      decoration: BoxDecoration(
+                        color: containerBgColor,
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: primaryColor.withValues(alpha: 0.3)),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 8, spreadRadius: 1),
+                        ],
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: searchSuggestions.length,
+                        separatorBuilder: (_, i) => Divider(
+                          height: 1,
+                          color: subtitleTextColor.withValues(alpha: 0.2),
+                        ),
+                        itemBuilder: (context, index) {
+                          final Map<String, dynamic> suggestion = searchSuggestions[index];
+                          final bool isVenue = suggestion['type'] == 'venue';
+                          return InkWell(
+                            onTap: () => _onSuggestionSelected(suggestion),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isVenue ? Icons.sports_soccer : Icons.place_outlined,
+                                    color: primaryColor,
+                                    size: 18.sp,
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          suggestion['title']?.toString() ?? '',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if ((suggestion['subtitle']?.toString() ?? '').isNotEmpty)
+                                          Text(
+                                            suggestion['subtitle'].toString(),
+                                            style: TextStyle(
+                                              color: subtitleTextColor,
+                                              fontSize: 12.sp,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
             ),
       

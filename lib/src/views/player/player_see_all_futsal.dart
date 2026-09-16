@@ -170,6 +170,20 @@ class _PlayerSeeAllFutsalState extends State<PlayerSeeAllFutsal> {
                 lng: venue.longitude,
                 originalData: venue, // Passes your full model straight to FutsalDetail
               )).toList(),
+              onSearchVenues: (query) async {
+                await _con.loadAllVenues(
+                  searchQuery: query,
+                  selectedAmenities: getSelectedAmenities(),
+                );
+                return _con.allVenues.map((venue) => MapVenueItem(
+                  id: venue.id,
+                  name: venue.name,
+                  address: venue.address,
+                  lat: venue.latitude,
+                  lng: venue.longitude,
+                  originalData: venue,
+                )).toList();
+              },
             ));
           },
           child: Container(
