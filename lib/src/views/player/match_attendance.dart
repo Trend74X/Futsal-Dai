@@ -167,10 +167,12 @@ class _MatchAttendanceState extends State<MatchAttendance> {
     final userStatus = currentUserId != null ? controller.matchAttendanceMap[currentUserId] : null;
     final hasChosen = userStatus == 'IN' || userStatus == 'OUT';
 
-    // If user has already made a choice, hide the widget completely
-    if (hasChosen) {
-      return const SizedBox.shrink();
-    }
+    // Show a different prompt so the user knows they can change their vote
+    final String title = !hasChosen
+        ? 'Are you showing up for this game?'
+        : userStatus == 'IN'
+            ? "You're marked IN. Change your answer?"
+            : "You're marked OUT. Change your answer?";
 
     return Container(
       width: .infinity,
@@ -184,7 +186,7 @@ class _MatchAttendanceState extends State<MatchAttendance> {
         crossAxisAlignment: .start,
         children: [
           Text(
-            'Are you showing up for this game?',
+            title,
             style: regularStyle(whiteTextColor, 16.sp),
           ),
           SizedBox(height: 12.h),
