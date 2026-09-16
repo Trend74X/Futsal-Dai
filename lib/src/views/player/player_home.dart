@@ -5,6 +5,7 @@ import 'package:futsal_dai/src/helper/constant.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/player/futsal_detail.dart';
 import 'package:futsal_dai/src/views/player/player_local_list.dart';
+import 'package:futsal_dai/src/views/player/player_see_all_futsal.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
@@ -215,12 +216,15 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
               ),
             ),
             Spacer(),
-            Text(
-              'SEE ALL',
-              style: TextStyle(
-                color: primaryTextColor,
-                fontSize: 12.sp,
-                fontWeight: .bold
+            InkWell(
+              onTap: () => Get.to(() => PlayerSeeAllFutsal()),
+              child: Text(
+                'SEE ALL',
+                style: TextStyle(
+                  color: primaryTextColor,
+                  fontSize: 12.sp,
+                  fontWeight: .bold
+                ),
               ),
             )
           ],

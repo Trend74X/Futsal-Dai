@@ -1,10 +1,12 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:futsal_dai/src/controller/auth_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/model/booking_model.dart';
 import 'package:futsal_dai/src/model/futsal_venue_model.dart';
+import 'package:futsal_dai/src/model/user_model.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -17,6 +19,9 @@ class PlayerController extends GetxController {
   
   RxBool isLoadingNearByData = false.obs;
   RxList nearbyVenues = [].obs;
+
+  RxList allVenues = [].obs; 
+  RxBool isLoadingAllVenues = false.obs;
 
   // --- VENUE DETAILS VARIABLES ---
   RxBool isLoadingDetails = false.obs;
@@ -46,11 +51,20 @@ class PlayerController extends GetxController {
   }) async {
     try {
       isLoadingNearByData(true);
+
+      // Use the logged-in user's profile coordinates if available
+      final String cachedUserId = read('userId');
+      final UserModel? profile = Get.find<AuthController>().profile ??
+          (cachedUserId.isNotEmpty ? await _fetchProfile(cachedUserId) : null);
+
+      final double userLat = profile?.latitude ?? 27.6712;   // e.g. 27.6712
+      final double userLng = profile?.longitude ?? 85.3214;  // e.g. 85.3214
+
       final response = await supabase.rpc(
         'get_nearby_venues',
         params: {
-          'user_lat': 27.6712,     // e.g. 27.6712
-          'user_long': 85.3214,    // e.g. 85.3214
+          'user_lat': userLat,
+          'user_long': userLng,
           'max_km': maxKm,          // Distance limit in kilometers
           'limit_count': limit,
           'search_text': searchQuery, 
@@ -67,6 +81,52 @@ class PlayerController extends GetxController {
       isLoadingNearByData(false);
       logError();
       log('Error fetching nearby venues: $e');
+    }
+  }
+
+  // --- SEARCH ALL LOCATIONS (no distance limit) ---
+  Future<UserModel?> _fetchProfile(String userId) async {
+    try {
+      final data = await supabase.from('users').select().eq('id', userId).maybeSingle();
+      if (data == null) return null;
+      final profile = UserModel.fromJson(data);
+      Get.find<AuthController>().profile = profile;
+      return profile;
+    } catch (e) {
+      logError();
+      return null;
+    }
+  }
+
+  Future<void> loadAllVenues({
+    String searchQuery = '',
+    List<String> selectedAmenities = const [],
+  }) async {
+    try {
+      isLoadingAllVenues(true);
+      var query = supabase
+          .from('futsal_venues')
+          .select()
+          .eq('is_deleted', false);
+
+      if (searchQuery.isNotEmpty) {
+        query = query.ilike('name', '%$searchQuery%');
+      }
+
+      if (selectedAmenities.isNotEmpty) {
+        query = query.overlaps('amenities', selectedAmenities);
+      }
+
+      final response = await query;
+      allVenues.value = (response as List)
+          .map((item) => FutsalVenueModel.fromJson(item as Map<String, dynamic>))
+          .toList();
+      isLoadingAllVenues(false);
+      logSuccess();
+    } catch (e) {
+      isLoadingAllVenues(false);
+      logError();
+      log('Error fetching all venues: $e');
     }
   }
 

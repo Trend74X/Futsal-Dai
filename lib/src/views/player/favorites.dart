@@ -133,7 +133,7 @@ class _FavoritePageState extends State<FavoritePage> {
                   ),
                   child: Image.asset(
                     'assets/images/court.png', 
-                    height: 192.h,
+                    height: 164.h,
                     width: double.infinity,
                     fit: .cover,
                   ),
@@ -162,22 +162,13 @@ class _FavoritePageState extends State<FavoritePage> {
                       Expanded(
                         child: Text(
                           data.name,
-                          style: boldStyle(whiteTextColor, 28.sp).copyWith(height: 1.0),
+                          style: boldStyle(whiteTextColor, 24.sp).copyWith(height: 1.0),
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: .start,
-                        children: [
-                          Text(
-                            "Rs. ${data.basePrice.toInt()}",
-                            style: boldStyle(primaryTextColor, 14.sp).copyWith(height: 1.0),
-                          ),
-                          Text(
-                            '/ hour',
-                            style: boldStyle(subtitleTextColor, 14.sp).copyWith(height: 1.0),
-                          ),
-                        ],
-                      )
+                      // Text(
+                      //   "Rs. ${data.basePrice.toInt()}",
+                      //   style: boldStyle(primaryTextColor, 14.sp).copyWith(height: 1.0),
+                      // )
                     ],
                   ),
                   SizedBox(height: 8.h),
