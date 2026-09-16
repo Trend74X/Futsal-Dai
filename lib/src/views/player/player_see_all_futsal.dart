@@ -65,7 +65,7 @@ class _PlayerSeeAllFutsalState extends State<PlayerSeeAllFutsal> {
               padding: EdgeInsets.symmetric(horizontal: 16.sp, vertical: 8.h),
               child: SingleChildScrollView(
                 controller: _scrollController, // Attach controller here
-                child: Obx(() => _con.isLoadingAllVenues.isTrue && _con.allVenues.isEmpty
+                child: Obx(() => _con.isLoadingAllVenues.isTrue
                     ? SizedBox(
                         height: Get.height * 0.6,
                         child: Center(

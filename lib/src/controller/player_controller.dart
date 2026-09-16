@@ -133,7 +133,7 @@ class PlayerController extends GetxController {
       }
 
       if (selectedAmenities.isNotEmpty) {
-        query = query.overlaps('amenities', selectedAmenities);
+        query = query.contains('amenities', selectedAmenities);
       }
 
       // 2. Apply range() and execute query at the very end
