@@ -363,6 +363,13 @@ class OwnerController extends GetxController {
 
       pendingBookings.removeWhere((booking) => booking['id'] == bookingId);
 
+      // if(newStatus == 'booked') {
+      //   await supabase.rpc('add_participant_to_booking', params: {
+      //     'p_booking_id': bookingId,
+      //     'p_user_id': creatorUserId,
+      //   });
+      // }
+
       if (groundId != null && dateStr != null) {
         fetchGroundTimelineBookings(groundId: groundId, dateStr: dateStr);
       }

@@ -204,11 +204,11 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
           children: [
             historyTile(icon: Icons.person_outline, label: 'Profile', onTap: () => Get.to(() => EditProfile())),
             Divider(color: gray01),
-            historyTile(icon: Icons.diversity_3, label: 'Teams / Player Groups', onTap: () => Get.to(() => PlayerGroupList())),
+            historyTile(icon: Icons.diversity_3, label: 'Teams / Groups', onTap: () => Get.to(() => PlayerGroupList())),
             Divider(color: gray01),
-            historyTile(icon: Icons.star_border, label: 'Saved / Favorite Futsals', onTap: () => Get.to(() => FavoritePage())),
+            historyTile(icon: Icons.star_border, label: 'Favorite Futsals', onTap: () => Get.to(() => FavoritePage())),
             Divider(color: gray01),
-            historyTile(icon: Icons.history, label: 'Transaction & Payment History', onTap: () => Get.to(() => PlayerTransactions()) ),
+            historyTile(icon: Icons.history, label: 'Games History', onTap: () => Get.to(() => PlayerTransactions()) ),
             Divider(color: grayDark),
             historyTile(icon: Icons.question_mark, label: 'Support & Anti-Spam Guidelines', onTap: () => Get.to(() => RulesWebViewScreen()))
           ]

@@ -383,6 +383,18 @@ class GroupController extends GetxController {
         'p_user_id': userId,
         'p_status': status,
       });
+
+      if(status == 'IN') {
+        await supabase.rpc('add_participant_to_booking', params: {
+          'p_booking_id': bookingId,
+          'p_user_id': read('userId')
+        });
+      } else if(status == 'OUT') {
+        await supabase.rpc('remove_participant_from_booking', params: {
+          'p_booking_id': bookingId,
+          'p_user_id': read('userId')
+        });
+      }
       logSuccess();
       
     } catch (e) {
