@@ -5,6 +5,7 @@ import 'package:futsal_dai/src/controller/player_controller.dart';
 import 'package:futsal_dai/src/helper/share_url.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
+import 'package:futsal_dai/src/views/common/report_widget.dart';
 import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
@@ -128,6 +129,15 @@ class _FutsalDetailState extends State<FutsalDetail> {
                           )
                         ),
                       ),
+                      SizedBox(height: 12.h),
+                      iconButton(
+                        icon: Icons.flag_outlined, 
+                        onTap: () => showReportDialog(
+                          context, 
+                          targetType: 'venue',
+                          targetId: widget.data.id.toString()
+                        ),
+                      )
                     ],
                   ),
                 )
