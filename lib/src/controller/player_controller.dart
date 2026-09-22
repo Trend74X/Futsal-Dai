@@ -43,6 +43,10 @@ class PlayerController extends GetxController {
   List myMatches = [];
   dynamic venueDetail;
 
+  // match history
+  RxBool isgettingHistory = false.obs;
+  List matchHistory = [];
+
   // see all futsal paginations
   var   page          = 0;
   final int pageSize  = 30;
@@ -613,6 +617,81 @@ class PlayerController extends GetxController {
       showToast(message: 'Could not load matches.', isSuccess: false);
     } finally {
       isLoadingBookings.value = false;
+    }
+  }
+
+  // Future<void> getPlayerHistory() async {
+  Future<void> getPlayerHistory() async {
+    isgettingHistory(true); 
+    try {
+      // 1. Get all bookings where the user's ID is in the participant_ids array
+      final bookingsResponse = await supabase
+          .from('bookings')
+          .select('id, venue_name, booking_date, start_time, participant_ids, created_by',)
+          .contains('participant_ids', [read('userId')])
+          .order('booking_date', ascending: false)
+          .order('start_time', ascending: false);
+
+      if (bookingsResponse.isEmpty) {
+        matchHistory = [];
+        return;
+      }
+
+      // 2. Collect all unique user IDs across these bookings so we can fetch their details in one batch
+      Set<String> allUserIds = {};
+      for (var booking in bookingsResponse) {
+        List ids = booking['participant_ids'] ?? [];
+        for (var id in ids) {
+          allUserIds.add(id.toString());
+        }
+      }
+
+      // 3. Fetch user names and profile pictures in a single query
+      final usersResponse = await supabase
+          .from('users') // Change to 'profiles' if your table is named profiles
+          .select('id, full_name, profile_pic')
+          .inFilter('id', allUserIds.toList());
+
+      // Map user IDs to a map containing both name and profile_pic for fast lookup
+      Map<String, Map<String, dynamic>> userProfileMap = {};
+      for (var user in usersResponse) {
+        userProfileMap[user['id'].toString()] = {
+          'name'       : user['full_name']?.toString() ?? 'Unknown Player',
+          'profile_pic': user['profile_pic']?.toString() ?? '',
+        };
+      }
+
+      // 4. Combine the data so your UI can display Venue, Date, Participant Names, and Profile Pictures
+      var datas = bookingsResponse.map((booking) {
+        List ids = booking['participant_ids'] ?? [];
+        List participantsWithDetails = ids.map((id) {
+          String userId = id.toString();
+          var profile = userProfileMap[userId] ?? {};
+          
+          return {
+            'id'         : userId,
+            'name'       : profile['name'] ?? 'Player',
+            'profile_pic': profile['profile_pic'] ?? '',
+          };
+        }).toList();
+
+        return {
+          'venue_name'  : booking['venue_name'],
+          'booking_date': booking['booking_date'],
+          'start_time'  : booking['start_time'],
+          'created_by'  : booking['created_by'],
+          'participants': participantsWithDetails,
+        };
+      }).toList();
+
+      matchHistory = datas;
+      logSuccess();
+    } catch (e) {
+      logError();
+      log('Error fetching bookings list: $e');
+      showToast(message: 'Could not load match history.', isSuccess: false);
+    } finally {
+      isgettingHistory(false);
     }
   }
 

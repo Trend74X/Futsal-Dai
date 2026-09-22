@@ -7,7 +7,7 @@ import 'package:futsal_dai/src/views/common/edit_profile.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
 import 'package:futsal_dai/src/views/player/favorites.dart';
 import 'package:futsal_dai/src/views/player/player_group_list.dart';
-import 'package:futsal_dai/src/views/player/player_transactions.dart';
+import 'package:futsal_dai/src/views/player/player_match_history.dart';
 import 'package:futsal_dai/src/widgets/custom_alert_dialog.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:futsal_dai/src/widgets/display_image.dart';
@@ -208,7 +208,7 @@ class _PlayerProfilePageState extends State<PlayerProfilePage> {
             Divider(color: gray01),
             historyTile(icon: Icons.star_border, label: 'Favorite Futsals', onTap: () => Get.to(() => FavoritePage())),
             Divider(color: gray01),
-            historyTile(icon: Icons.history, label: 'Games History', onTap: () => Get.to(() => PlayerTransactions()) ),
+            historyTile(icon: Icons.history, label: 'Match History', onTap: () => Get.to(() => PlayerMatchHistory()) ),
             Divider(color: grayDark),
             historyTile(icon: Icons.question_mark, label: 'Support & Anti-Spam Guidelines', onTap: () => Get.to(() => RulesWebViewScreen()))
           ]
