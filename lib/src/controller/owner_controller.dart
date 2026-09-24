@@ -277,12 +277,11 @@ class OwnerController extends GetxController {
     }
   }
 
-  /// Uploads venue images to the 'profile_pic' bucket with timestamped,
+  /// Uploads venue images to the 'venue_pic' bucket with timestamped,
   /// cache-busting filenames, and returns their public URLs in the same order
-  /// the images were passed in. Venue files sit alongside profile images (no
+  /// the images were passed in. Venue files sit at the bucket root (no
   /// subfolder).
   Future<List<String>> uploadVenueImages(List<File> imageFiles) async {
-    // 1. Get the exact UUID directly from Supabase Auth
     final user = supabase.auth.currentUser;
     if (user == null) {
       log('Upload failed: User not authenticated');
@@ -291,15 +290,12 @@ class OwnerController extends GetxController {
     final String userId = user.id; 
     
     final List<String> urls = [];
-
-    // Index counter guarantees unique filenames within the same upload batch
-    // (timestampSuffix is minute-precision, so several images picked at once
-    // would otherwise share a filename and overwrite each other via upsert).
     int batchIndex = 0;
 
     for (final image in imageFiles) {
       try {
-        final filePath = '$userId/venue_${timestampSuffix()}_$batchIndex.webp';
+        // Fix: Added '$userId/' at the beginning to route the file into the user's secure folder
+        final filePath = '$userId/venue_${userId}_${timestampSuffix()}_$batchIndex.webp';
         batchIndex++;
 
         await supabase.storage.from('venue_pic').upload(
@@ -336,6 +332,28 @@ class OwnerController extends GetxController {
         logError();
         log('Failed to delete venue image: $e');
       }
+    }
+  }
+
+  /// Persists the updated gallery after a photo is deleted, so the stored URL
+  /// is removed from both gallery_image_urls and main_image_url.
+  Future<void> refreshVenueGalleryInDb({
+    required dynamic venueId,
+    required List<String> galleryUrls,
+  }) async {
+    try {
+      final String? mainImage = galleryUrls.isNotEmpty ? galleryUrls.first : null;
+      await supabase
+          .from('futsal_venues')
+          .update({
+            'main_image_url': mainImage,
+            'gallery_image_urls': galleryUrls,
+          })
+          .eq('id', venueId);
+      logSuccess();
+    } catch (e) {
+      logError();
+      log('Failed to update venue gallery in DB: $e');
     }
   }
 

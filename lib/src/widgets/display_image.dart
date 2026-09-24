@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:futsal_dai/src/widgets/custom_fullscreen_image.dart';
+import 'package:get/get.dart';
 import 'package:shimmer/shimmer.dart';
 
 class DisplayNetworkImage extends StatefulWidget {
@@ -12,7 +14,8 @@ class DisplayNetworkImage extends StatefulWidget {
     this.width, 
     this.boxFit,
     this.fromPage,
-    this.bigPlaceHolder
+    this.heroTag,
+    this.disableFullImgClick = false,
   });
       
   final String imageUrl;
@@ -20,13 +23,15 @@ class DisplayNetworkImage extends StatefulWidget {
   final double? width;
   final BoxFit? boxFit;
   final String? fromPage;
-  final bool? bigPlaceHolder;
+  final Object? heroTag;
+  final bool? disableFullImgClick;
 
   @override
   State<DisplayNetworkImage> createState() => _DisplayNetworkImageState();
 }
 
 class _DisplayNetworkImageState extends State<DisplayNetworkImage> {
+  String get _heroTag => widget.heroTag?.toString() ?? '${widget.imageUrl}_${identityHashCode(this)}';
 
   @override
   Widget build(BuildContext context) {
@@ -55,27 +60,42 @@ class _DisplayNetworkImageState extends State<DisplayNetworkImage> {
           )
         : widget.imageUrl.contains('assets/')
           ? placeHolder(widget.imageUrl)
-          : CachedNetworkImage(
-            fit: widget.boxFit ?? BoxFit.fitWidth,
-            width: widget.width,
-            height: widget.height,
-            placeholder: (context, url) => ClipRRect(
-              borderRadius: BorderRadius.circular(widget.fromPage == 'tutorial' ? 24.r : 5.r),
-              child: const CustomShimmer(),
+          : GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap:  widget.disableFullImgClick != null && widget.disableFullImgClick == true
+              ? null
+              : () => Get.to(() => 
+                ViewFullScreenImage(
+                  imageUrl: widget.imageUrl, 
+                  id: _heroTag,
+                ), 
+                transition: Transition.fade,
+                duration: const Duration(milliseconds: 300)
+              ),
+            child:  Hero(
+              tag: _heroTag,
+              transitionOnUserGestures: true, 
+              child: CachedNetworkImage(
+                fit: widget.boxFit ?? BoxFit.fitWidth,
+                width: widget.width,
+                height: widget.height,
+                placeholder: (context, url) => ClipRRect(
+                  borderRadius: BorderRadius.circular(5.r),
+                  child: const CustomShimmer(),
+                ),
+                imageUrl: widget.imageUrl,
+                errorWidget: (context, url,_) => placeHolder(),
+              ),
             ),
-            imageUrl: widget.imageUrl,
-            errorWidget: (context, url,_) => placeHolder(),
           );
   }
 
   Image placeHolder([String? imgUrl]) {
     return Image.asset(
-      imgUrl ?? (widget.bigPlaceHolder != null && widget.bigPlaceHolder == true
-          ? "assets/images/default.png"
-          : "assets/icons/ball.png"),
+      imgUrl ?? "assets/icons/ball.png",
       width: widget.width,
       height: widget.height,
-      fit: widget.bigPlaceHolder != null && widget.bigPlaceHolder == true ? BoxFit.contain : BoxFit.cover,
+      fit: .contain,
     );
   }
 

@@ -22,6 +22,12 @@ class FutsalVenueModel {
   final String? peakStartTime;
   final String? peakEndTime;
   final double? peakRate;
+  
+  // New fields added from the response
+  final List<String> closedDates;
+  final String status;
+  final DateTime? expiresAt;
+  
   final double distanceKm;
 
   FutsalVenueModel({
@@ -48,6 +54,9 @@ class FutsalVenueModel {
     this.peakStartTime,
     this.peakEndTime,
     this.peakRate,
+    required this.closedDates,
+    required this.status,
+    this.expiresAt,
     required this.distanceKm,
   });
 
@@ -76,6 +85,12 @@ class FutsalVenueModel {
       peakStartTime: json['peak_start_time']?.toString(),
       peakEndTime: json['peak_end_time']?.toString(),
       peakRate: json['peak_rate'] != null ? (json['peak_rate'] as num).toDouble() : null,
+      
+      // Parsing new fields
+      closedDates: _parseArray(json['closed_dates']),
+      status: json['status']?.toString() ?? 'pending',
+      expiresAt: json['expires_at'] != null ? DateTime.tryParse(json['expires_at'].toString()) : null,
+      
       distanceKm: (json['distance_km'] as num?)?.toDouble() ?? 0.0,
     );
   }
@@ -105,6 +120,12 @@ class FutsalVenueModel {
       'peak_start_time': peakStartTime,
       'peak_end_time': peakEndTime,
       'peak_rate': peakRate,
+      
+      // Serializing new fields
+      'closed_dates': closedDates,
+      'status': status,
+      'expires_at': expiresAt?.toIso8601String(),
+      
       'distance_km': distanceKm,
     };
   }
@@ -115,7 +136,6 @@ class FutsalVenueModel {
       return value.map((e) => e.toString()).toList();
     }
     if (value is String) {
-      // Handles Postgres array formatted string like '{Parking,Showers,"Night Light"}'
       String cleanStr = value.replaceAll('{', '').replaceAll('}', '').replaceAll('"', '');
       if (cleanStr.trim().isEmpty) return [];
       return cleanStr.split(',').map((e) => e.trim()).toList();

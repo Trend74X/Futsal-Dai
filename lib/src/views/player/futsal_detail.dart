@@ -7,7 +7,9 @@ import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
 import 'package:futsal_dai/src/views/common/report_widget.dart';
 import 'package:futsal_dai/src/views/player/player_booking_confirmation.dart';
+import 'package:futsal_dai/src/widgets/custom_image_slider.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
@@ -65,10 +67,15 @@ class _FutsalDetailState extends State<FutsalDetail> {
                         topRight: .circular(24.r),
                       )
                     ),
-                    child: Image.asset(
-                      'assets/images/court.png',
-                      fit: .cover,
-                    ),
+                    child: widget.data.galleryImageUrls.isEmpty || widget.data.galleryImageUrls.length == 1 
+                      ? DisplayNetworkImage(
+                        imageUrl: widget.data.galleryImageUrls.isEmpty ? widget.data.mainImageUrl ?? 'assets/images/court.png' : widget.data.galleryImageUrls[0],
+                        boxFit: .fitHeight,
+                      )
+                      : ImageSlider(
+                        imagePath: widget.data.galleryImageUrls,
+                        height: 360.h,
+                      )
                   ),
                 ),
                 SafeArea(

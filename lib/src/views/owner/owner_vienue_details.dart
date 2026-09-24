@@ -201,7 +201,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         ),
         SizedBox(height: 4.h),
         Text(
-          'Add up to 5 photos. These will be shown in a slider on your venue page.',
+          'Add up to 5 photos. For the best slider experience, landscape images are preferred.',
           style: regularStyle(subtitleTextColor, 12.sp),
         ),
         SizedBox(height: 12.h),
@@ -330,6 +330,15 @@ Future<void> _deleteVenueImage(int index) async {
 
   // Delete only this selected image from storage, triggered by the user click
   await ownCon.deleteVenueImages([url]);
+
+  // Remove the URL from the DB record too (gallery + main image) so no
+  // stale reference is left behind
+  if (currentVenueId != null) {
+    await ownCon.refreshVenueGalleryInDb(
+      venueId: currentVenueId,
+      galleryUrls: List.of(galleryImageUrls),
+    );
+  }
 }
 
 Future<void> _showVenueImagePicker() async {

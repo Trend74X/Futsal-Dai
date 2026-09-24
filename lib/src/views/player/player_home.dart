@@ -9,6 +9,7 @@ import 'package:futsal_dai/src/views/player/player_see_all_futsal.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
+import 'package:futsal_dai/src/widgets/display_image.dart';
 import 'package:get/get.dart';
 
 class PlayerHomePage extends StatefulWidget {
@@ -271,13 +272,20 @@ class _PlayerHomePageState extends State<PlayerHomePage> {
                             height: 176.h,
                             width: 280.w,
                             decoration: BoxDecoration(
-                              color: primaryTextColor,
-                              borderRadius: .circular(12.r)
+                              borderRadius: .circular(12.r),
+                              border: Border.all(
+                                color: Color(0xFF3C4B35),
+                                width: 1.w
+                              )
                             ),
-                            child: Image.asset(
-                              'assets/images/court.png',
-                              fit: .cover,
-                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12.r),
+                              child: DisplayNetworkImage(
+                                imageUrl: data.mainImageUrl ?? 'assets/images/court.png',
+                                boxFit: .cover,
+                                disableFullImgClick: true,
+                              ),
+                            )
                           ),
                           SizedBox(height: 8.h),
                           Text(
