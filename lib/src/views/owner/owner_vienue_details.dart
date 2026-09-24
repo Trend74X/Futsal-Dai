@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/owner_controller.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/image_helper.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/model/amenities_model.dart';
@@ -13,7 +14,9 @@ import 'package:futsal_dai/src/model/pitch_model.dart';
 import 'package:futsal_dai/src/widgets/custom_appbar_widget.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 
 class OwnerVenueDetails extends StatefulWidget {
@@ -43,8 +46,9 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   double venueLong = 0.0;
 
   // Venue photos (slider gallery, up to 5)
-  List<File> selectedVenueImages = [];
-  List<String> venueGalleryImageUrls = [];
+  final ImagePicker picker = ImagePicker();
+  List<String> galleryImageUrls = [];
+  bool isCompressingVenueImage = false;
 
   // Selected Amenities
   final Set<String> selectedAmenities = {'Parking', 'Changing'};
@@ -80,8 +84,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
 
         // Set existing gallery images
         final List<dynamic> galleryRes = venueRes['gallery_image_urls'] ?? [];
-        venueGalleryImageUrls = galleryRes.map((e) => e.toString()).toList();
-        selectedVenueImages.clear();
+        galleryImageUrls = galleryRes.map((e) => e.toString()).toList();
 
         // Set amenities
         final List<dynamic> savedAmenities = venueRes['amenities'] ?? [];
@@ -175,7 +178,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   }
 
   Widget venueImageWidget() {
-    final int totalImages = selectedVenueImages.length + venueGalleryImageUrls.length;
+    final int totalImages = galleryImageUrls.length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +219,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             // Add tile shown at the end while under the 5 image cap
             if (index == totalImages) {
               return InkWell(
-                onTap: pickVenueImage,
+                onTap: isCompressingVenueImage ? null : _showVenueImagePicker,
                 borderRadius: BorderRadius.circular(16.r),
                 child: Container(
                   decoration: BoxDecoration(
@@ -230,17 +233,26 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(10.r),
-                        decoration: BoxDecoration(
-                          color: primaryColor.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.add_a_photo, color: primaryColor, size: 22.sp),
-                      ),
+                      isCompressingVenueImage
+                          ? SizedBox(
+                              height: 24.h,
+                              width: 24.w,
+                              child: CircularProgressIndicator(
+                                color: primaryColor,
+                                strokeWidth: 2.5.w,
+                              ),
+                            )
+                          : Container(
+                              padding: EdgeInsets.all(10.r),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.add_a_photo, color: primaryColor, size: 22.sp),
+                            ),
                       SizedBox(height: 8.h),
                       Text(
-                        'Add Photo',
+                        isCompressingVenueImage ? 'Processing...' : 'Add Photo',
                         style: boldStyle(whiteTextColor, 13.sp),
                       ),
                     ],
@@ -249,10 +261,7 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
               );
             }
 
-            final bool isLocal = index < selectedVenueImages.length;
-            ImageProvider provider = isLocal
-                ? FileImage(selectedVenueImages[index])
-                : NetworkImage(venueGalleryImageUrls[index - selectedVenueImages.length]);
+            ImageProvider provider = NetworkImage(galleryImageUrls[index]);
 
             return Stack(
               fit: StackFit.expand,
@@ -270,14 +279,14 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                   top: 4.r,
                   right: 4.r,
                   child: GestureDetector(
-                    onTap: () => _removeVenueImage(index),
+                    onTap: () => _deleteVenueImage(index),
                     child: Container(
-                      padding: EdgeInsets.all(4.r),
+                      padding: EdgeInsets.all(5.r),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.close, color: Colors.white, size: 14.sp),
+                      child: Icon(Icons.delete_outline, color: Color(0xFFFFB4AB), size: 13.sp),
                     ),
                   ),
                 ),
@@ -289,19 +298,175 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
     );
   }
 
-  void _removeVenueImage(int index) {
-    setState(() {
-      if (index < selectedVenueImages.length) {
-        selectedVenueImages.removeAt(index);
-      } else {
-        venueGalleryImageUrls.removeAt(index - selectedVenueImages.length);
-      }
-    });
+Future<void> _deleteVenueImage(int index) async {
+  final String url = galleryImageUrls[index];
+
+  // Confirm before permanently deleting from storage
+  final bool? confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: const Color(0xFF0E171D),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+      title: Text('Delete photo?', style: boldStyle(primaryTextColor, 16.sp)),
+      content: Text(
+        'This will permanently remove the photo from storage.',
+        style: regularStyle(subtitleTextColor, 14.sp),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: Text('Cancel', style: regularStyle(subtitleTextColor, 14.sp)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text('Delete', style: boldStyle(const Color(0xFFFFB4AB), 14.sp)),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !mounted) return;
+
+  setState(() => galleryImageUrls.removeAt(index));
+
+  // Delete only this selected image from storage, triggered by the user click
+  await ownCon.deleteVenueImages([url]);
+}
+
+Future<void> _showVenueImagePicker() async {
+  final int remainingSlots = 5 - galleryImageUrls.length;
+  if (remainingSlots <= 0) {
+    showToast(message: 'Maximum 5 photos allowed', isSuccess: false);
+    return;
   }
 
-  void pickVenueImage() {
-    // image picking / uploading handled by the owner
+  await showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF0E171D),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Add Venue Photo',
+                style: boldStyle(primaryTextColor, 18.sp),
+              ),
+              SizedBox(height: 20.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  InkWell(
+                    onTap: () => _pickVenueImage(ImageSource.camera),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 28.r,
+                          backgroundColor: primaryColor.withValues(alpha: 0.15),
+                          child: Icon(Icons.camera_alt, color: primaryColor, size: 28.r),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text('Camera', style: regularStyle(subtitleTextColor, 14.sp)),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => _pickVenueImage(ImageSource.gallery),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 28.r,
+                          backgroundColor: primaryColor.withValues(alpha: 0.15),
+                          child: Icon(Icons.photo_library, color: primaryColor, size: 28.r),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text('Gallery', style: regularStyle(subtitleTextColor, 14.sp)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _pickVenueImage(ImageSource source) async {
+  Get.back(); // Close the bottom sheet
+
+  final int remainingSlots = 5 - galleryImageUrls.length;
+  if (remainingSlots <= 0) {
+    showToast(message: 'Maximum 5 photos allowed', isSuccess: false);
+    return;
   }
+
+  if (source == ImageSource.gallery) {
+    await _pickVenueMultipleImages(maxCount: remainingSlots);
+  } else {
+    await _pickVenueSingleImage();
+  }
+}
+
+Future<void> _pickVenueMultipleImages({required int maxCount}) async {
+  final List<XFile> pickedFiles = await picker.pickMultiImage(
+    imageQuality: 90,
+    limit: maxCount, // respects the 5-photo cap
+  );
+  if (pickedFiles.isEmpty) return;
+
+  await _processPickedVenueImages(pickedFiles);
+}
+
+Future<void> _pickVenueSingleImage() async {
+  final XFile? pickedFile = await picker.pickImage(
+    source: ImageSource.camera,
+    imageQuality: 90,
+  );
+  if (pickedFile == null) return;
+
+  await _processPickedVenueImages([pickedFile]);
+}
+
+Future<void> _processPickedVenueImages(List<XFile> pickedFiles) async {
+  // Re-check remaining capacity against the live list
+  final int remainingSlots = 5 - galleryImageUrls.length;
+  final List<XFile> filesToAdd = pickedFiles.take(remainingSlots).toList();
+  if (filesToAdd.isEmpty) {
+    showToast(message: 'Maximum 5 photos allowed', isSuccess: false);
+    return;
+  }
+
+  setState(() => isCompressingVenueImage = true);
+
+  final List<File> converted = [];
+  for (final file in filesToAdd) {
+    try {
+      converted.add(await compressToWebp(file.path, prefix: 'venue'));
+    } catch (e) {
+      log('Venue image WebP conversion failed, using original: $e');
+      converted.add(File(file.path));
+    }
+  }
+
+  if (!mounted) return;
+
+  // Upload immediately so the picked photo shows up in the gallery right away
+  final List<String> uploadedUrls = await ownCon.uploadVenueImages(converted);
+
+  if (!mounted) return;
+
+  setState(() {
+    galleryImageUrls.addAll(uploadedUrls);
+    isCompressingVenueImage = false;
+  });
+}
 
   Widget formWidget() {
     return Column(
@@ -714,6 +879,9 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             .map((item) => item.label)
             .toList();
 
+          // Gallery already uploaded when photos were picked; just persist it
+          final List<String> finalGallery = List.of(galleryImageUrls);
+
           var venueData = {
             "owner_id"    : read('userId'),
             "name"        : venueNameCon.text,
@@ -723,7 +891,9 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             'address': addressCon.text.trim(),
             'latitude': venueLat,
             'longitude': venueLong,
-            'amenities': selectedAmenityLabels
+            'amenities': selectedAmenityLabels,
+            'main_image_url': finalGallery.isNotEmpty ? finalGallery.first : null,
+            'gallery_image_urls': finalGallery,
           };
 
           List<Map<String, dynamic>> groundsList = pitches.map<Map<String, dynamic>>((pitch) {
@@ -738,9 +908,10 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             };
           }).toList();
 
+          bool saved = false;
           if (currentVenueId != null) {
             // --- UPDATE MODE ---
-            await ownCon.updateVenueAndPitches(
+            saved = await ownCon.updateVenueAndPitches(
               venueId: currentVenueId!,
               futsalVenues: venueData,
               futsalGround: groundsList,
@@ -748,10 +919,18 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
             );
           } else {
             // --- CREATE MODE ---
-            await ownCon.saveVenueAndPitches(
+            saved = await ownCon.saveVenueAndPitches(
               futsalVenues: venueData,
               futsalGround: groundsList,
             );
+          }
+
+          // Clean up storage for photos removed via the delete button
+          // (already handled immediately on click, so nothing to do here)
+
+          // Return to the previous page once saved successfully
+          if (saved && mounted) {
+            Get.back();
           }
         }
       },

@@ -1,5 +1,9 @@
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/image_helper.dart';
 import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:get/get.dart';
@@ -133,13 +137,14 @@ class OwnerController extends GetxController {
     }
   }
 
-  Future<void> saveVenueAndPitches({
+  Future<bool> saveVenueAndPitches({
     required Map<String, dynamic> futsalVenues, 
     required List<Map<String, dynamic>> futsalGround,
   }) async {
     final userId = read('userId');
     if(userId == null) {
       showToast(message: "User not authenticated", isSuccess: false);
+      return false;
     }
 
     try {
@@ -161,13 +166,15 @@ class OwnerController extends GetxController {
       await supabase.from('futsal_grounds').insert(groundsData);
       showToast(message: "Venue and pitches saved successfully!", isSuccess: true);
       logSuccess();
+      return true;
     } catch (e) {
       logError();
       showToast(message: "Failed to save data: $e", isSuccess: false);
+      return false;
     }
   }
 
-  Future<void> updateVenueAndPitches({
+  Future<bool> updateVenueAndPitches({
     required dynamic venueId,
     required Map<String, dynamic> futsalVenues,
     required List<Map<String, dynamic>> futsalGround,
@@ -177,7 +184,7 @@ class OwnerController extends GetxController {
 
     if (userId == null) {
       showToast(message: "User not authenticated", isSuccess: false);
-      return;
+      return false;
     }
 
     try {
@@ -223,12 +230,14 @@ class OwnerController extends GetxController {
       if (existingPitches.isNotEmpty) {
         await supabase.from('futsal_grounds').upsert(existingPitches);
       }
-
+      Get.back();
       showToast(message: "Venue and pitches updated successfully!", isSuccess: true);
       logSuccess();
+      return true;
     } catch (e) {
       logError();
       showToast(message: "Failed to update data: $e", isSuccess: false);
+      return false;
     }
   }
 
@@ -265,6 +274,68 @@ class OwnerController extends GetxController {
       return null;
     } finally {
       isLoadingData.value = false;
+    }
+  }
+
+  /// Uploads venue images to the 'profile_pic' bucket with timestamped,
+  /// cache-busting filenames, and returns their public URLs in the same order
+  /// the images were passed in. Venue files sit alongside profile images (no
+  /// subfolder).
+  Future<List<String>> uploadVenueImages(List<File> imageFiles) async {
+    // 1. Get the exact UUID directly from Supabase Auth
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      log('Upload failed: User not authenticated');
+      return [];
+    }
+    final String userId = user.id; 
+    
+    final List<String> urls = [];
+
+    // Index counter guarantees unique filenames within the same upload batch
+    // (timestampSuffix is minute-precision, so several images picked at once
+    // would otherwise share a filename and overwrite each other via upsert).
+    int batchIndex = 0;
+
+    for (final image in imageFiles) {
+      try {
+        final filePath = '$userId/venue_${timestampSuffix()}_$batchIndex.webp';
+        batchIndex++;
+
+        await supabase.storage.from('venue_pic').upload(
+              filePath,
+              image,
+              fileOptions: FileOptions(
+                contentType: contentTypeForImage(image),
+                cacheControl: '3600',
+                upsert: true,
+              ),
+            );
+        urls.add(supabase.storage.from('venue_pic').getPublicUrl(filePath));
+      } catch (e) {
+        logError();
+        log('Venue image upload failed: $e');
+        showToast(message: "Failed to upload venue photo: $e", isSuccess: false);
+      }
+    }
+    logSuccess();
+    return urls;
+  }
+
+  /// Deletes the given venue images from the 'venue_pic' bucket. Used to
+  /// clean up photos that were removed in the UI and old versions after an
+  /// update.
+  Future<void> deleteVenueImages(List<String> imageUrls) async {
+    for (final url in imageUrls) {
+      try {
+        final objectPath = storageObjectPathFromUrl(url, 'venue_pic');
+        if (objectPath == null) continue;
+        await supabase.storage.from('venue_pic').remove([objectPath]);
+        log('Deleted venue image: $objectPath');
+      } catch (e) {
+        logError();
+        log('Failed to delete venue image: $e');
+      }
     }
   }
 
