@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
+import 'package:futsal_dai/src/helper/cache_manager.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/views/common/edit_profile.dart';
 import 'package:futsal_dai/src/views/common/rules_web_view_screen.dart';
@@ -23,6 +24,15 @@ class PlayerProfilePage extends StatefulWidget {
 class _PlayerProfilePageState extends State<PlayerProfilePage> {
   final AuthController _authCon = Get.put(AuthController());
   final AppController _appCon = Get.put(AppController());
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _authCon.getUserById(read('userId'), needRoute: false);
+      setState(() { });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

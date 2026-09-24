@@ -1,14 +1,19 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
+import 'package:futsal_dai/src/helper/image_helper.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/views/auth/log_in.dart';
 import 'package:futsal_dai/src/widgets/custom_textfield.dart';
+import 'package:futsal_dai/src/widgets/custom_toast.dart';
 import 'package:futsal_dai/src/widgets/custom_usual_button.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -30,6 +35,11 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailCon    = TextEditingController();
   final passwordCon = TextEditingController();
 
+  // --- Profile Image Variables ---
+  final ImagePicker picker = ImagePicker();
+  File? selectedWebpImage;
+  bool isCompressingImage = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -48,6 +58,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   appbarWidget(),
                   SizedBox(height: 24.h),
                   titles(),
+                  SizedBox(height: 24.h),
+                  profileImageWidget(),
                   SizedBox(height: 24.h),
                   selectingRole(),
                   SizedBox(height: 24.h),
@@ -251,6 +263,171 @@ class _RegisterPageState extends State<RegisterPage> {
     ); 
   }
 
+  // --- Avatar Picker Widget ---
+  Widget profileImageWidget() {
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: isCompressingImage ? null : showImagePickerModal,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 100.r,
+                height: 100.r,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0E171D),
+                  border: Border.all(
+                    color: primaryColor,
+                    width: 2.w,
+                  ),
+                  image: selectedWebpImage != null
+                      ? DecorationImage(
+                          image: FileImage(selectedWebpImage!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: selectedWebpImage == null
+                    ? Icon(
+                        Icons.person,
+                        size: 50.r,
+                        color: subtitleTextColor,
+                      )
+                    : null,
+              ),
+              if (isCompressingImage)
+                SizedBox(
+                  width: 100.r,
+                  height: 100.r,
+                  child: CircularProgressIndicator(
+                    color: primaryColor,
+                    strokeWidth: 3.w,
+                  ),
+                ),
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: BoxDecoration(
+                    color: primaryColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    size: 16.r,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Text(
+          'Upload Profile Picture',
+          style: TextStyle(
+            fontSize: 12.sp,
+            color: subtitleTextColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> pickProfileImage(ImageSource source) async {
+    Get.back(); // Close modal bottom sheet
+
+    final XFile? pickedFile = await picker.pickImage(
+      source: source,
+      imageQuality: 90,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() => isCompressingImage = true);
+
+    File finalImage;
+    try {
+      finalImage = await compressToWebp(pickedFile.path);
+    } catch (e) {
+      showToast(message: 'Could not convert to WebP, using original image', isSuccess: false);
+      finalImage = File(pickedFile.path);
+    }
+
+    setState(() {
+      selectedWebpImage = finalImage;
+      isCompressingImage = false;
+    });
+  }
+
+  // --- Camera / Gallery Bottom Sheet ---
+  void showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0E171D),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Select Profile Picture',
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    InkWell(
+                      onTap: () => pickProfileImage(ImageSource.camera),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 28.r,
+                            backgroundColor: primaryColor.withValues(alpha: 0.15),
+                            child: Icon(Icons.camera_alt, color: primaryColor, size: 28.r),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text('Camera', style: TextStyle(color: subtitleTextColor, fontSize: 14.sp)),
+                        ],
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () => pickProfileImage(ImageSource.gallery),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 28.r,
+                            backgroundColor: primaryColor.withValues(alpha: 0.15),
+                            child: Icon(Icons.photo_library, color: primaryColor, size: 28.r),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text('Gallery', style: TextStyle(color: subtitleTextColor, fontSize: 14.sp)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   ClipRRect registerForm() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
@@ -382,6 +559,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     "password"    : passwordCon.text.trim(),
                     "username"    : userNameCon.text.trim(),
                     "role"        : selectedRole,
+                    "profile_pic" : selectedWebpImage,
                   };
                   bool isSignedUp = await authCon.signUp(data);
                   if(isSignedUp) Get.offAll(() => LogInPage());

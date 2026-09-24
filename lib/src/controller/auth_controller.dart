@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:futsal_dai/src/helper/cache_manager.dart';
+import 'package:futsal_dai/src/helper/image_helper.dart';
 import 'package:futsal_dai/src/helper/log_helper.dart';
 import 'package:futsal_dai/src/helper/notification_helper.dart';
 import 'package:futsal_dai/src/model/user_model.dart';
@@ -51,15 +52,16 @@ class AuthController extends GetxController {
   /// Helper method to upload WebP avatar to Supabase Storage
   Future<String?> uploadProfileImage(String userId, File imageFile) async {
     try {
-      // Unique file path per user inside the 'avatars' storage bucket
-      final String filePath = 'profile_$userId.webp';
+      // Unique file path per user & upload time, so the CDN/cache-buster
+      // returns a fresh URL every time the image is replaced
+      final String filePath = 'profile_${userId}_${_timestampSuffix()}.webp';
 
-      // Upload to bucket 'avatars'
+      // Upload to bucket 'profile_pic'
       await supabase.storage.from('profile_pic').upload(
         filePath,
         imageFile,
-        fileOptions: const FileOptions(
-          contentType: 'image/webp',
+        fileOptions: FileOptions(
+          contentType: contentTypeForImage(imageFile),
           cacheControl: '3600',
           upsert: true, // Overwrites if the file already exists
         ),
@@ -73,6 +75,62 @@ class AuthController extends GetxController {
       logError();
       log('Image Upload Failed: $e');
       return null; // Return null if upload fails so account creation still completes
+    }
+  }
+
+  /// Unique suffix used in storage filenames to bust CDN & app image caches
+  String _timestampSuffix() {
+    final now = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    final y = now.year.toString();
+    final mo = two(now.month);
+    final d = two(now.day);
+    final h = two(now.hour);
+    final mi = two(now.minute);
+    final s = two(now.second);
+    return '$y$mo$d$h$mi$s'; // e.g. 202609241054
+  }
+
+  /// Deletes the current profile picture object from storage so
+  Future<void> _deleteOldProfileImage(String userId, String oldUrl) async {
+    try {
+      if (oldUrl.isEmpty) return;
+
+      // Use Uri to safely parse the URL (ignores query params like ?t=123)
+      final Uri uri = Uri.parse(oldUrl);
+      final List<String> segments = uri.pathSegments;
+
+      // Find the bucket name in the path to isolate the file name
+      final int bucketIndex = segments.indexOf('profile_pic');
+      if (bucketIndex == -1 || bucketIndex == segments.length - 1) {
+        log('Delete skipped: Bucket name "profile_pic" not found in URL.');
+        return;
+      }
+
+      // Extract the exact file path and decode it (in case of %20 spaces)
+      final List<String> objectPathSegments = segments.sublist(bucketIndex + 1);
+      final String objectPath = Uri.decodeComponent(objectPathSegments.join('/'));
+
+      if (objectPath.isEmpty) return;
+
+      // Ensure it belongs to the user
+      if (!objectPath.startsWith('profile_$userId')) {
+        log('Delete skipped: File "$objectPath" does not match user ID "$userId".');
+        return;
+      }
+
+      // Execute deletion
+      final List<FileObject> deletedFiles = await supabase.storage.from('profile_pic').remove([objectPath]);
+      
+      if (deletedFiles.isEmpty) {
+        log('Warning: Delete requested, but Supabase returned an empty list. (Check RLS policies)');
+      } else {
+        log('updateUser: Successfully deleted old avatar $objectPath');
+      }
+
+    } catch (e) {
+      logError();
+      log('updateUser: Failed to delete old avatar: $e');
     }
   }
 
@@ -222,52 +280,39 @@ class AuthController extends GetxController {
       }
 
       String? avatarUrl;
+      // 1. Capture the old URL before doing anything else
+      final String? oldAvatarUrl = profile?.profilePic; 
 
-      // 1. Upload/Overwrite profile picture if selected
-      if (data['profile_pic'] != null && data['profile_pic'] is File) {
-        File imageFile = data['profile_pic'];
-        final filePath = 'profile_${user.id}.webp';
+      // 2. Upload/Overwrite profile picture if selected
+      final dynamic pic = data['profile_pic'];
+      if (pic != null && pic is File) {
+        File imageFile = pic;
+        final filePath = 'profile_${user.id}_${_timestampSuffix()}.webp';
 
-        // Upload using upsert to overwrite any old image
         await supabase.storage.from('profile_pic').upload(
           filePath,
           imageFile,
-          fileOptions: const FileOptions(
-            contentType: 'image/webp',
+          fileOptions: FileOptions(
+            contentType: contentTypeForImage(imageFile),
             cacheControl: '3600',
-            upsert: true, // Overwrites existing profile picture
+            upsert: true, 
           ),
         );
 
-        // Get updated Public URL
         avatarUrl = supabase.storage.from('profile_pic').getPublicUrl(filePath);
-      }
+      } 
 
-      // 2. Prepare payload for the database
+      // 3. Prepare payload for the database
       final Map<String, dynamic> updatePayload = {
         "full_name": data["full_name"],
         "phone_number": data["phone_number"],
       };
 
-      // Only add location coordinates if they are not null
-      if (data["longitude"] != null) {
-        updatePayload["longitude"] = data["longitude"];
-      }
-      if (data["latitude"] != null) {
-        updatePayload["latitude"] = data["latitude"];
-      }
-
-      // Only add address if they are not null
-      if (data["address"] != null) {
-        updatePayload["address"] = data["address"];
-      }
-
-      // Only add email if they are not null
-      if (data["email"] != null) {
-        updatePayload["email"] = data["email"];
-      }
-
-      // Only update avatar_url in DB if a new picture was uploaded
+      if (data["longitude"] != null) updatePayload["longitude"] = data["longitude"];
+      if (data["latitude"] != null) updatePayload["latitude"] = data["latitude"];
+      if (data["address"] != null) updatePayload["address"] = data["address"];
+      if (data["email"] != null) updatePayload["email"] = data["email"];
+      
       if (avatarUrl != null) {
         updatePayload["profile_pic"] = avatarUrl;
       }
@@ -275,7 +320,7 @@ class AuthController extends GetxController {
       String? fcm = await NotificationHelper.getFcmToken() ?? "FCM";
       updatePayload["fcm"] = fcm;
 
-      // 3. Perform update in 'Users' table matching the current user ID
+      // 4. Perform update in 'Users' table
       final response = await supabase
           .from('users')
           .update(updatePayload)
@@ -284,7 +329,13 @@ class AuthController extends GetxController {
 
       if (response.isNotEmpty) {
         log('User profile updated successfully.');
-        await getUserById(user.id);
+        
+        // 5. DB updated successfully. NOW it is safe to delete the old image.
+        if (avatarUrl != null && oldAvatarUrl != null && oldAvatarUrl != avatarUrl) {
+          await _deleteOldProfileImage(user.id, oldAvatarUrl);
+        }
+
+        await getUserById(user.id); // Fetch fresh data
         logSuccess();
         return true;
       }
@@ -298,15 +349,19 @@ class AuthController extends GetxController {
     }
   }
 
-  Future getUserById(String userId) async {
+  Future getUserById(String userId, {bool needRoute = true}) async {
     try {
       final data = await supabase.from('users').select().eq('id', userId).maybeSingle();
       if (data != null) {
         profile = UserModel.fromJson(data);
-        if(profile!.role == 'player') {
-          Get.offAll(() => PlayerBottomsheet());
-        } else {
-          getVenueId();
+        if(needRoute == true) {
+          if(profile!.role == 'player') {
+            Get.offAll(() => PlayerBottomsheet());
+          } else if(profile!.role == 'owner') {
+            getVenueId();
+          } else if(profile!.role == 'admin') {
+            Get.offAll(() => OwnerBottomsheet());();
+          }
         }
       }
       logSuccess();

@@ -352,96 +352,96 @@ class _PlayerMatchHistoryState extends State<PlayerMatchHistory> {
               SizedBox(height: 8.h),
               Flexible(
                 child: participants.isEmpty
-                    ? Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24.h),
-                        child: Center(
-                          child: Text(
-                            'No players recorded for this match',
-                            style: regularStyle(subtitleTextColor, 14.sp),
-                          ),
+                  ? Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24.h),
+                      child: Center(
+                        child: Text(
+                          'No players recorded for this match',
+                          style: regularStyle(subtitleTextColor, 14.sp),
                         ),
-                      )
-                    : ListView.separated(
-                        shrinkWrap: true,
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: participants.length,
-                        separatorBuilder: (context, index) => SizedBox(height: 6.h),
-                        itemBuilder: (context, index) {
-                          var     player = participants[index];
-                          String  name   = player['name'] ?? 'Player';
-                          String? picUrl = player['profile_pic'];
-                          String? userId = player['id'];
-
-                          return Container(
-                            padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 10.w),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.03),
-                              borderRadius: BorderRadius.circular(10.r),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: primaryColor.withValues(alpha: 0.4),
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  child: ClipOval(
-                                    child: (picUrl != null && picUrl.isNotEmpty)
-                                        ? DisplayNetworkImage(
-                                            imageUrl: picUrl,
-                                            boxFit: BoxFit.cover,
-                                            height: 38.h,
-                                            width: 38.w,
-                                          )
-                                        : Container(
-                                            height: 38.h,
-                                            width: 38.w,
-                                            color: Colors.white10,
-                                            child: Icon(
-                                              Icons.person,
-                                              size: 22.sp,
-                                              color: Colors.white54,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: Text(
-                                    name,
-                                    style: semiBoldStyle(whiteTextColor, 15.sp),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Spacer(),
-                                Container(
-                                  height: 40.h,
-                                  width: 40.w,
-                                  decoration: BoxDecoration(
-                                  color: black8.withValues(alpha: 0.5),
-                                    shape: .circle
-                                  ),
-                                  child: IconButton(
-                                    onPressed: () => showReportDialog(
-                                      context, 
-                                      targetType: 'player',
-                                      targetId: userId
-                                    ),
-                                    icon: Icon(
-                                      Icons.flag,
-                                      color: white,
-                                      size: 18.r,
-                                    )
-                                  ),
-                                )
-                              ],
-                            ),
-                          );
-                        },
                       ),
+                    )
+                  : ListView.separated(
+                    shrinkWrap: true,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: participants.length,
+                    separatorBuilder: (context, index) => SizedBox(height: 6.h),
+                    itemBuilder: (context, index) {
+                      var     player = participants[index];
+                      String  name   = player['name'] ?? 'Player';
+                      String? picUrl = player['profile_pic'];
+                      String? userId = player['id'];
+
+                      return Container(
+                        padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 10.w),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.03),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: primaryColor.withValues(alpha: 0.4),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: (picUrl != null && picUrl.isNotEmpty)
+                                  ? DisplayNetworkImage(
+                                    imageUrl: picUrl,
+                                    boxFit: BoxFit.cover,
+                                    height: 38.h,
+                                    width: 38.w,
+                                  )
+                                  : Container(
+                                    height: 38.h,
+                                    width: 38.w,
+                                    color: Colors.white10,
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 22.sp,
+                                      color: Colors.white54,
+                                    ),
+                                  ),
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: semiBoldStyle(whiteTextColor, 15.sp),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Spacer(),
+                            Container(
+                              height: 40.h,
+                              width: 40.w,
+                              decoration: BoxDecoration(
+                              color: black8.withValues(alpha: 0.5),
+                                shape: .circle
+                              ),
+                              child: IconButton(
+                                onPressed: () => showReportDialog(
+                                  context, 
+                                  targetType: 'player',
+                                  targetId: userId
+                                ),
+                                icon: Icon(
+                                  Icons.flag,
+                                  color: white,
+                                  size: 18.r,
+                                )
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                  ),
               ),
             ],
           ),

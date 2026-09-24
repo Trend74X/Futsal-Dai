@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:futsal_dai/src/controller/app_controller.dart';
 import 'package:futsal_dai/src/controller/auth_controller.dart';
+import 'package:futsal_dai/src/helper/image_helper.dart';
 import 'package:futsal_dai/src/helper/styles.dart';
 import 'package:futsal_dai/src/helper/validators.dart';
 import 'package:futsal_dai/src/widgets/custom_map.dart';
@@ -17,8 +17,6 @@ import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart' as path_provider;
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -382,33 +380,19 @@ class _EditProfileState extends State<EditProfile> {
 
     setState(() => isCompressingImage = true);
 
+    File finalImage;
     try {
-      final dir = await path_provider.getTemporaryDirectory();
-      final targetPath = p.join(
-        dir.absolute.path,
-        "profile_${DateTime.now().millisecondsSinceEpoch}.webp",
-      );
-
-      // Compress and convert to WebP
-      final XFile? compressedXFile = await FlutterImageCompress.compressAndGetFile(
-        pickedFile.path,
-        targetPath,
-        format: CompressFormat.webp,
-        quality: 80,
-        minWidth: 500,  // Capped dimensions suitable for avatars
-        minHeight: 500,
-      );
-
-      if (compressedXFile != null) {
-        setState(() {
-          selectedWebpImage = File(compressedXFile.path);
-        });
-      }
+      finalImage = await compressToWebp(pickedFile.path);
     } catch (e) {
-      showToast(message: 'Could not process image: $e', isSuccess: false);
-    } finally {
-      setState(() => isCompressingImage = false);
+      log('WebP conversion failed, falling back to original: $e');
+      showToast(message: 'Could not convert to WebP, using original image', isSuccess: false);
+      finalImage = File(pickedFile.path);
     }
+
+    setState(() {
+      selectedWebpImage = finalImage;
+      isCompressingImage = false;
+    });
   }
 
   // --- Camera / Gallery Bottom Sheet ---

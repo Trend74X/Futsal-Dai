@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -41,6 +42,10 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
   double venueLat = 0.0;
   double venueLong = 0.0;
 
+  // Venue photos (slider gallery, up to 5)
+  List<File> selectedVenueImages = [];
+  List<String> venueGalleryImageUrls = [];
+
   // Selected Amenities
   final Set<String> selectedAmenities = {'Parking', 'Changing'};
 
@@ -72,6 +77,11 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         descriptionCon.text = venueRes['description'] ?? '';
         venueLat            = venueRes['latitude'] ?? 0.0;
         venueLong           = venueRes['longitude'] ?? 0.0;
+
+        // Set existing gallery images
+        final List<dynamic> galleryRes = venueRes['gallery_image_urls'] ?? [];
+        venueGalleryImageUrls = galleryRes.map((e) => e.toString()).toList();
+        selectedVenueImages.clear();
 
         // Set amenities
         final List<dynamic> savedAmenities = venueRes['amenities'] ?? [];
@@ -138,6 +148,8 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(height: 12.h),
+                          venueImageWidget(),
+                          SizedBox(height: 20.h),
                           formWidget(),
                           SizedBox(height: 24.h),
                           amenitiesWidget(),
@@ -160,6 +172,135 @@ class _OwnerVenueDetailsState extends State<OwnerVenueDetails> {
         ),
       ),
     );
+  }
+
+  Widget venueImageWidget() {
+    final int totalImages = selectedVenueImages.length + venueGalleryImageUrls.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              "VENUE PHOTOS (SLIDER)",
+              style: boldStyle(subtitleTextColor, 12.sp),
+            ),
+            Text(
+              '$totalImages/5',
+              style: boldStyle(
+                totalImages >= 5 ? const Color(0xFFFFB4AB) : subtitleTextColor,
+                12.sp,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          'Add up to 5 photos. These will be shown in a slider on your venue page.',
+          style: regularStyle(subtitleTextColor, 12.sp),
+        ),
+        SizedBox(height: 12.h),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 12.w,
+            mainAxisSpacing: 12.h,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: totalImages < 5 ? totalImages + 1 : totalImages,
+          itemBuilder: (context, index) {
+            // Add tile shown at the end while under the 5 image cap
+            if (index == totalImages) {
+              return InkWell(
+                onTap: pickVenueImage,
+                borderRadius: BorderRadius.circular(16.r),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1B241E),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: primaryColor.withValues(alpha: 0.5),
+                      width: 1.5.w,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(10.r),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.add_a_photo, color: primaryColor, size: 22.sp),
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        'Add Photo',
+                        style: boldStyle(whiteTextColor, 13.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            final bool isLocal = index < selectedVenueImages.length;
+            ImageProvider provider = isLocal
+                ? FileImage(selectedVenueImages[index])
+                : NetworkImage(venueGalleryImageUrls[index - selectedVenueImages.length]);
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B241E),
+                      image: DecorationImage(image: provider, fit: BoxFit.cover),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 4.r,
+                  right: 4.r,
+                  child: GestureDetector(
+                    onTap: () => _removeVenueImage(index),
+                    child: Container(
+                      padding: EdgeInsets.all(4.r),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.close, color: Colors.white, size: 14.sp),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  void _removeVenueImage(int index) {
+    setState(() {
+      if (index < selectedVenueImages.length) {
+        selectedVenueImages.removeAt(index);
+      } else {
+        venueGalleryImageUrls.removeAt(index - selectedVenueImages.length);
+      }
+    });
+  }
+
+  void pickVenueImage() {
+    // image picking / uploading handled by the owner
   }
 
   Widget formWidget() {

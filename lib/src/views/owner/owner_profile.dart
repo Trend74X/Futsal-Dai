@@ -160,12 +160,13 @@ class _OwnerProfilePageState extends State<OwnerProfilePage> {
                 _authCon.profile!.fullName,
                 style: boldStyle(whiteTextColor, 28.sp).copyWith(height: 1.0)
               ),
+              SizedBox(height: 4.h),
               Text(
-                'Sanepa, Lalitpur Nepal',
+                '@${_authCon.profile!.userName}',
                 style: TextStyle(
                   color: whiteTextColor,
                   fontSize: 16.sp
-                ),
+                ).copyWith(height: 1.2),
               ),
               SizedBox(height: 8.h),
               Container(
