@@ -550,7 +550,7 @@ class OwnerController extends GetxController {
         'team_name'   : teamName,
         'phone_number': phoneNumber,
         'total_price' : totalPrice,
-        'user_id'     : read('userId')
+        'created_by'  : read('userId')
       };
 
       await supabase.from('bookings').insert(bookingData);

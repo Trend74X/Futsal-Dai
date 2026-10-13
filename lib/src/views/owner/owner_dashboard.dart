@@ -464,9 +464,7 @@ class _OwnerDashboardState extends State<OwnerDashboard> {
 
                 if (matchingBooking != null) {
                   final String dbStatus = matchingBooking['status'] ?? 'booked';
-                  final String displayName = matchingBooking['team_name'] ?? 
-                                             matchingBooking['users']?['full_name'] ?? 
-                                             'Reserved';
+                  final String displayName = matchingBooking['team_name'] ??  matchingBooking['users']?['full_name'] ?? 'Reserved';
 
                   if (dbStatus == 'booked' || dbStatus == 'confirmed') {
                     status = 'Booked';
